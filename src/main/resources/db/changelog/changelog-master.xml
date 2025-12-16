@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+           http://www.liquibase.org/xml/ns/dbchangelog
+           http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd">
+
+    <changeSet id="001-init-extensions" author="ticbnpickTeam">
+        <sqlFile
+                path="db/changelog/init-extensions.sql"
+                relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="002-create-personne" author="ticbnpickTeam">
+        <sqlFile
+                path="db/changelog/create-personne.sql"
+                relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="003-create-client" author="ticbnpickTeam">
+        <sqlFile
+                path="db/changelog/create-client.sql"
+                relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="004-create-livreur" author="ticbnpickTeam">
+        <sqlFile
+                path="db/changelog/create-livreur.sql"
+                relativeToChangelogFile="false"/>
+    </changeSet>
+
+</databaseChangeLog>
