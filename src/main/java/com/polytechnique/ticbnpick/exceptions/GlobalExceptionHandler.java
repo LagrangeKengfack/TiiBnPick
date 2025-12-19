@@ -1,5 +1,7 @@
 package com.polytechnique.ticbnpick.exceptions;
 
+import com.polytechnique.ticbnpick.exceptions.address.AddressOperationException;
+import com.polytechnique.ticbnpick.exceptions.address.InvalidAddressException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +26,6 @@ public class GlobalExceptionHandler {
     /**
      * Handles ResourceNotFoundException.
      * Returns 404 Not Found.
-     *
-     * @param ex exception
-     * @param exchange web exchange
-     * @return error response
-     * @author Kengfack Lagrange
-     * @date 18/12/2025
      */
     @ExceptionHandler(ResourceNotFoundException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleResourceNotFoundException(
@@ -44,18 +40,13 @@ public class GlobalExceptionHandler {
                 exchange.getRequest().getPath().value()
         );
 
+        logError(ex, exchange);
         return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(error));
     }
 
     /**
      * Handles DuplicateResourceException.
      * Returns 409 Conflict.
-     *
-     * @param ex exception
-     * @param exchange web exchange
-     * @return error response
-     * @author Kengfack Lagrange
-     * @date 18/12/2025
      */
     @ExceptionHandler(DuplicateResourceException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleDuplicateResourceException(
@@ -70,18 +61,55 @@ public class GlobalExceptionHandler {
                 exchange.getRequest().getPath().value()
         );
 
+        logError(ex, exchange);
         return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(error));
+    }
+
+    /**
+     * Handles InvalidAddressException.
+     * Returns 400 Bad Request.
+     */
+    @ExceptionHandler(InvalidAddressException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleInvalidAddressException(
+            InvalidAddressException ex,
+            ServerWebExchange exchange) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                exchange.getRequest().getPath().value()
+        );
+
+        logError(ex, exchange);
+        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
+    }
+
+    /**
+     * Handles AddressOperationException.
+     * Returns 500 Internal Server Error.
+     */
+    @ExceptionHandler(AddressOperationException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleAddressOperationException(
+            AddressOperationException ex,
+            ServerWebExchange exchange) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Internal Server Error",
+                ex.getMessage(),
+                exchange.getRequest().getPath().value()
+        );
+
+        logError(ex, exchange);
+        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error));
     }
 
     /**
      * Handles duplicate key exceptions from database.
      * Returns 409 Conflict.
-     *
-     * @param ex exception
-     * @param exchange web exchange
-     * @return error response
-     * @author Kengfack Lagrange
-     * @date 18/12/2025
      */
     @ExceptionHandler(DuplicateKeyException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleDuplicateKeyException(
@@ -94,6 +122,8 @@ public class GlobalExceptionHandler {
             message = "Email already exists";
         } else if (ex.getMessage().contains("persons_national_id_key")) {
             message = "National ID already exists";
+        } else if (ex.getMessage().contains("addresses_street_city_district_country_key")) {
+            message = "Address with same street, city, district and country already exists";
         }
 
         ErrorResponse error = new ErrorResponse(
@@ -104,18 +134,13 @@ public class GlobalExceptionHandler {
                 exchange.getRequest().getPath().value()
         );
 
+        logError(ex, exchange);
         return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(error));
     }
 
     /**
      * Handles validation errors.
      * Returns 400 Bad Request.
-     *
-     * @param ex exception
-     * @param exchange web exchange
-     * @return error response
-     * @author Kengfack Lagrange
-     * @date 18/12/2025
      */
     @ExceptionHandler(WebExchangeBindException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleValidationException(
@@ -137,18 +162,34 @@ public class GlobalExceptionHandler {
                 exchange.getRequest().getPath().value()
         );
 
+        logError(ex, exchange);
+        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
+    }
+
+    /**
+     * Handles IllegalArgumentException.
+     * Returns 400 Bad Request.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            ServerWebExchange exchange) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                exchange.getRequest().getPath().value()
+        );
+
+        logError(ex, exchange);
         return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
     }
 
     /**
      * Handles all other exceptions.
      * Returns 500 Internal Server Error.
-     *
-     * @param ex exception
-     * @param exchange web exchange
-     * @return error response
-     * @author Kengfack Lagrange
-     * @date 18/12/2025
      */
     @ExceptionHandler(Exception.class)
     public Mono<ResponseEntity<ErrorResponse>> handleGenericException(
@@ -159,10 +200,23 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
-                "An unexpected error occurred: " + ex.getMessage(),
+                "An unexpected error occurred",
                 exchange.getRequest().getPath().value()
         );
 
+        logError(ex, exchange);
         return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error));
+    }
+
+    /**
+     * Log error details for debugging.
+     */
+    private void logError(Exception ex, ServerWebExchange exchange) {
+        System.err.printf("[%s] %s %s - %s: %s%n",
+                LocalDateTime.now(),
+                exchange.getRequest().getMethod(),
+                exchange.getRequest().getPath().value(),
+                ex.getClass().getSimpleName(),
+                ex.getMessage());
     }
 }
