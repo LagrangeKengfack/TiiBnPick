@@ -1,7 +1,7 @@
 package com.polytechnique.ticbnpick.controllers;
 
-import com.polytechnique.ticbnpick.dtos.ClientDTO;
-import com.polytechnique.ticbnpick.dtos.ClientResponseDTO;
+import com.polytechnique.ticbnpick.dtos.client.ClientDTO;
+import com.polytechnique.ticbnpick.dtos.client.ClientResponseDTO;
 import com.polytechnique.ticbnpick.services.ClientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

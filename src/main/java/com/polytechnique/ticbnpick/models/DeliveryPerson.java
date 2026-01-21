@@ -7,7 +7,6 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -35,15 +34,15 @@ public class DeliveryPerson {
 
     @NotNull
     @Column("commercial_register")
-    private String commercialRegister;
+    private UUID commercialRegister;
 
     @NotNull
     @Column("commercial_name")
     private String commercialName;
 
     @NotNull
-    @Column("nui")
-    private String nui;
+    @Column("taxpayer_number")
+    private String taxpayerNumber;
 
     @NotNull
     @Column("status")
@@ -64,4 +63,19 @@ public class DeliveryPerson {
 
     @Column("siret")
     private Double siret;
+
+    @Column("longitude_gps")
+    private Float longitudeGps;
+
+    @Column("latitude_gps")
+    private Float latitudeGps;
+
+    @Column("remaining_deliveries")
+    private Integer remainingDeliveries;
+
+    @Column("failed_deliveries")
+    private Integer failedDeliveries;
+
+    @Column("subscription_id")
+    private UUID subscriptionId;
 }
