@@ -1,7 +1,7 @@
 package com.polytechnique.ticbnpick.services;
 
-import com.polytechnique.ticbnpick.dtos.ClientDTO;
-import com.polytechnique.ticbnpick.dtos.ClientResponseDTO;
+import com.polytechnique.ticbnpick.dtos.client.ClientDTO;
+import com.polytechnique.ticbnpick.dtos.client.ClientResponseDTO;
 import com.polytechnique.ticbnpick.exceptions.ResourceNotFoundException;
 import com.polytechnique.ticbnpick.models.Client;
 import com.polytechnique.ticbnpick.models.Person;

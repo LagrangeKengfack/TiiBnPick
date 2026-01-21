@@ -1,8 +1,6 @@
 package com.polytechnique.ticbnpick.models;
 
-import com.polytechnique.ticbnpick.models.enums.response.ResponseStatus;
 import jakarta.validation.constraints.NotNull;
-import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,16 +10,17 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 /**
- * Represents a deliveryPerson response to an announcement.
+ * Represents a notification related to an announcement.
+ * Extends the concept of Notification for announcement-specific notifications.
  *
  * @author Kengfack Lagrange
- * @date 17/12/2025
+ * @date 21/01/2026
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("responses")
-public class Response {
+@Table("notification_annonces")
+public class NotificationAnnonce {
 
     @Id
     @Column("id")
@@ -30,19 +29,4 @@ public class Response {
     @NotNull
     @Column("announcement_id")
     private UUID announcementId;
-
-    @NotNull
-    @Column("delivery_person_id")
-    private UUID deliveryPersonId;
-
-    @NotNull
-    @Column("arrival_time")
-    private Instant arrivalTime;
-
-    @NotNull
-    @Column("status")
-    private ResponseStatus status;
-
-    @Column("created_at")
-    private Instant createdAt;
 }

@@ -1,6 +1,5 @@
 package com.polytechnique.ticbnpick.models;
 
-import com.polytechnique.ticbnpick.models.enums.response.ResponseStatus;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
@@ -12,36 +11,36 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 /**
- * Represents a deliveryPerson response to an announcement.
+ * Represents a comment in the system.
+ * Comments can be associated with deliveries or announcements.
  *
  * @author Kengfack Lagrange
- * @date 17/12/2025
+ * @date 21/01/2026
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("responses")
-public class Response {
+@Table("comments")
+public class Comment {
 
     @Id
     @Column("id")
     private UUID id;
 
     @NotNull
-    @Column("announcement_id")
-    private UUID announcementId;
+    @Column("person_id")
+    private UUID personId;
 
     @NotNull
-    @Column("delivery_person_id")
-    private UUID deliveryPersonId;
+    @Column("person_receiver_id")
+    private UUID personReceiverId;
 
     @NotNull
-    @Column("arrival_time")
-    private Instant arrivalTime;
+    @Column("message")
+    private String message;
 
-    @NotNull
-    @Column("status")
-    private ResponseStatus status;
+    @Column("num_of_like")
+    private Integer numOfLike;
 
     @Column("created_at")
     private Instant createdAt;

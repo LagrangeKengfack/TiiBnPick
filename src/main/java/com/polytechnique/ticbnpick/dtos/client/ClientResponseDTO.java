@@ -1,4 +1,4 @@
-package com.polytechnique.ticbnpick.dtos;
+package com.polytechnique.ticbnpick.dtos.client;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

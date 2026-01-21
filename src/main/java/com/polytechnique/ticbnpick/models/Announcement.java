@@ -7,7 +7,6 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -32,6 +31,9 @@ public class Announcement {
     @NotNull
     @Column("client_id")
     private UUID clientId;
+
+    @Column("packet_id")
+    private UUID packetId;
 
     @NotNull
     @Column("pickup_address_id")
@@ -60,4 +62,13 @@ public class Announcement {
 
     @Column("updated_at")
     private Instant updatedAt;
+
+    @Column("recipient_name")
+    private String recipientName;
+
+    @Column("recipient_number")
+    private String recipientNumber;
+
+    @Column("amount")
+    private Float amount;
 }
