@@ -8,7 +8,6 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -35,57 +34,45 @@ public class Delivery {
     private UUID announcementId;
 
     @NotNull
-    @Column("packet_id")
-    private UUID packetId;
-
-    @NotNull
     @Column("delivery_person_id")
     private UUID deliveryPersonId;
-
-    @NotNull
-    @Column("sender_phone")
-    private String senderPhone;
-
-    @NotNull
-    @Column("receiver_phone")
-    private String receiverPhone;
-
-    @NotNull
-    @Column("pickup_time_min")
-    private Instant pickupTimeMin;
-
-    @NotNull
-    @Column("pickup_time_max")
-    private Instant pickupTimeMax;
-
-    @NotNull
-    @Column("delivery_time_min")
-    private Instant deliveryTimeMin;
-
-    @NotNull
-    @Column("delivery_time_max")
-    private Instant deliveryTimeMax;
-
-    @Column("estimated_delivery")
-    private Instant estimatedDelivery;
-
-    @Column("distance_km")
-    private Double distanceKm;
-
-    @NotNull
-    @Column("urgency")
-    private DeliveryUrgency urgency;
-
-    @Column("delivery_note")
-    private String deliveryNote;
 
     @NotNull
     @Column("status")
     private DeliveryStatus status;
 
-    @Column("created_at")
-    private Instant createdAt;
+    @Column("tarif")
+    private Integer tarif;
 
-    @Column("updated_at")
-    private Instant updatedAt;
+    @Column("note_livreur")
+    private Float noteLivreur;
+
+    @NotNull
+    @Column("pickup_min_time")
+    private Instant pickupMinTime;
+
+    @NotNull
+    @Column("pickup_max_time")
+    private Instant pickupMaxTime;
+
+    @NotNull
+    @Column("urgency")
+    private DeliveryUrgency urgency;
+
+    @NotNull
+    @Column("delivery_min_time")
+    private Instant deliveryMinTime;
+
+    @NotNull
+    @Column("delivery_max_time")
+    private Instant deliveryMaxTime;
+
+    @Column("estimated_delivery")
+    private Instant estimatedDelivery;
+
+    @Column("delivery_note")
+    private Double deliveryNote;
+
+    @Column("distance_km")
+    private Double distanceKm;
 }

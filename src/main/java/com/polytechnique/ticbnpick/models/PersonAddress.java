@@ -10,42 +10,27 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 /**
- * Represents a packet to be delivered.
- * A packet is associated with an announcement.
+ * Association table for the many-to-many relationship between Person and Address.
+ * A person can have multiple addresses and an address can belong to multiple persons.
  *
  * @author Kengfack Lagrange
- * @date 17/12/2025
+ * @date 21/01/2026
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("packets")
-public class Packet {
+@Table("person_addresses")
+public class PersonAddress {
 
     @Id
     @Column("id")
     private UUID id;
 
     @NotNull
-    @Column("width")
-    private Double width;
+    @Column("person_id")
+    private UUID personId;
 
     @NotNull
-    @Column("length")
-    private Double length;
-
-    @NotNull
-    @Column("fragile")
-    private Boolean fragile;
-
-    @Column("description")
-    private String description;
-
-    @NotNull
-    @Column("photo_packet")
-    private String photoPacket;
-
-    @NotNull
-    @Column("is_perishable")
-    private Boolean isPerishable;
+    @Column("address_id")
+    private UUID addressId;
 }

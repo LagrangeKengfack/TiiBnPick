@@ -8,7 +8,6 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -38,10 +37,6 @@ public class Logistics {
     private String plateNumber;
 
     @NotNull
-    @Column("logistics_photo")
-    private String logisticsPhoto;
-
-    @NotNull
     @Column("logistics_type")
     private LogisticsType logisticsType;
 
@@ -66,4 +61,7 @@ public class Logistics {
 
     @Column("total_seat_number")
     private Integer totalSeatNumber;
+
+    @Column("color")
+    private String color;
 }
