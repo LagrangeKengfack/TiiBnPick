@@ -40,8 +40,8 @@ public class ClientService {
      */
     public Mono<ClientResponseDTO> createClient(ClientDTO clientDTO) {
         Person person = new Person();
-        person.setLast_name(clientDTO.getLastName());
-        person.setFirst_name(clientDTO.getFirstName());
+        person.setLastName(clientDTO.getLastName());
+        person.setFirstName(clientDTO.getFirstName());
         person.setPhone(clientDTO.getPhone());
         person.setEmail(clientDTO.getEmail());
         person.setPassword(passwordEncoder.encode(clientDTO.getPassword()));
@@ -112,8 +112,8 @@ public class ClientService {
                 .flatMap(existingClient -> personRepository.findById(existingClient.getPersonId())
                         .switchIfEmpty(Mono.error(new ResourceNotFoundException("Person", "id", existingClient.getPersonId())))
                         .flatMap(existingPerson -> {
-                            existingPerson.setLast_name(clientDTO.getLastName());
-                            existingPerson.setFirst_name(clientDTO.getFirstName());
+                            existingPerson.setLastName(clientDTO.getLastName());
+                            existingPerson.setFirstName(clientDTO.getFirstName());
                             existingPerson.setPhone(clientDTO.getPhone());
                             existingPerson.setEmail(clientDTO.getEmail());
                             existingPerson.setPassword(clientDTO.getPassword());
@@ -159,8 +159,8 @@ public class ClientService {
         ClientResponseDTO responseDTO = new ClientResponseDTO();
         responseDTO.setId(client.getId());
         responseDTO.setPersonId(person.getId());
-        responseDTO.setLastName(person.getLast_name());
-        responseDTO.setFirstName(person.getFirst_name());
+        responseDTO.setLastName(person.getLastName());
+        responseDTO.setFirstName(person.getFirstName());
         responseDTO.setPhone(person.getPhone());
         responseDTO.setEmail(person.getEmail());
         responseDTO.setNationalId(person.getNationalId());

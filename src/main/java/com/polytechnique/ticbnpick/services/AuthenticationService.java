@@ -30,8 +30,8 @@ public class AuthenticationService {
                     AuthResponseDTO response = new AuthResponseDTO();
                     response.setToken(token);
                     response.setId(person.getId());
-                    response.setLastName(person.getLast_name());
-                    response.setFirstName(person.getFirst_name());
+                    response.setLastName(person.getLastName());
+                    response.setFirstName(person.getFirstName());
                     response.setEmail(person.getEmail());
                     response.setPhone(person.getPhone());
                     response.setPhotoCard(person.getPhotoCard());
