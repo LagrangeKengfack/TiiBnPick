@@ -52,6 +52,8 @@ class DeliveryPersonRegistrationServiceTest {
     private PasswordHasherService passwordHasherService;
     @Mock
     private EmailService emailService;
+    @Mock
+    private com.polytechnique.ticbnpick.services.support.KafkaEventPublisher kafkaEventPublisher;
 
     @InjectMocks
     private DeliveryPersonRegistrationService service;
@@ -101,7 +103,7 @@ class DeliveryPersonRegistrationServiceTest {
                 .verifyComplete();
 
         verify(passwordHasherService).encode("plainPassword");
-        verify(person).setPassword("hashedPassword");
+        org.junit.jupiter.api.Assertions.assertEquals("hashedPassword", person.getPassword());
         // verify(emailService).sendSimpleMessage(eq("test@test.com"), anyString(), anyString()); // If email is sent
     }
 

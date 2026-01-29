@@ -62,6 +62,9 @@ public class Announcement {
     @Column("updated_at")
     private Instant updatedAt;
 
+    @Column("duration")
+    private Integer duration;
+
     @Column("recipient_name")
     private String recipientName;
 
