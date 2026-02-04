@@ -22,6 +22,7 @@ public class KafkaEventPublisher {
     private static final String TOPIC_DELIVERY_PERSON_VALIDATED = "delivery-person-validated";
 
     private static final String TOPIC_ANNOUNCEMENT_PUBLISHED = "announcement-published";
+    private static final String TOPIC_SUBSCRIPTION_ATTEMPTS = "subscription-attempts";
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -54,5 +55,16 @@ public class KafkaEventPublisher {
     public void publishAnnouncementPublished(com.polytechnique.ticbnpick.events.AnnouncementPublishedEvent event) {
         log.info("Publishing AnnouncementPublishedEvent for announcement ID: {}", event.getAnnouncement().getId());
         kafkaTemplate.send(TOPIC_ANNOUNCEMENT_PUBLISHED, event.getAnnouncement().getId().toString(), event);
+    }
+
+    /**
+     * Publishes a SubscriptionAttemptEvent to Kafka.
+     *
+     * @param event the event to publish
+     */
+    public void publishSubscriptionAttempt(com.polytechnique.ticbnpick.events.SubscriptionAttemptEvent event) {
+        log.info("Publishing SubscriptionAttemptEvent for deliveryPerson: {} and announcement: {}",
+                event.getDeliveryPersonId(), event.getAnnouncementId());
+        kafkaTemplate.send(TOPIC_SUBSCRIPTION_ATTEMPTS, event.getAnnouncementId().toString(), event);
     }
 }

@@ -128,4 +128,9 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/update-address-coordinates.sql" relativeToChangelogFile="false"/>
     </changeSet>
+
+    <changeSet id="019-create-announcement-subscription" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/create-announcement-subscription.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

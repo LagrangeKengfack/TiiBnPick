@@ -237,4 +237,14 @@ public class AnnouncementService {
                             });
                 });
     }
+
+    public Mono<Void> initiateSubscription(UUID announcementId, UUID deliveryPersonId) {
+        return Mono.fromRunnable(() -> {
+            com.polytechnique.ticbnpick.events.SubscriptionAttemptEvent event = new com.polytechnique.ticbnpick.events.SubscriptionAttemptEvent(
+                    announcementId,
+                    deliveryPersonId,
+                    Instant.now());
+            kafkaEventPublisher.publishSubscriptionAttempt(event);
+        });
+    }
 }
