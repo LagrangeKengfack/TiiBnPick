@@ -26,19 +26,14 @@ public class DataSeeder implements CommandLineRunner {
             if (count == 0) {
                 log.info("No clients found. Seeding test client...");
                 Person person = new Person();
-<<<<<<< HEAD
-                person.setLast_name("Doe");
-                person.setFirst_name("John");
-=======
                 person.setLastName("Doe");
                 person.setFirstName("John");
->>>>>>> subscription
                 person.setPhone("+33612345678");
                 person.setEmail("john.doe@example.com");
                 person.setPassword("password");
                 person.setNationalId("ID12345");
                 person.setPhotoCard("photo.jpg");
-                
+
                 return personRepository.save(person).flatMap(savedPerson -> {
                     Client client = new Client();
                     client.setPersonId(savedPerson.getId());
@@ -48,9 +43,8 @@ public class DataSeeder implements CommandLineRunner {
             }
             return Mono.empty();
         }).subscribe(
-            client -> log.info(" Test Client Created with ID: {}", client.getId()),
-            error -> log.error("Error seeding data:", error),
-            () -> log.info("Data seeding check completed.")
-        );
+                client -> log.info(" Test Client Created with ID: {}", client.getId()),
+                error -> log.error("Error seeding data:", error),
+                () -> log.info("Data seeding check completed."));
     }
 }

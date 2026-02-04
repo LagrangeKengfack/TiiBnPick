@@ -7,8 +7,6 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Data;
 
-<<<<<<< HEAD
-=======
 /**
  * DTO representing the response for an announcement.
  *
@@ -19,7 +17,6 @@ import lombok.Data;
  *       to resolve mapping issues where Lombok setters were not being detected
  *       correctly.
  */
->>>>>>> subscription
 @Data
 public class AnnouncementResponseDTO {
     private UUID id;
@@ -33,12 +30,6 @@ public class AnnouncementResponseDTO {
     private String recipientName;
     private String recipientNumber;
     private Float amount;
-<<<<<<< HEAD
-    
-    private AddressDTO pickupAddress;
-    private AddressDTO deliveryAddress;
-    private PacketDTO packet;
-=======
 
     private AddressDTO pickupAddress;
     private AddressDTO deliveryAddress;
@@ -55,5 +46,4 @@ public class AnnouncementResponseDTO {
     public void setPacket(PacketDTO packet) {
         this.packet = packet;
     }
->>>>>>> subscription
 }

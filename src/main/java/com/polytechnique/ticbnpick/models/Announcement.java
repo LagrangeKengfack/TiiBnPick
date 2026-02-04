@@ -65,4 +65,10 @@ public class Announcement {
 
     @Column("amount")
     private Float amount;
+
+    @Column("created_at")
+    private Instant createdAt;
+
+    @Column("updated_at")
+    private Instant updatedAt;
 }

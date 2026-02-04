@@ -70,12 +70,9 @@ public class Delivery {
     @Column("estimated_delivery")
     private Instant estimatedDelivery;
 
-<<<<<<< HEAD
-=======
     @Column("duration")
     private Integer duration;
 
->>>>>>> subscription
     @Column("delivery_note")
     private Double deliveryNote;
 
