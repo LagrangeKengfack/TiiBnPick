@@ -48,10 +48,7 @@ public class Packet {
     @NotNull
     @Column("is_perishable")
     private Boolean isPerishable;
-<<<<<<< HEAD
-=======
 
     @Column("thickness")
     private Double thickness;
->>>>>>> subscription
 }

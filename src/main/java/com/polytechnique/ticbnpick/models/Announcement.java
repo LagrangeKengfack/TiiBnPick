@@ -53,24 +53,10 @@ public class Announcement {
     @NotNull
     @Column("status")
     private AnnouncementStatus status;
-<<<<<<< HEAD
-=======
 
->>>>>>> subscription
-
-
-    @Column("created_at")
-    private Instant createdAt;
-
-    @Column("updated_at")
-    private Instant updatedAt;
-
-<<<<<<< HEAD
-=======
     @Column("duration")
     private Integer duration;
 
->>>>>>> subscription
     @Column("recipient_name")
     private String recipientName;
 
