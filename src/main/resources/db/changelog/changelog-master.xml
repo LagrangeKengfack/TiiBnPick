@@ -124,4 +124,8 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/update-schema-duration.sql" relativeToChangelogFile="false"/>
     </changeSet>
+    <changeSet id="018-add-address-coordinates" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/update-address-coordinates.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

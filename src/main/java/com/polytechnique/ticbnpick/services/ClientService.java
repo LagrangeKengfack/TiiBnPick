@@ -100,7 +100,7 @@ public class ClientService {
     /**
      * Updates an existing client.
      *
-     * @param id client identifier
+     * @param id        client identifier
      * @param clientDTO updated client data
      * @return updated client response or error
      * @author Kenmeugne Michèle
@@ -110,7 +110,8 @@ public class ClientService {
         return clientRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Client", "id", id)))
                 .flatMap(existingClient -> personRepository.findById(existingClient.getPersonId())
-                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("Person", "id", existingClient.getPersonId())))
+                        .switchIfEmpty(
+                                Mono.error(new ResourceNotFoundException("Person", "id", existingClient.getPersonId())))
                         .flatMap(existingPerson -> {
                             existingPerson.setLastName(clientDTO.getLastName());
                             existingPerson.setFirstName(clientDTO.getFirstName());

@@ -7,6 +7,16 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Data;
 
+/**
+ * DTO representing the response for an announcement.
+ *
+ * @author François-Charles ATANGA
+ * @date 03/02/2026
+ *       Note: Added explicit setters for complex objects (pickupAddress,
+ *       deliveryAddress, packet)
+ *       to resolve mapping issues where Lombok setters were not being detected
+ *       correctly.
+ */
 @Data
 public class AnnouncementResponseDTO {
     private UUID id;
@@ -20,8 +30,20 @@ public class AnnouncementResponseDTO {
     private String recipientName;
     private String recipientNumber;
     private Float amount;
-    
+
     private AddressDTO pickupAddress;
     private AddressDTO deliveryAddress;
     private PacketDTO packet;
+
+    public void setPickupAddress(AddressDTO pickupAddress) {
+        this.pickupAddress = pickupAddress;
+    }
+
+    public void setDeliveryAddress(AddressDTO deliveryAddress) {
+        this.deliveryAddress = deliveryAddress;
+    }
+
+    public void setPacket(PacketDTO packet) {
+        this.packet = packet;
+    }
 }

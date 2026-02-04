@@ -28,6 +28,8 @@ public class AddressMapper {
         address.setCity(request.getCity());
         address.setCountry(request.getCountry());
         address.setType(request.getType());
+        address.setLatitude(request.getLatitude());
+        address.setLongitude(request.getLongitude());
         return address;
     }
 }

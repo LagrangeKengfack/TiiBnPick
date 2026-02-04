@@ -11,6 +11,15 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * REST Controller for managing announcements.
+ *
+ * @author François-Charles ATANGA
+ * @date 03/02/2026
+ *       Note: Added publishAnnouncement endpoint (PATCH /{id}/publish) to
+ *       trigger
+ *       announcement publication and Kafka event.
+ */
 @RestController
 @RequestMapping("/api/announcements")
 @RequiredArgsConstructor
@@ -35,7 +44,8 @@ public class AnnouncementController {
     }
 
     @PutMapping("/{id}")
-    public Mono<AnnouncementResponseDTO> updateAnnouncement(@PathVariable UUID id, @RequestBody AnnouncementRequestDTO request) {
+    public Mono<AnnouncementResponseDTO> updateAnnouncement(@PathVariable UUID id,
+            @RequestBody AnnouncementRequestDTO request) {
         return announcementService.updateAnnouncement(id, request);
     }
 
@@ -43,5 +53,10 @@ public class AnnouncementController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteAnnouncement(@PathVariable UUID id) {
         return announcementService.deleteAnnouncement(id);
+    }
+
+    @PatchMapping("/{id}/publish")
+    public Mono<AnnouncementResponseDTO> publishAnnouncement(@PathVariable UUID id) {
+        return announcementService.publishAnnouncement(id);
     }
 }

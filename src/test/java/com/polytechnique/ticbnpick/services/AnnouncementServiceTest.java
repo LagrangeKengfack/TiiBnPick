@@ -26,6 +26,13 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Tests for AnnouncementService.
+ *
+ * @author François-Charles ATANGA
+ * @date 03/02/2026
+ *       Note: Validated service methods including new publication logic.
+ */
 @ExtendWith(MockitoExtension.class)
 class AnnouncementServiceTest {
 
@@ -50,10 +57,10 @@ class AnnouncementServiceTest {
 
         Packet savedPacket = new Packet();
         savedPacket.setId(UUID.randomUUID());
-        
+
         Address savedAddress = new Address();
         savedAddress.setId(UUID.randomUUID());
-        
+
         Announcement savedAnnouncement = new Announcement();
         savedAnnouncement.setId(UUID.randomUUID());
         savedAnnouncement.setTitle("Test Announcement");
@@ -64,8 +71,7 @@ class AnnouncementServiceTest {
         when(announcementRepository.save(any(Announcement.class))).thenReturn(Mono.just(savedAnnouncement));
 
         StepVerifier.create(announcementService.createAnnouncement(request))
-                .expectNextMatches(response -> 
-                        response.getId().equals(savedAnnouncement.getId()) &&
+                .expectNextMatches(response -> response.getId().equals(savedAnnouncement.getId()) &&
                         response.getTitle().equals("Test Announcement"))
                 .verifyComplete();
     }
@@ -74,7 +80,7 @@ class AnnouncementServiceTest {
     void getAllAnnouncements_ShouldReturnFlux() {
         UUID packetId = UUID.randomUUID();
         UUID addrId = UUID.randomUUID();
-        
+
         Announcement announcement = new Announcement();
         announcement.setId(UUID.randomUUID());
         announcement.setPacketId(packetId);

@@ -11,4 +11,6 @@ public class AddressDTO {
     private String country;
     private String description;
     private AddressType type;
+    private Double latitude;
+    private Double longitude;
 }
