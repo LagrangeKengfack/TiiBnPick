@@ -50,4 +50,10 @@ public class Address {
 
     @Column("description")
     private String description;
+
+    @Column("latitude")
+    private Double latitude;
+
+    @Column("longitude")
+    private Double longitude;
 }

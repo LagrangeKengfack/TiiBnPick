@@ -53,9 +53,11 @@ public class Announcement {
     @NotNull
     @Column("status")
     private AnnouncementStatus status;
+<<<<<<< HEAD
+=======
 
-    @Column("price")
-    private Double price;
+>>>>>>> subscription
+
 
     @Column("created_at")
     private Instant createdAt;
@@ -63,6 +65,12 @@ public class Announcement {
     @Column("updated_at")
     private Instant updatedAt;
 
+<<<<<<< HEAD
+=======
+    @Column("duration")
+    private Integer duration;
+
+>>>>>>> subscription
     @Column("recipient_name")
     private String recipientName;
 

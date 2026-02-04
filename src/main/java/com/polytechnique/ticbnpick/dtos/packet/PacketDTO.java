@@ -10,4 +10,8 @@ public class PacketDTO {
     private String description;
     private String photoPacket;
     private Boolean isPerishable;
+<<<<<<< HEAD
+=======
+    private Double thickness;
+>>>>>>> subscription
 }

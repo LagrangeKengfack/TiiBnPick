@@ -64,4 +64,10 @@ public class Logistics {
 
     @Column("color")
     private String color;
+<<<<<<< HEAD
+=======
+
+    @Column("logistic_image")
+    private String logisticImage;
+>>>>>>> subscription
 }
