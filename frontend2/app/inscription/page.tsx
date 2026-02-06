@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { checkEmail, createClient, checkNationalId } from '../../services/clientService'
 
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3 | 4 | 5
 type Role = 'client' | 'livreur' | null
 
 export default function LoginPage() {
@@ -48,7 +48,7 @@ export default function LoginPage() {
     typeVehicule: '',
     marqueVehicule: '',
     numeroImmatriculation: '',
-    couleurVoiture: '',
+    color: '',
     dimensionsMalle: ''
   })
 
@@ -183,7 +183,7 @@ export default function LoginPage() {
       }
     }
 
-    if (role === 'livreur' && step < 4) {
+    if (role === 'livreur' && step < 5) {
       setCompletedSteps([...completedSteps, step])
       setStep((step + 1) as Step)
     } else if (role === 'client' && step < 3) {
@@ -317,7 +317,7 @@ export default function LoginPage() {
   }
 
   // Step 2+: Form
-  const totalSteps = role === 'client' ? 3 : 4
+  const totalSteps = role === 'client' ? 3 : 5
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f0e6]">
@@ -365,6 +365,12 @@ export default function LoginPage() {
             {step === 4 && role === 'livreur' && (
               <h2 className="text-base md:text-lg font-medium text-gray-800 text-center leading-relaxed">
                 Informations sur le véhicule
+              </h2>
+            )}
+
+            {step === 5 && role === 'livreur' && (
+              <h2 className="text-base md:text-lg font-medium text-gray-800 text-center leading-relaxed">
+                Vérification des informations
               </h2>
             )}
           </div>
@@ -794,7 +800,6 @@ export default function LoginPage() {
             <Card className="border-2 border-gray-200">
               <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
                 <div className="flex items-center justify-center mb-3 md:mb-4">
-                  <Car className="h-6 w-6 md:h-8 md:w-8 text-orange-500 mr-2" />
                   <h3 className="text-base md:text-lg font-semibold text-orange-500 text-center">Informations sur le véhicule</h3>
                 </div>
 
@@ -908,25 +913,16 @@ export default function LoginPage() {
 
                 {/* 5. Couleur de la voiture */}
                 <div className="space-y-1 md:space-y-2">
-                  <Label className="text-gray-700 text-xs md:text-sm font-medium">Couleur de la voiture</Label>
-                  <Select value={formData.couleurVoiture} onValueChange={(value) => updateField('couleurVoiture', value)}>
-                    <SelectTrigger className="border-gray-300 focus:border-orange-500 text-sm md:text-base">
-                      <SelectValue placeholder="Sélectionner la couleur" />
-                      <ChevronDown className="ml-2 h-4 w-4 text-orange-500" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="blanc">Blanc</SelectItem>
-                      <SelectItem value="noir">Noir</SelectItem>
-                      <SelectItem value="gris">Gris</SelectItem>
-                      <SelectItem value="rouge">Rouge</SelectItem>
-                      <SelectItem value="bleu">Bleu</SelectItem>
-                      <SelectItem value="vert">Vert</SelectItem>
-                      <SelectItem value="jaune">Jaune</SelectItem>
-                      <SelectItem value="or">Or</SelectItem>
-                      <SelectItem value="argent">Argent</SelectItem>
-                      <SelectItem value="autre">Autre</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-gray-700 text-xs md:text-sm font-medium">Couleur du véhicule</Label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Ex: Noir, Blanc, Rouge métallique..."
+                      value={formData.color}
+                      onChange={(e) => updateField('color', e.target.value)}
+                      className="border-gray-300 focus:border-orange-500 text-sm md:text-base"
+                    />
+                  </div>
                 </div>
 
                 {/* 6. Dimensions de la malle arrière (optionnel) */}
@@ -955,9 +951,106 @@ export default function LoginPage() {
                   </Button>
                   <Button
                     className="flex-1 bg-orange-500 hover:bg-orange-600 h-12 md:h-auto text-sm md:text-base"
-                    onClick={() => console.log('Submit:', formData)}
+                    onClick={goNext}
                   >
-                    Créer mon compte
+                    Suivant
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 5: Vérification - LIVREUR ONLY */}
+          {step === 5 && role === 'livreur' && (
+            <Card className="border-2 border-gray-200">
+              <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
+                <h3 className="text-center text-base md:text-lg font-semibold text-orange-500 mb-3 md:mb-4">Récapitulatif des informations</h3>
+
+                <div className="space-y-3 md:space-y-4">
+                  {/* Section: Identité */}
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 md:p-4 space-y-2">
+                    <h4 className="text-sm font-bold text-orange-700 flex items-center gap-2">
+                      <User className="h-4 w-4" /> Identité & Contact
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
+                      <span className="text-gray-500">Nom complet:</span>
+                      <span className="text-gray-800 font-medium">{formData.nom} {formData.prenom}</span>
+                      <span className="text-gray-500">Téléphone:</span>
+                      <span className="text-gray-800 font-medium">{formData.telephone}</span>
+                      <span className="text-gray-500">Email:</span>
+                      <span className="text-gray-800 font-medium">{formData.email}</span>
+                      <span className="text-gray-500">N° CNI:</span>
+                      <span className="text-gray-800 font-medium">{formData.numeroCNI}</span>
+                    </div>
+                  </div>
+
+                  {/* Section: Localisation */}
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 md:p-4 space-y-2">
+                    <h4 className="text-sm font-bold text-orange-700 flex items-center gap-2">
+                      <MapPin className="h-4 w-4" /> Localisation
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
+                      <span className="text-gray-500">Pays:</span>
+                      <span className="text-gray-800 font-medium capitalize">{formData.pays}</span>
+                      <span className="text-gray-500">Adresse:</span>
+                      <span className="text-gray-800 font-medium">{formData.adressePersonnelle}</span>
+                      <span className="text-gray-500">Lieu dit:</span>
+                      <span className="text-gray-800 font-medium">{formData.lieuDitAdresse}</span>
+                    </div>
+                  </div>
+
+                  {/* Section: Véhicule */}
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 md:p-4 space-y-2">
+                    <h4 className="text-sm font-bold text-orange-700 flex items-center gap-2">
+                      <Car className="h-4 w-4" /> Véhicule
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
+                      <span className="text-gray-500">Type & Marque:</span>
+                      <span className="text-gray-800 font-medium capitalize">{formData.typeVehicule} - {formData.marqueVehicule}</span>
+                      <span className="text-gray-500">Immatriculation:</span>
+                      <span className="text-gray-800 font-medium uppercase">{formData.numeroImmatriculation}</span>
+                      <span className="text-gray-500">Couleur:</span>
+                      <span className="text-gray-800 font-medium capitalize">{formData.color}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checkbox conditions */}
+                <div className="flex items-start gap-3 pt-2">
+                  <input
+                    type="checkbox"
+                    id="conditions-livreur"
+                    checked={isTermsAccepted}
+                    onChange={(e) => setIsTermsAccepted(e.target.checked)}
+                    className="mt-1 w-4 h-4 md:w-5 md:h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <label htmlFor="conditions-livreur" className="text-xs md:text-sm text-gray-700 cursor-pointer">
+                    J'ai lu et j'accepte les conditions d'utilisation et la politique de confidentialité.
+                  </label>
+                </div>
+
+                {/* Boutons */}
+                <div className="flex gap-2 md:gap-3 pt-3 md:pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-orange-500 text-orange-500 hover:bg-orange-50 h-12 md:h-auto text-sm md:text-base bg-transparent"
+                    onClick={goBack}
+                  >
+                    Précédent
+                  </Button>
+                  <Button
+                    className={`flex-1 h-12 md:h-auto text-sm md:text-base ${isTermsAccepted
+                      ? 'bg-orange-500 hover:bg-orange-600 font-bold'
+                      : 'bg-gray-300 cursor-not-allowed'
+                      }`}
+                    disabled={!isTermsAccepted}
+                    onClick={() => {
+                      console.log('Final Submission Livreur:', formData);
+                      alert('Demande d\'inscription envoyée avec succès !');
+                      router.push('/');
+                    }}
+                  >
+                    Confirmer & S'inscrire
                   </Button>
                 </div>
               </CardContent>
