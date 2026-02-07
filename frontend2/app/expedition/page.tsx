@@ -30,10 +30,9 @@ import PaymentStep from '../../components/expedition/PaymentStepExpedition';
 import { CheckCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { UserPlusIcon } from 'lucide-react';
 import jsPDF from 'jspdf';
-import OriginalQRCode from 'qrcode';
-import { useAuth } from '@/context/AuthContext';
-import { packageService, PackageCreationPayload } from '@/services/packageService';
 import { SenderData, RecipientData,  PackageData, RouteData, SignatureData, ExpeditionFormData, LoggedInUser } from '@/types/package';
+import { buildFullAddress } from '@/lib/utils';
+
 const EXPEDITION_FORM_STORAGE_KEY = 'expedition_form_in_progress';
 
 
@@ -341,9 +340,28 @@ const handleCreateAccount = () => {
           onBack={() => setFormData(prev => ({ ...prev, currentStep: 2 }))}
         />;
       case 4:
+        // Inside app/expedition/page.tsx -> case 4:
+  // Construct full strings for both sides
+  const fullDeparture = buildFullAddress({
+    lieuDit: formData.senderData.senderLieuDit,
+    address: formData.senderData.senderAddress,
+    city: formData.senderData.senderCity,
+    region: formData.senderData.senderRegion,
+    country: formData.senderData.senderCountry,
+  });
+
+  const fullArrival = buildFullAddress({
+    lieuDit: formData.recipientData.recipientLieuDit,
+    address: formData.recipientData.recipientAddress,
+    city: formData.recipientData.recipientCity,
+    region: formData.recipientData.recipientRegion,
+    country: formData.recipientData.recipientCountry,
+  });
+
+
         return <RouteSelectionStep
-          initialDepartureAddress={formData.senderData.senderAddress}
-          initialArrivalAddress={formData.recipientData.recipientAddress}
+          initialDepartureAddress={fullDeparture}
+          initialArrivalAddress={fullArrival}
           onContinue={(routeData, travelPrice) => setFormData(prev => ({ ...prev, routeData, pricing: { ...prev.pricing, travelPrice }, currentStep: 5 }))}
           onBack={() => setFormData(prev => ({ ...prev, currentStep: 3 }))}
         />;

@@ -3,13 +3,30 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Loader2 } from 'lucide-react'
-import MapLeaflet from '@/components/MapLeaflet'
 import { geocode } from '@/services/geocoding'
 import { getRoute } from '@/services/routing'
 import type { GeoJSON } from 'geojson'
 import { RouteData, RouteSelectionStepProps } from '@/types/package'
 import { calculateTravelPrice } from '@/lib/utils'
 
+// TO FIX THE ERROR: "window is not defined" when importing MapLeaflet, we need to dynamically import it with SSR disabled.
+// 1. Remove the direct import: 
+// import MapLeaflet from '@/components/MapLeaflet'
+
+// 2. Add this dynamic import at the top (after other imports):
+import dynamic from 'next/dynamic';
+
+const MapLeaflet = dynamic(
+  () => import('@/components/MapLeaflet'),
+  { 
+    ssr: false, // This is the magic line that fixes "window is not defined"
+    loading: () => (
+      <div className="w-full h-96 bg-gray-100 animate-pulse flex items-center justify-center">
+        Chargement de la carte...
+      </div>
+    )
+  }
+);
 
 export default function RouteSelectionStep({ onContinue, onBack, initialDepartureAddress, initialArrivalAddress }: RouteSelectionStepProps) {
   const [routeData, setRouteData] = useState<RouteData>({
@@ -101,12 +118,12 @@ export default function RouteSelectionStep({ onContinue, onBack, initialDepartur
         <MapLeaflet center={markers[0]?.position ?? [5.33, -4.03]} markers={markers} route={routeGeoJSON} />
 
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/10">
+          <div className="absolute inset-0 flex items-center justify-center z-0 bg-black/10">
             <Loader2 className="animate-spin text-orange-500" />
           </div>
         )}
 
-        <div className="absolute top-4 left-4 right-4 lg:left-auto lg:w-80">
+        <div className="absolute top-4 left-4 right-4 lg:left-auto lg:w-80 z-1001">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-semibold text-gray-800 dark:text-gray-100">Coût du trajet</h4>

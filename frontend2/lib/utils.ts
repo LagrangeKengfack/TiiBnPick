@@ -122,4 +122,25 @@ export const calculateTravelPrice = (distance: number) => {
     return Math.round(baseFee + distance * pricePerKm);
 };
 
+/**
+ * Builds a clean address string for geocoding
+ */
+export const buildFullAddress = (data: {
+  lieuDit?: string;
+  address?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+}) => {
+  const parts = [
+    data.lieuDit,
+    data.address,
+    data.city,
+    //data.region,
+    data.country
+  ];
+  
+  // Filter out empty/undefined parts and join with commas
+  return parts.filter(part => part && part.trim() !== '').join(', ');
+};
 // END MELI
