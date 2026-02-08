@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useEffect } from "react"
-
-import { useState } from 'react'
+import React, { useEffect, useState } from "react"
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 
 // Helper component for stable photo previews
@@ -101,6 +100,29 @@ export default function LoginPage() {
     hauteurMalle: '',
     uniteMalle: 'cm'
   })
+
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    try {
+      const r = searchParams.get('role')
+      const s = searchParams.get('step')
+      if (r === 'livreur' || r === 'client') {
+        setRole(r as Role)
+        setCompletedSteps([1])
+        if (s) {
+          const n = parseInt(s, 10)
+          if (!isNaN(n) && n >= 1 && n <= 4) setStep(n as Step)
+          else setStep(2)
+        } else {
+          setStep(2)
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const selectClient = () => {
     setRole('client')
