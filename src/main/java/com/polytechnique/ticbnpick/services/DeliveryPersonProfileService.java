@@ -165,8 +165,20 @@ public class DeliveryPersonProfileService {
                         logistics.setTankCapacity(request.getTankCapacity());
                         changed = true;
                     }
-                    if (request.getLuggageMaxCapacity() != null) {
-                        logistics.setLuggageMaxCapacity(request.getLuggageMaxCapacity());
+                    if (request.getLength() != null) {
+                        logistics.setLength(request.getLength());
+                        changed = true;
+                    }
+                    if (request.getWidth() != null) {
+                        logistics.setWidth(request.getWidth());
+                        changed = true;
+                    }
+                    if (request.getHeight() != null) {
+                        logistics.setHeight(request.getHeight());
+                        changed = true;
+                    }
+                    if (request.getUnit() != null) {
+                        logistics.setUnit(request.getUnit());
                         changed = true;
                     }
                     if (request.getTotalSeatNumber() != null) {

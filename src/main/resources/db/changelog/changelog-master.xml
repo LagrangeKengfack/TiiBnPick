@@ -137,4 +137,26 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/update-schema-logistic-packet-announcement.sql" relativeToChangelogFile="false"/>
     </changeSet>
+    <changeSet id="021-add-cni-photos-to-person" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260207_add_cni_photos_to_person.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="022-update-logistics-dimensions" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260207_update_logistics_dimensions.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="023-add-nui-is-active-to-person" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260208_add_nui_is_active_to_person.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="024-fix-delivery-person-and-logistics-schema" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260208_fix_delivery_person_and_logistics_schema.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="025-fix-packets-and-announcements-schema" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260208_fix_packets_and_announcements_schema.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

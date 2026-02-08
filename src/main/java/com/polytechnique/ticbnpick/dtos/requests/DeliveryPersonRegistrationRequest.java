@@ -34,6 +34,9 @@ public class DeliveryPersonRegistrationRequest {
     private String commercialRegister;
     private String commercialName;
     private String nui;
+    private String nuiPhoto;
+    private String cniRecto;
+    private String cniVerso;
     private Double commissionRate;
     private Double siret;
 
@@ -47,7 +50,10 @@ public class DeliveryPersonRegistrationRequest {
     private String backPhoto;
     private String frontPhoto;
     private Double tankCapacity;
-    private Double luggageMaxCapacity;
+    private Double length;
+    private Double width;
+    private Double height;
+    private String unit;
     private Integer totalSeatNumber;
     private String color;
 

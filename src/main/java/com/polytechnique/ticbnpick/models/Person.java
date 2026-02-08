@@ -66,6 +66,12 @@ public class Person {
     @Column("nui")
     private String nui;
 
+    @Column("cni_recto")
+    private String cniRecto;
+
+    @Column("cni_verso")
+    private String cniVerso;
+
     @Column("is_active")
     private Boolean isActive;
 }

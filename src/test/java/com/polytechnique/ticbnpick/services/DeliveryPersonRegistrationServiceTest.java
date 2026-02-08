@@ -54,6 +54,8 @@ class DeliveryPersonRegistrationServiceTest {
     private EmailService emailService;
     @Mock
     private com.polytechnique.ticbnpick.services.support.KafkaEventPublisher kafkaEventPublisher;
+    @Mock
+    private com.polytechnique.ticbnpick.services.support.FileStorageService fileStorageService;
 
     @InjectMocks
     private DeliveryPersonRegistrationService service;
@@ -64,10 +66,10 @@ class DeliveryPersonRegistrationServiceTest {
         DeliveryPersonRegistrationRequest request = new DeliveryPersonRegistrationRequest();
         request.setEmail("test@test.com");
         request.setPassword("plainPassword");
-        
+
         Person person = new Person();
         person.setEmail("test@test.com");
-        
+
         Person savedPerson = new Person();
         savedPerson.setId(UUID.randomUUID());
         savedPerson.setEmail("test@test.com");
@@ -83,28 +85,30 @@ class DeliveryPersonRegistrationServiceTest {
         when(validator.validate(request)).thenReturn(Mono.just(request));
         when(lecturePersonService.existsByEmail(anyString())).thenReturn(Mono.just(false));
         when(passwordHasherService.encode("plainPassword")).thenReturn("hashedPassword");
-        
+
+        when(fileStorageService.saveBase64Image(any(), anyString())).thenReturn(Mono.just("path/to/image"));
+
         when(mapper.toPerson(request)).thenReturn(person);
         when(mapper.toDeliveryPerson(request)).thenReturn(deliveryPerson);
         when(mapper.toLogistics(request)).thenReturn(logistics);
         when(mapper.toAddress(request)).thenReturn(address);
 
         when(creationPersonService.createPerson(any(Person.class))).thenReturn(Mono.just(savedPerson));
-        when(creationDeliveryPersonService.createDeliveryPerson(any(DeliveryPerson.class))).thenReturn(Mono.just(savedDeliveryPerson));
+        when(creationDeliveryPersonService.createDeliveryPerson(any(DeliveryPerson.class)))
+                .thenReturn(Mono.just(savedDeliveryPerson));
         when(creationLogisticsService.createLogistics(any(Logistics.class))).thenReturn(Mono.just(new Logistics()));
         when(creationAddressService.createAddress(any(Address.class))).thenReturn(Mono.just(new Address()));
-        
+
         // Act & Assert
         StepVerifier.create(service.register(request))
-                .expectNextMatches(response -> 
-                    "PENDING".equals(response.getStatus()) && 
-                    response.getDeliveryPersonId() != null
-                )
+                .expectNextMatches(response -> "PENDING".equals(response.getStatus()) &&
+                        response.getDeliveryPersonId() != null)
                 .verifyComplete();
 
         verify(passwordHasherService).encode("plainPassword");
         org.junit.jupiter.api.Assertions.assertEquals("hashedPassword", person.getPassword());
-        // verify(emailService).sendSimpleMessage(eq("test@test.com"), anyString(), anyString()); // If email is sent
+        // verify(emailService).sendSimpleMessage(eq("test@test.com"), anyString(),
+        // anyString()); // If email is sent
     }
 
     @Test
@@ -120,7 +124,7 @@ class DeliveryPersonRegistrationServiceTest {
         StepVerifier.create(service.register(request))
                 .expectError(EmailAlreadyUsedException.class)
                 .verify();
-                
+
         verify(creationPersonService, never()).createPerson(any());
     }
 }

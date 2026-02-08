@@ -29,7 +29,10 @@ public class DeliveryPersonUpdateRequest {
     private String logisticsClass;
     private String color;
     private Double tankCapacity;
-    private Double luggageMaxCapacity;
+    private Double length;
+    private Double width;
+    private Double height;
+    private String unit;
     private Integer totalSeatNumber;
 
     // Address fields? Usually separate update, but if included:

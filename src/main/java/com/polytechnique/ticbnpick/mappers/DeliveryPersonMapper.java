@@ -43,7 +43,9 @@ public class DeliveryPersonMapper {
         person.setNationalId(request.getNationalId());
         person.setPhotoCard(request.getPhotoCard());
         person.setNui(request.getNui());
-        person.setIsActive(true);
+        person.setCniRecto(request.getCniRecto());
+        person.setCniVerso(request.getCniVerso());
+        person.setIsActive(false);
         return person;
     }
 
@@ -63,7 +65,7 @@ public class DeliveryPersonMapper {
         deliveryPerson.setSiret(request.getSiret());
         deliveryPerson.setCommissionRate(request.getCommissionRate());
         deliveryPerson.setTaxpayerNumber(request.getNui());
-        deliveryPerson.setIsActive(true);
+        deliveryPerson.setIsActive(false);
         return deliveryPerson;
     }
 
@@ -91,7 +93,10 @@ public class DeliveryPersonMapper {
         logistics.setBackPhoto(request.getBackPhoto());
         logistics.setFrontPhoto(request.getFrontPhoto());
         logistics.setTankCapacity(request.getTankCapacity());
-        logistics.setLuggageMaxCapacity(request.getLuggageMaxCapacity());
+        logistics.setLength(request.getLength());
+        logistics.setWidth(request.getWidth());
+        logistics.setHeight(request.getHeight());
+        logistics.setUnit(request.getUnit());
         logistics.setTotalSeatNumber(request.getTotalSeatNumber());
         logistics.setColor(request.getColor());
         return logistics;
