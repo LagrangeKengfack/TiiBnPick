@@ -22,21 +22,25 @@ import {
   MessageSquare,
   User,
   Calendar,
-  MapPin as MapPinIcon
+  MapPin as MapPinIcon,
+  LogOut
 } from 'lucide-react'
+import { withAuth } from '@/components/hoc/withAuth'
+import { useAuth } from '@/context/AuthContext'
 
-export default function ClientLanding() {
+export function ClientLanding() {
   const router = useRouter()
+  const { user, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [trackingNumber, setTrackingNumber] = useState('')
   const [activeTab, setActiveTab] = useState('accueil')
 
-  // Données fictives du client
+  // Client info from context
   const clientInfo = {
-    firstName: 'Marie',
-    lastName: 'Kouassi',
-    rating: 4.6,
-    totalOrders: 24
+    firstName: user?.firstName || 'Client',
+    lastName: user?.lastName || '',
+    rating: user?.rating || 4.6,
+    totalOrders: user?.totalDeliveries || 0
   }
 
   const steps = [
@@ -81,6 +85,9 @@ export default function ClientLanding() {
               <Button variant="ghost" className="text-gray-700 hover:text-orange-600 hover:bg-orange-50 font-medium">
                 Comment ça marche
               </Button>
+              <Button variant="ghost" size="icon" onClick={logout} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                <LogOut className="w-5 h-5" />
+              </Button>
               <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-medium shadow-md">
                 <MapPin className="w-4 h-4 mr-2" />
                 Commander
@@ -112,7 +119,7 @@ export default function ClientLanding() {
           {mobileMenuOpen && (
             <nav className="md:hidden border-t border-gray-100 bg-white py-4 space-y-2">
               <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors"
-                   onClick={() => router.push('/client/profil')}>
+                onClick={() => router.push('/client/profil')}>
                 <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
@@ -131,6 +138,10 @@ export default function ClientLanding() {
               <Button variant="ghost" className="w-full justify-start">
                 <Calendar className="w-4 h-4 mr-2" />
                 Historique des livraisons
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-red-600" onClick={logout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Déconnexion
               </Button>
             </nav>
           )}
@@ -311,9 +322,8 @@ export default function ClientLanding() {
           <div className="flex items-center justify-around py-3">
             <button
               onClick={() => setActiveTab('accueil')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-                activeTab === 'accueil' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
-              }`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === 'accueil' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
+                }`}
             >
               <Home className="w-6 h-6" />
               <span className="text-xs font-medium">Accueil</span>
@@ -321,9 +331,8 @@ export default function ClientLanding() {
 
             <button
               onClick={() => setActiveTab('annonces')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-                activeTab === 'annonces' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
-              }`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === 'annonces' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
+                }`}
             >
               <Megaphone className="w-6 h-6" />
               <span className="text-xs font-medium">Annonces</span>
@@ -331,9 +340,8 @@ export default function ClientLanding() {
 
             <button
               onClick={() => setActiveTab('reponses')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-                activeTab === 'reponses' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
-              }`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === 'reponses' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
+                }`}
             >
               <MessageSquare className="w-6 h-6" />
               <span className="text-xs font-medium">Réponses</span>
@@ -341,9 +349,8 @@ export default function ClientLanding() {
 
             <button
               onClick={() => setActiveTab('livraisons')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-                activeTab === 'livraisons' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
-              }`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === 'livraisons' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
+                }`}
             >
               <Package className="w-6 h-6" />
               <span className="text-xs font-medium">Livraisons</span>
@@ -354,3 +361,5 @@ export default function ClientLanding() {
     </div>
   )
 }
+
+export default withAuth(ClientLanding, ['CLIENT'])

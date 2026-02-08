@@ -3,18 +3,58 @@
 import React from "react"
 
 import { useState } from "react"
-import { Eye, EyeOff, Shield } from "lucide-react"
+import { Eye, EyeOff, Shield, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { login as loginService } from "@/services/authService"
+import { useAuth } from "@/context/AuthContext"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log("Login attempt:", { email, password })
+    setError(null)
+
+    if (!email || !password) {
+      setError("Veuillez remplir tous les champs.")
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await loginService(email, password)
+      setSuccess(true)
+
+      // Use AuthContext to store user and token
+      login(response)
+
+      setTimeout(() => {
+        if (response.userType === 'ADMIN') {
+          router.push('/admin')
+        } else if (response.userType === 'CLIENT') {
+          router.push('/client')
+        } else if (response.userType === 'LIVREUR') {
+          if (response.isActive) {
+            router.push('/livreur')
+          } else {
+            setSuccess(false)
+            setError("Votre compte livreur n'est pas encore activé. Veuillez patienter ou contacter le support.")
+          }
+        }
+      }, 1500)
+    } catch (err: any) {
+      setError(err.message || "Une erreur s'est produite.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -25,6 +65,20 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-[#1e2a4a] mb-2">Connexion</h1>
           <p className="text-[#5a6b8a]">Accédez à votre espace de gestion</p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <AlertCircle className="shrink-0" size={20} />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-100 text-green-600 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <CheckCircle2 className="shrink-0" size={20} />
+            <p className="text-sm font-medium">Authentification effectuée avec succès ! Redirection en cours...</p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -77,9 +131,15 @@ export default function LoginPage() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-[#e67e22] hover:bg-[#d35400] text-white font-semibold py-3.5 rounded-lg transition-colors mt-2"
+            disabled={isLoading || success}
+            className="w-full bg-[#e67e22] hover:bg-[#d35400] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-lg transition-colors mt-2 flex items-center justify-center gap-2"
           >
-            Se connecter
+            {isLoading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Connexion...
+              </>
+            ) : "Se connecter"}
           </button>
         </form>
 

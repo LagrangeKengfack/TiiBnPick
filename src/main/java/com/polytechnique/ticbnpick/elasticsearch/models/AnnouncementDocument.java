@@ -25,7 +25,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "announcements")
+@Document(indexName = "announcements", createIndex = false)
 public class AnnouncementDocument {
 
     @Id

@@ -26,6 +26,9 @@ import {
   X,
   MoreHorizontal,
 } from 'lucide-react'
+import { withAuth } from '@/components/hoc/withAuth'
+import { useAuth } from '@/context/AuthContext'
+import api from '@/lib/api'
 
 // Types
 interface DeliveryPersonRequest {
@@ -61,8 +64,9 @@ interface Account {
 
 type ActiveView = 'dashboard' | 'registrations' | 'accounts'
 
-export default function SuperAdminDashboard() {
+export function SuperAdminDashboard() {
   const { toast } = useToast()
+  const { user, logout } = useAuth()
   const [loading, setLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState<DeliveryPersonRequest | null>(null)
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
@@ -74,8 +78,8 @@ export default function SuperAdminDashboard() {
   const [registrationRequests, setRegistrationRequests] = useState<DeliveryPersonRequest[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
 
-  // Super admin info
-  const superAdminName = 'Charles Henry'
+  // Super admin info from context if available
+  const superAdminName = user ? `${user.lastName} ${user.firstName}` : 'Admin'
 
   // Fetch data on component mount
   useEffect(() => {
@@ -86,11 +90,8 @@ export default function SuperAdminDashboard() {
   // Fetch registration requests
   const fetchRegistrations = async () => {
     try {
-      const response = await fetch('/api/registrations')
-      if (response.ok) {
-        const data = await response.json()
-        setRegistrationRequests(data)
-      }
+      const response = await api.get('/api/registrations')
+      setRegistrationRequests(response.data)
     } catch (error) {
       console.error('Error fetching registrations:', error)
     } finally {
@@ -101,11 +102,8 @@ export default function SuperAdminDashboard() {
   // Fetch accounts
   const fetchAccounts = async () => {
     try {
-      const response = await fetch('/api/accounts')
-      if (response.ok) {
-        const data = await response.json()
-        setAccounts(data)
-      }
+      const response = await api.get('/api/accounts')
+      setAccounts(response.data)
     } catch (error) {
       console.error('Error fetching accounts:', error)
     }
@@ -143,66 +141,40 @@ export default function SuperAdminDashboard() {
   const confirmAction = async () => {
     try {
       if (actionDialog === 'approve' && selectedRequest) {
-        const response = await fetch(`/api/registrations/${selectedRequest.id}/approve`, {
-          method: 'POST'
-        })
+        await api.post(`/api/registrations/${selectedRequest.id}/approve`)
 
-        if (response.ok) {
-          toast({
-            title: 'Inscription approuvée',
-            description: `Le livreur ${selectedRequest.name} a été approuvé avec succès.`
-          })
-          await fetchRegistrations()
-          await fetchAccounts()
-        } else {
-          throw new Error('Failed to approve')
-        }
+        toast({
+          title: 'Inscription approuvée',
+          description: `Le livreur ${selectedRequest.name} a été approuvé avec succès.`
+        })
+        await fetchRegistrations()
+        await fetchAccounts()
       } else if (actionDialog === 'reject' && selectedRequest) {
-        const response = await fetch(`/api/registrations/${selectedRequest.id}/reject`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: 'Rejeté par l\'administrateur' })
-        })
+        await api.post(`/api/registrations/${selectedRequest.id}/reject`, { reason: 'Rejeté par l\'administrateur' })
 
-        if (response.ok) {
-          toast({
-            title: 'Inscription rejetée',
-            description: `La demande de ${selectedRequest.name} a été rejetée.`,
-            variant: 'destructive'
-          })
-          await fetchRegistrations()
-        } else {
-          throw new Error('Failed to reject')
-        }
+        toast({
+          title: 'Inscription rejetée',
+          description: `La demande de ${selectedRequest.name} a été rejetée.`,
+          variant: 'destructive'
+        })
+        await fetchRegistrations()
       } else if (actionDialog === 'suspend' && selectedAccount) {
-        const response = await fetch(`/api/accounts/${selectedAccount.id}/suspend`, {
-          method: 'POST'
-        })
+        await api.post(`/api/accounts/${selectedAccount.id}/suspend`)
 
-        if (response.ok) {
-          toast({
-            title: 'Compte suspendu',
-            description: `Le compte de ${selectedAccount.name} a été suspendu.`
-          })
-          await fetchAccounts()
-        } else {
-          throw new Error('Failed to suspend')
-        }
+        toast({
+          title: 'Compte suspendu',
+          description: `Le compte de ${selectedAccount.name} a été suspendu.`
+        })
+        await fetchAccounts()
       } else if (actionDialog === 'revoke' && selectedAccount) {
-        const response = await fetch(`/api/accounts/${selectedAccount.id}/revoke`, {
-          method: 'POST'
-        })
+        await api.post(`/api/accounts/${selectedAccount.id}/revoke`)
 
-        if (response.ok) {
-          toast({
-            title: 'Compte révoqué',
-            description: `Le compte de ${selectedAccount.name} a été révoqué définitivement.`,
-            variant: 'destructive'
-          })
-          await fetchAccounts()
-        } else {
-          throw new Error('Failed to revoke')
-        }
+        toast({
+          title: 'Compte révoqué',
+          description: `Le compte de ${selectedAccount.name} a été révoqué définitivement.`,
+          variant: 'destructive'
+        })
+        await fetchAccounts()
       }
     } catch (error) {
       console.error('Error performing action:', error)
@@ -256,68 +228,68 @@ export default function SuperAdminDashboard() {
       // MOTO - design minimaliste avec guidon, corps arrondi et deux roues
       return (
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
-          <rect x="8" y="5" width="8" height="7" rx="1" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="8" cy="16" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="16" cy="16" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M10 9l2-3h2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 8v1" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <rect x="8" y="5" width="8" height="7" rx="1" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="8" cy="16" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="16" cy="16" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M10 9l2-3h2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M12 8v1" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     } else if (vehicleType.includes('tricycle') || vehicleType.includes('tricy')) {
       // TRICYCLE - corps central arrondi avec trois roues (deux avant, une arrière)
       return (
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
-          <ellipse cx="12" cy="8" rx="4" ry="3" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="8" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="12" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="16" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 11v-2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <ellipse cx="12" cy="8" rx="4" ry="3" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="8" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="12" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="16" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M12 11v-2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     } else if (vehicleType.includes('camion') || vehicleType.includes('truck')) {
       // CAMION - corps rectangulaire avec cabine
       return (
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
-          <path d="M3 10h10v8H3v-8z" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M13 10h8v8h-8v-8z" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M13 14v4h8v-4h-8z" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="8" cy="20" r="2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="19" cy="20" r="2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <rect x="5" y="8" width="3" height="2" rx="0.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 10h10v8H3v-8z" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M13 10h8v8h-8v-8z" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M13 14v4h8v-4h-8z" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="8" cy="20" r="2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="19" cy="20" r="2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="5" y="8" width="3" height="2" rx="0.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     } else if (vehicleType.includes('voiture') || vehicleType.includes('car') || vehicleType.includes('auto')) {
       // VOITURE - silhouète arrondie avec deux roues
       return (
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
-          <rect x="2" y="9" width="14" height="7" rx="3" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="6" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="14" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M5 9l1-2h6l1 2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M7 7l1 1h4" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <rect x="2" y="9" width="14" height="7" rx="3" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="6" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="14" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5 9l1-2h6l1 2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M7 7l1 1h4" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     } else if (vehicleType.includes('vélo') || vehicleType.includes('velo') || vehicleType.includes('bike') || vehicleType.includes('bicyclette')) {
       // VÉLO - cadre avec deux roues et guidon
       return (
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
-          <path d="M7 12v4M12 8v8M17 12v4" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="7" cy="17" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="17" cy="17" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M7 17l3-7h4" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M10 10l2-2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M14 10h-2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M7 12v4M12 8v8M17 12v4" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="7" cy="17" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="17" cy="17" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M7 17l3-7h4" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M10 10l2-2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M14 10h-2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     } else {
       // Par défaut, voiture
       return (
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
-          <rect x="2" y="9" width="14" height="7" rx="3" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="6" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="14" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M5 9l1-2h6l1 2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M7 7l1 1h4" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <rect x="2" y="9" width="14" height="7" rx="3" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="6" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="14" cy="18" r="2.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5 9l1-2h6l1 2" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M7 7l1 1h4" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     }
@@ -404,7 +376,7 @@ export default function SuperAdminDashboard() {
               </div>
             )}
             {sidebarOpen && (
-              <Button variant="ghost" size="icon" className="flex-shrink-0">
+              <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={logout}>
                 <LogOut className="w-4 h-4" />
               </Button>
             )}
@@ -424,8 +396,8 @@ export default function SuperAdminDashboard() {
               TiiB<span className="text-orange-500">n</span>Pick
             </h1>
           </div>
-          <Button variant="outline" size="sm" onClick={() => { fetchRegistrations(); fetchAccounts() }}>
-            <RefreshCw className="w-4 h-4" />
+          <Button variant="outline" size="sm" onClick={logout} className="text-red-600">
+            <LogOut className="w-4 h-4" />
           </Button>
         </header>
 
@@ -566,7 +538,7 @@ export default function SuperAdminDashboard() {
                     </CardContent>
                   </Card>
                 )))}
-              </div>
+            </div>
           )}
 
           {/* Accounts View */}
@@ -679,8 +651,8 @@ export default function SuperAdminDashboard() {
                             </TableCell>
                           </TableRow>
                         )))}
-                      </TableBody>
-                    </Table>
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
@@ -755,3 +727,5 @@ export default function SuperAdminDashboard() {
     </div>
   )
 }
+
+export default withAuth(SuperAdminDashboard, ['ADMIN'])

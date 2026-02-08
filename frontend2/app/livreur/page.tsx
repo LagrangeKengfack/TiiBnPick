@@ -37,8 +37,10 @@ import {
   Zap,
   BarChart3,
   ArrowUpRight,
-  Shield,
+  Shield
 } from 'lucide-react'
+import { withAuth } from '@/components/hoc/withAuth'
+import { useAuth } from '@/context/AuthContext'
 import { EarningsChart } from '@/components/charts/earnings-chart'
 import { DeliveriesChart } from '@/components/charts/deliveries-chart'
 import { ComparisonChart } from '@/components/charts/comparison-chart'
@@ -54,20 +56,21 @@ import {
   DialogClose,
 } from '@/components/ui/dialog'
 
-export default function LivreurDashboard() {
+export function LivreurDashboard() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
 
-  // Données fictives du livreur
+  // Livreur info from context
   const livreurInfo = {
-    firstName: 'Kouamé',
-    lastName: 'Jean',
-    rating: 4.8,
-    totalDeliveries: 156,
+    firstName: user?.firstName || 'Livreur',
+    lastName: user?.lastName || '',
+    rating: user?.rating || 4.8,
+    totalDeliveries: user?.totalDeliveries || 156,
     totalEarnings: 245000,
-    phone: '+225 07 00 00 00 00'
+    phone: user?.phone || '+225 07 00 00 00 00'
   }
 
   // Statistiques du jour
@@ -218,8 +221,12 @@ export default function LivreurDashboard() {
       setAvailableDeliveries((prev) => prev.filter((d) => d.id !== deliveryId))
       const accepted = availableDeliveries.find((d) => d.id === deliveryId)
       if (accepted) {
-        const now = { ...accepted, status: 'pickup' }
-        setActiveDeliveries((prev) => [now, ...prev])
+        const now = {
+          ...accepted,
+          status: 'pickup' as const,
+          pickupTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        }
+        setActiveDeliveries((prev: any) => [now, ...prev])
       }
 
       // switch to livraisons tab so the livreur voit sa nouvelle livraison
@@ -312,7 +319,7 @@ export default function LivreurDashboard() {
                 <Settings className="w-5 h-5" />
               </Button>
 
-              <Button variant="ghost" size="icon" className="text-red-600">
+              <Button variant="ghost" size="icon" className="text-red-600" onClick={logout}>
                 <LogOut className="w-5 h-5" />
               </Button>
             </nav>
@@ -338,7 +345,7 @@ export default function LivreurDashboard() {
           {mobileMenuOpen && (
             <nav className="md:hidden border-t bg-white py-4 space-y-2">
               <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors"
-                   onClick={() => router.push('/livreur/profil')}>
+                onClick={() => router.push('/livreur/profil')}>
                 <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
@@ -358,7 +365,7 @@ export default function LivreurDashboard() {
                 <Calendar className="w-4 h-4 mr-2" />
                 Historique des livraisons
               </Button>
-              <Button variant="ghost" className="w-full justify-start text-red-600">
+              <Button variant="ghost" className="w-full justify-start text-red-600" onClick={logout}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Déconnexion
               </Button>
@@ -385,7 +392,7 @@ export default function LivreurDashboard() {
                       <Truck className="w-10 h-10" />
                     </div>
                   </div>
-                    <div className="mt-4 flex gap-3" />
+                  <div className="mt-4 flex gap-3" />
                 </CardContent>
               </Card>
 
@@ -631,60 +638,60 @@ export default function LivreurDashboard() {
               ) : (
                 /* Dashboard Standard for Medium accounts */
                 <>
-              {/* Stats Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-[10px] md:text-xs">Aujourd'hui</CardDescription>
-                    <CardTitle className="text-xl md:text-2xl text-orange-600">{todayStats.deliveries}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Package className="w-3 h-3 mr-1" />
-                      Livraisons
-                    </div>
-                  </CardContent>
-                </Card>
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 px-4 py-3">
+                        <CardDescription className="text-[10px] md:text-xs">Aujourd'hui</CardDescription>
+                        <CardTitle className="text-xl md:text-2xl text-orange-600">{todayStats.deliveries}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4">
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Package className="w-3 h-3 mr-1" />
+                          Livraisons
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-[10px] md:text-xs">Revenus</CardDescription>
-                    <CardTitle className="text-xl md:text-2xl text-green-600">{todayStats.earnings.toLocaleString()} FCFA</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <DollarSign className="w-3 h-3 mr-1" />
-                      Gains
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 px-4 py-3">
+                        <CardDescription className="text-[10px] md:text-xs">Revenus</CardDescription>
+                        <CardTitle className="text-xl md:text-2xl text-green-600">{todayStats.earnings.toLocaleString()} FCFA</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4">
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <DollarSign className="w-3 h-3 mr-1" />
+                          Gains
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-[10px] md:text-xs">Distance</CardDescription>
-                    <CardTitle className="text-xl md:text-2xl text-blue-600">{todayStats.distance} km</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <MapIcon className="w-3 h-3 mr-1" />
-                      Parcourue
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 px-4 py-3">
+                        <CardDescription className="text-[10px] md:text-xs">Distance</CardDescription>
+                        <CardTitle className="text-xl md:text-2xl text-blue-600">{todayStats.distance} km</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4">
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <MapIcon className="w-3 h-3 mr-1" />
+                          Parcourue
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-[10px] md:text-xs">Pourboires</CardDescription>
-                    <CardTitle className="text-xl md:text-2xl text-purple-600">{todayStats.tips.toLocaleString()} FCFA</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <TrendingUp className="w-3 h-3 mr-1" />
-                      Reçus
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 px-4 py-3">
+                        <CardDescription className="text-[10px] md:text-xs">Pourboires</CardDescription>
+                        <CardTitle className="text-xl md:text-2xl text-purple-600">{todayStats.tips.toLocaleString()} FCFA</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4">
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <TrendingUp className="w-3 h-3 mr-1" />
+                          Reçus
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
                   {/* Total Stats Card */}
                   <Card className="bg-gradient-to-r from-gray-900 to-gray-800 text-white">
@@ -798,80 +805,80 @@ export default function LivreurDashboard() {
               {/* Details Dialog */}
               <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) setSelectedDelivery(null) }}>
                 <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-50 rounded-md flex items-center justify-center">
-                          <Package className="w-5 h-5 text-orange-600" />
-                        </div>
-                        <div>
-                          <DialogTitle>Résumé du colis</DialogTitle>
-                          <DialogDescription className="text-sm text-gray-500">{selectedDelivery?.id}</DialogDescription>
-                        </div>
+                  <DialogHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-orange-50 rounded-md flex items-center justify-center">
+                        <Package className="w-5 h-5 text-orange-600" />
                       </div>
-                    </DialogHeader>
-
-                    <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
-                      <div className="sm:col-span-1">
-                        <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                          {/* Placeholder image */}
-                          <img alt="miniature" src="/placeholder-package.png" className="object-cover w-full h-full" onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.ico' }} />
-                        </div>
+                      <div>
+                        <DialogTitle>Résumé du colis</DialogTitle>
+                        <DialogDescription className="text-sm text-gray-500">{selectedDelivery?.id}</DialogDescription>
                       </div>
+                    </div>
+                  </DialogHeader>
 
-                      <div className="sm:col-span-2">
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Désignation:</p>
-                            <p className="font-semibold text-gray-900">{selectedDelivery?.designation}</p>
-                          </div>
-
-                          <div className="flex gap-6">
-                            <div>
-                              <p className="text-sm text-gray-600">Poids:</p>
-                              <p className="font-semibold text-gray-900">{selectedDelivery?.weight} kg</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-600">Volume:</p>
-                              <p className="font-semibold text-gray-900">{selectedDelivery?.volume} m³</p>
-                            </div>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600">Options:</p>
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                              {selectedDelivery?.options?.map((opt: string) => (
-                                <span key={opt} className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 text-xs">{opt}</span>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600">Livraison:</p>
-                            <p className="font-semibold text-gray-900">{selectedDelivery?.deliveryType}</p>
-                          </div>
-                        </div>
+                  <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
+                    <div className="sm:col-span-1">
+                      <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                        {/* Placeholder image */}
+                        <img alt="miniature" src="/placeholder-package.png" className="object-cover w-full h-full" onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.ico' }} />
                       </div>
                     </div>
 
-                    <div className="my-6 border-t border-dashed border-gray-200 pt-4" />
-
-                    <DialogFooter>
-                      <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full gap-4">
+                    <div className="sm:col-span-2">
+                      <div className="space-y-3">
                         <div>
-                          <p className="text-sm text-orange-600">Prix de manutention</p>
-                          <p className="text-3xl font-bold text-orange-600">{(selectedDelivery?.price || 0).toLocaleString()} FCFA</p>
-                          <p className="text-xs text-gray-400">Manutention uniquement</p>
+                          <p className="text-sm text-gray-600">Désignation:</p>
+                          <p className="font-semibold text-gray-900">{selectedDelivery?.designation}</p>
                         </div>
 
-                        <div className="flex gap-2 w-full sm:w-auto">
-                          <DialogClose>
-                            <Button variant="outline" className="flex-1 sm:flex-none">← Retour</Button>
-                          </DialogClose>
-                          <Button onClick={() => { if (selectedDelivery) handleAcceptDelivery(selectedDelivery.id); setDetailsOpen(false) }} className="flex-1 sm:flex-none bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">Continuer vers les adresses →</Button>
+                        <div className="flex gap-6">
+                          <div>
+                            <p className="text-sm text-gray-600">Poids:</p>
+                            <p className="font-semibold text-gray-900">{selectedDelivery?.weight} kg</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Volume:</p>
+                            <p className="font-semibold text-gray-900">{selectedDelivery?.volume} m³</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-sm text-gray-600">Options:</p>
+                          <div className="flex gap-2 mt-2 flex-wrap">
+                            {selectedDelivery?.options?.map((opt: string) => (
+                              <span key={opt} className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 text-xs">{opt}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-sm text-gray-600">Livraison:</p>
+                          <p className="font-semibold text-gray-900">{selectedDelivery?.deliveryType}</p>
                         </div>
                       </div>
-                    </DialogFooter>
-                  </DialogContent>
+                    </div>
+                  </div>
+
+                  <div className="my-6 border-t border-dashed border-gray-200 pt-4" />
+
+                  <DialogFooter>
+                    <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full gap-4">
+                      <div>
+                        <p className="text-sm text-orange-600">Prix de manutention</p>
+                        <p className="text-3xl font-bold text-orange-600">{(selectedDelivery?.price || 0).toLocaleString()} FCFA</p>
+                        <p className="text-xs text-gray-400">Manutention uniquement</p>
+                      </div>
+
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <DialogClose>
+                          <Button variant="outline" className="flex-1 sm:flex-none">← Retour</Button>
+                        </DialogClose>
+                        <Button onClick={() => { if (selectedDelivery) handleAcceptDelivery(selectedDelivery.id); setDetailsOpen(false) }} className="flex-1 sm:flex-none bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">Continuer vers les adresses →</Button>
+                      </div>
+                    </div>
+                  </DialogFooter>
+                </DialogContent>
               </Dialog>
             </>
           )}
@@ -1021,6 +1028,8 @@ export default function LivreurDashboard() {
     </div>
   )
 }
+
+export default withAuth(LivreurDashboard, ['LIVREUR'])
 
 function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(' ')
