@@ -29,20 +29,38 @@ const createCustomIcon = (color: string) => {
   });
 };
 
+const getCoordinates = (routeData: any) => {
+  if (!routeData) return [];
+  try {
+    // Standard GeoJSON Feature
+    if (routeData.type === 'Feature' && routeData.geometry && routeData.geometry.coordinates) {
+      return routeData.geometry.coordinates;
+    }
+    // OSRM response format (OSRM Routing Machine)
+    if (routeData.routes && routeData.routes[0]?.geometry?.coordinates) {
+      return routeData.routes[0].geometry.coordinates;
+    }
+    // Direct geometry
+    if (routeData.coordinates) {
+      return routeData.coordinates;
+    }
+  } catch (e) {
+    console.error("Error extracting coordinates", e);
+  }
+  return [];
+};
+
 // Component to automatically fit bounds to markers and route
-function FitBounds({ markers, route }: { markers: { position: LatLngExpression }[], route?: GeoJSON.Feature | null }) {
+function FitBounds({ markers, route }: { markers: { position: LatLngExpression }[], route?: any }) {
   const map = useMap();
   useEffect(() => {
     let points: any[] = markers.map(m => m.position);
 
     if (route) {
-      try {
-        // @ts-ignore
-        const coords = route.type === 'Feature' && route.geometry && (route.geometry as any).coordinates;
-        if (coords) {
-          points = [...points, ...coords.map((c: any) => [c[1], c[0]])];
-        }
-      } catch (e) { }
+      const coords = getCoordinates(route);
+      if (coords.length > 0) {
+        points = [...points, ...coords.map((c: any) => [c[1], c[0]])];
+      }
     }
 
     if (points.length > 0) {
@@ -80,14 +98,12 @@ export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers 
           </Marker>
         ))}
         {route && (() => {
-          try {
-            // @ts-ignore
-            const coords = route.type === 'Feature' && route.geometry && (route.geometry as any).coordinates
-            const latlngs = coords?.map((c: any) => [c[1], c[0]]) || []
-            return <Polyline positions={latlngs} pathOptions={{ color: '#f97316', weight: 5, opacity: 0.8 }} />
-          } catch (e) {
-            return null
+          const coords = getCoordinates(route);
+          if (coords && coords.length > 0) {
+            const latlngs = coords.map((c: any) => [c[1], c[0]]);
+            return <Polyline positions={latlngs} pathOptions={{ color: '#f97316', weight: 5, opacity: 0.8 }} />;
           }
+          return null;
         })()}
       </MapContainer>
     </div>

@@ -310,17 +310,23 @@ export default function ClientLanding() {
 
                       <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
                         <div className="flex items-center gap-2">
-                          <MapIcon className="w-4 h-4" />
-                          <span>{announcement.distance} km</span>
+                          <Truck className="w-4 h-4 text-orange-500" />
+                          <span className="capitalize">{announcement.vehicleType || 'Moteur'}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          <span>{announcement.estimatedTime}</span>
+                          <MapIcon className="w-4 h-4" />
+                          <span>{announcement.distance} km</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="w-4 h-4 text-green-600" />
                           <span className="font-semibold text-green-600">{announcement.price.toLocaleString()} FCFA</span>
                         </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {announcement.isFragile && <Badge variant="outline" className="text-[10px] py-0 border-red-200 text-red-600 bg-red-50">Fragile</Badge>}
+                        {announcement.isPerishable && <Badge variant="outline" className="text-[10px] py-0 border-orange-200 text-orange-600 bg-orange-50">Périssable</Badge>}
+                        <Badge variant="outline" className="text-[10px] py-0 border-blue-200 text-blue-600 bg-blue-50">{announcement.deliveryType}</Badge>
                       </div>
 
                       <div className="flex gap-2 pt-2">
