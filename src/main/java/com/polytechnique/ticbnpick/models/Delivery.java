@@ -70,6 +70,9 @@ public class Delivery {
     @Column("estimated_delivery")
     private Instant estimatedDelivery;
 
+    @Column("duration")
+    private Integer duration;
+
     @Column("delivery_note")
     private Double deliveryNote;
 

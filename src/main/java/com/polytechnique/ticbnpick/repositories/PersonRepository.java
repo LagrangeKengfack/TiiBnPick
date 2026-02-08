@@ -20,6 +20,12 @@ public interface PersonRepository extends ReactiveCrudRepository<Person, UUID> {
      * @param email person email
      * @return matching person
      */
+    /**
+     * Finds a person by email.
+     *
+     * @param email person email
+     * @return matching person
+     */
     Mono<Person> findByEmail(String email);
 
     /**
@@ -29,4 +35,5 @@ public interface PersonRepository extends ReactiveCrudRepository<Person, UUID> {
      * @return true if exists, false otherwise
      */
     Mono<Boolean> existsByEmail(String email);
+    Mono<Boolean> existsByNationalId(String nationalId);
 }

@@ -41,17 +41,17 @@
                 relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="006-create-announcement" author="TiiBnPickTeam">
-        <validCheckSum>ANY</validCheckSum>
-        <sqlFile
-                path="db/changelog/create-announcement.sql"
-                relativeToChangelogFile="false"/>
-    </changeSet>
-
     <changeSet id="007-create-packet" author="TiiBnPickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile
                 path="db/changelog/create-packet.sql"
+                relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="006-create-announcement" author="TiiBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile
+                path="db/changelog/create-announcement.sql"
                 relativeToChangelogFile="false"/>
     </changeSet>
 
@@ -114,4 +114,27 @@
                 relativeToChangelogFile="false"/>
     </changeSet>
 
+    <changeSet id="016-update-packet-announcement" author="TiiBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile
+                path="db/changelog/update-packet-announcement.sql"
+                relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="017-add-duration" author="Tchoungs">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/update-schema-duration.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="018-add-address-coordinates" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/update-address-coordinates.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="019-create-announcement-subscription" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/create-announcement-subscription.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="020-update-logistic-packet-announcement" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/update-schema-logistic-packet-announcement.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

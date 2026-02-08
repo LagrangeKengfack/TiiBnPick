@@ -20,4 +20,6 @@ public class AddressCreateRequest {
     private String country;
     private String postalCode;
     private AddressType type;
+    private Double latitude;
+    private Double longitude;
 }
