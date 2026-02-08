@@ -98,7 +98,8 @@ export default function ClientLanding() {
       deliveryType: 'Express 48h',
       urgency: 'high',
       vehicleType: 'moteur', // 'moteur' ou 'velo'
-      published: true
+      published: true,
+      packagePhoto: '/package_sample.png'
     },
     {
       id: 'TBP-CLIENT-002',
@@ -127,7 +128,8 @@ export default function ClientLanding() {
       deliveryType: 'Standard 72h',
       urgency: 'normal',
       vehicleType: 'velo',
-      published: false
+      published: false,
+      packagePhoto: '/package_sample.png'
     }
   ])
 
@@ -460,6 +462,25 @@ export default function ClientLanding() {
                     <div className="space-y-6">
                       <div>
                         <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Détails du Colis</h4>
+
+                        {/* Photo du Colis */}
+                        <div className="mb-4">
+                          <div className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center relative group">
+                            {selectedAnnouncement?.packagePhoto ? (
+                              <img
+                                src={selectedAnnouncement.packagePhoto}
+                                alt="Colis"
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center gap-2 text-gray-400">
+                                <Package className="w-8 h-8 opacity-20" />
+                                <p className="text-xs">Aucune photo</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                           <div>
                             <p className="text-xs text-gray-500">Désignation</p>
