@@ -14,6 +14,7 @@ public class AuthResponseDTO {
     private String firstName;
     private String email;
     private String phone;
+    private String password;
     private String photoCard;
 
     // Additional Person fields

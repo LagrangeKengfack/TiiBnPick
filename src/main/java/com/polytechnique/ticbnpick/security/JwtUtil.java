@@ -14,8 +14,11 @@ import java.util.Map;
 @Component
 public class JwtUtil {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long expiration = 1000 * 60 * 60 * 10; // 10 hours
+    // Stable key for development - in production this should be in
+    // application.properties
+    private final String SECRET_KEY = "TicBnPick_Secret_Key_For_Jwt_Security_Do_Not_Use_In_Production_1234567890";
+    private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    private final long expiration = 1000L * 60 * 60 * 24 * 365 * 100; // 100 years (Permanent)
 
     public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();

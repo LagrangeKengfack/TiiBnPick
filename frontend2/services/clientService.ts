@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '@/lib/axios';
 
 // Use relative path to leverage Next.js rewrites (see next.config.mjs)
 // This allows the frontend to be accessed from other devices (like a phone)
@@ -19,7 +19,7 @@ export interface ClientDTO {
 
 export const checkEmail = async (email: string): Promise<boolean> => {
     try {
-        const response = await axios.get(`${API_URL}/check-email`, {
+        const response = await apiClient.get(`${API_URL}/check-email`, {
             params: { email }
         });
         return response.data;
@@ -31,7 +31,7 @@ export const checkEmail = async (email: string): Promise<boolean> => {
 
 export const checkNationalId = async (nationalId: string): Promise<boolean> => {
     try {
-        const response = await axios.get(`${API_URL}/check-national-id`, {
+        const response = await apiClient.get(`${API_URL}/check-national-id`, {
             params: { nationalId }
         });
         return response.data;
@@ -61,10 +61,53 @@ export const createClient = async (clientData: any) => {
             loyaltyStatus: "REGULAR" // Default
         };
 
-        const response = await axios.post(API_URL, payload);
+        const response = await apiClient.post(API_URL, payload);
         return response.data;
     } catch (error) {
         console.error('Error creating client:', error);
+        throw error;
+    }
+};
+export const updateClient = async (id: string, clientData: any) => {
+    try {
+        console.log('Updating client with ID:', id, 'Payload:', clientData);
+
+        const payload: ClientDTO = {
+            lastName: clientData.lastName,
+            firstName: clientData.firstName,
+            phone: clientData.phone,
+            email: clientData.email,
+            password: clientData.password,
+            nationalId: clientData.nationalId,
+            photoCard: clientData.photoCard || "NOT_PROVIDED",
+            criminalRecord: clientData.criminalRecord || "CLEAN",
+            loyaltyStatus: clientData.loyaltyStatus || "REGULAR"
+        };
+
+        const response = await apiClient.put(`${API_URL}/${id}`, payload);
+        console.log('Update response:', response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error updating client:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const getClientById = async (id: string) => {
+    try {
+        const response = await apiClient.get(`${API_URL}/${id}`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error fetching client by ID:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const deleteClient = async (id: string) => {
+    try {
+        await apiClient.delete(`${API_URL}/${id}`);
+    } catch (error: any) {
+        console.error('Error deleting client:', error.response?.data || error.message);
         throw error;
     }
 };

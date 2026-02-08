@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { getClientById } from '@/services/clientService';
 
 export interface User {
   token: string;
@@ -16,6 +17,9 @@ export interface User {
   deliveryPersonId?: string;
   rating?: number;
   totalDeliveries?: number;
+  nationalId?: string;
+  password?: string;
+  memberSince?: string;
 }
 
 interface AuthContextType {
@@ -23,6 +27,7 @@ interface AuthContextType {
   loading: boolean;
   login: (userData: User) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,8 +67,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/');
   };
 
+  const refreshUser = async () => {
+    if (!user || (!user.clientId && !user.id)) return;
+
+    try {
+      // Use clientId for clients, or id as fallback
+      const targetId = user.clientId || user.id;
+      const latestData = await getClientById(targetId);
+
+      if (latestData) {
+        const updatedUser: User = {
+          ...user,
+          ...latestData,
+          // Ensure we keep the token from current state if not returned by fetch
+          token: user.token
+        };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error("Failed to refresh user data", error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -73,7 +101,7 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     // Fallback or better throw error if used outside Provider
-    return { user: null, loading: false, login: () => { }, logout: () => { } } as AuthContextType;
+    return { user: null, loading: false, login: () => { }, logout: () => { }, refreshUser: async () => { } } as AuthContextType;
   }
   return context;
 };

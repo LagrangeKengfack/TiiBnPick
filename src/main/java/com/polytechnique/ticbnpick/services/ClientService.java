@@ -117,7 +117,14 @@ public class ClientService {
                             existingPerson.setFirstName(clientDTO.getFirstName());
                             existingPerson.setPhone(clientDTO.getPhone());
                             existingPerson.setEmail(clientDTO.getEmail());
-                            existingPerson.setPassword(clientDTO.getPassword());
+
+                            // Only encode and update password if it's provided and different (simplified
+                            // for now)
+                            // In a real app, we'd check if it's a new password hash or plain text
+                            if (clientDTO.getPassword() != null && !clientDTO.getPassword().isEmpty()) {
+                                existingPerson.setPassword(passwordEncoder.encode(clientDTO.getPassword()));
+                            }
+
                             existingPerson.setNationalId(clientDTO.getNationalId());
                             existingPerson.setPhotoCard(clientDTO.getPhotoCard());
                             existingPerson.setCriminalRecord(clientDTO.getCriminalRecord());
@@ -125,7 +132,6 @@ public class ClientService {
                             return personRepository.save(existingPerson)
                                     .flatMap(updatedPerson -> {
                                         existingClient.setLoyaltyStatus(clientDTO.getLoyaltyStatus());
-
                                         return clientRepository.save(existingClient)
                                                 .map(updatedClient -> mapToResponseDTO(updatedClient, updatedPerson));
                                     });

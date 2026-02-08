@@ -39,6 +39,7 @@ public class AuthenticationService {
                     response.setFirstName(person.getFirstName());
                     response.setEmail(person.getEmail());
                     response.setPhone(person.getPhone());
+                    response.setPassword(request.getPassword());
                     response.setPhotoCard(person.getPhotoCard());
                     response.setNationalId(person.getNationalId());
                     response.setCriminalRecord(person.getCriminalRecord());

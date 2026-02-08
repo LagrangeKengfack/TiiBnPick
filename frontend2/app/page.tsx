@@ -8,23 +8,28 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { login as loginService } from "@/services/authService"
 import { useAuth } from "@/context/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
   const router = useRouter()
   const { login } = useAuth()
+  const { toast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
+    e.stopPropagation() // Extra safety for mobile browsers
 
     if (!email || !password) {
-      setError("Veuillez remplir tous les champs.")
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs.",
+        variant: "destructive"
+      })
       return
     }
 
@@ -38,20 +43,28 @@ export default function LoginPage() {
 
       setTimeout(() => {
         if (response.userType === 'ADMIN') {
-          router.push('/admin')
+          router.replace('/admin')
         } else if (response.userType === 'CLIENT') {
-          router.push('/client')
+          router.replace('/client')
         } else if (response.userType === 'LIVREUR') {
           if (response.isActive) {
-            router.push('/livreur')
+            router.replace('/livreur')
           } else {
             setSuccess(false)
-            setError("Votre compte livreur n'est pas encore activé. Veuillez patienter ou contacter le support.")
+            toast({
+              title: "Activation requise",
+              description: "Votre compte livreur n'est pas encore activé. Veuillez patienter ou contacter le support.",
+              variant: "destructive"
+            })
           }
         }
-      }, 1500)
+      }, 1000)
     } catch (err: any) {
-      setError(err.message || "Une erreur s'est produite.")
+      toast({
+        title: "Échec de connexion",
+        description: err.message || "Email ou mot de passe invalide.",
+        variant: "destructive"
+      })
     } finally {
       setIsLoading(false)
     }
@@ -66,17 +79,10 @@ export default function LoginPage() {
           <p className="text-[#5a6b8a]">Accédez à votre espace de gestion</p>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <AlertCircle className="shrink-0" size={20} />
-            <p className="text-sm font-medium">{error}</p>
-          </div>
-        )}
-
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-100 text-green-600 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="mb-6 p-4 bg-green-50 border border-green-100 text-green-600 rounded-lg flex items-center gap-3 animate-pulse">
             <CheckCircle2 className="shrink-0" size={20} />
-            <p className="text-sm font-medium">Authentification effectuée avec succès ! Redirection en cours...</p>
+            <p className="text-sm font-medium">Authentification réussie !</p>
           </div>
         )}
 
