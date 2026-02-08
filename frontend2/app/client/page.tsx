@@ -8,6 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+
+const MapLeaflet = dynamic(() => import('@/components/MapLeaflet'), {
+  ssr: false,
+  loading: () => <div className="w-full h-64 bg-gray-100 animate-pulse rounded-xl" />
+});
 import {
   MapPin,
   Clock,
@@ -37,9 +43,18 @@ export default function ClientLanding() {
   const [activeTab, setActiveTab] = useState('accueil')
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [myAnnouncements, setMyAnnouncements] = useState([
     {
       id: 'TBP-CLIENT-001',
+      senderName: 'Marie Kouassi',
+      senderPhone: '699001122',
+      senderAddress: 'Quartier Bastos, Yaoundé',
+      senderCoords: { lat: 3.8767, lon: 11.5122 },
+      recipientName: 'Jean Dupont',
+      recipientPhone: '677889900',
+      recipientAddress: 'Douala, Centre-ville',
+      recipientCoords: { lat: 4.0511, lon: 9.7679 },
       pickupAddress: 'Quartier Bastos, Yaoundé',
       deliveryAddress: 'Douala, Centre-ville',
       distance: 25.5,
@@ -47,15 +62,27 @@ export default function ClientLanding() {
       price: 5000,
       packageType: 'Courses urgentes',
       designation: 'Vêtements',
+      description: 'Sac de vêtements variés pour dons',
       weight: 3,
-      volume: 0.5,
-      options: ['Livraison'],
+      dimensions: { length: 40, width: 30, height: 20 },
+      isFragile: false,
+      isPerishable: false,
+      isInsured: true,
+      declaredValue: '50000',
       deliveryType: 'Express 48h',
       urgency: 'high',
       published: true
     },
     {
       id: 'TBP-CLIENT-002',
+      senderName: 'Marie Kouassi',
+      senderPhone: '699001122',
+      senderAddress: 'Plateau, Stade Général De Gaulle',
+      senderCoords: { lat: 5.3245, lon: -4.0123 },
+      recipientName: 'Sophie Amiand',
+      recipientPhone: '0505050505',
+      recipientAddress: 'Cocody, Angre',
+      recipientCoords: { lat: 5.3789, lon: -3.9876 },
       pickupAddress: 'Plateau, Stade Général De Gaulle',
       deliveryAddress: 'Cocody, Angre',
       distance: 6.8,
@@ -63,28 +90,16 @@ export default function ClientLanding() {
       price: 1800,
       packageType: 'Documents',
       designation: 'Papiers importants',
+      description: 'Dossier administratif urgent',
       weight: 0.5,
-      volume: 0.01,
-      options: ['Assurance'],
+      dimensions: { length: 30, width: 21, height: 2 },
+      isFragile: false,
+      isPerishable: false,
+      isInsured: false,
+      declaredValue: '0',
       deliveryType: 'Standard 72h',
       urgency: 'normal',
       published: false
-    },
-    {
-      id: 'TBP-CLIENT-TEST-001',
-      pickupAddress: 'Yopougon, Marché Central',
-      deliveryAddress: 'Attécoubé, Route de Bassam',
-      distance: 9.5,
-      estimatedTime: '30 min',
-      price: 3000,
-      packageType: 'Colis général',
-      designation: 'Test Annonce',
-      weight: 5,
-      volume: 0.5,
-      options: ['Livraison'],
-      deliveryType: 'Express 48h',
-      urgency: 'normal',
-      published: true
     }
   ])
 
@@ -101,6 +116,15 @@ export default function ClientLanding() {
   const handleDeleteAnnouncement = (id: string) => {
     setMyAnnouncements((prev) => prev.filter((ann) => ann.id !== id))
   }
+
+  // Fonction pour mettre à jour une annonce
+  const handleUpdateAnnouncement = (updatedAnn: any) => {
+    setMyAnnouncements((prev) =>
+      prev.map((ann) => (ann.id === updatedAnn.id ? updatedAnn : ann))
+    );
+    setSelectedAnnouncement(updatedAnn);
+    setIsEditing(false);
+  };
 
   // Données fictives du client
   const clientInfo = {
@@ -183,7 +207,7 @@ export default function ClientLanding() {
           {mobileMenuOpen && (
             <nav className="md:hidden border-t border-gray-100 bg-white py-4 space-y-2">
               <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors"
-                   onClick={() => router.push('/client/profil')}>
+                onClick={() => router.push('/client/profil')}>
                 <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
@@ -216,7 +240,7 @@ export default function ClientLanding() {
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Mes Annonces</h2>
-                <Button 
+                <Button
                   className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold"
                   onClick={() => router.push('/expedition')}
                 >
@@ -303,73 +327,155 @@ export default function ClientLanding() {
                 ))}
               </div>
 
-              {/* Details Dialog */}
-              <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) setSelectedAnnouncement(null) }}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
+              <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) { setSelectedAnnouncement(null); setIsEditing(false); } }}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="border-b pb-4">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-50 rounded-md flex items-center justify-center">
-                          <Package className="w-5 h-5 text-orange-600" />
+                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+                          <Package className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
-                          <DialogTitle>Résumé du colis</DialogTitle>
-                          <DialogDescription className="text-sm text-gray-500">{selectedAnnouncement?.id}</DialogDescription>
+                          <DialogTitle className="text-xl">Détails de l'annonce</DialogTitle>
+                          <DialogDescription className="font-mono text-orange-600">{selectedAnnouncement?.id}</DialogDescription>
                         </div>
                       </div>
-                    </DialogHeader>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={isEditing ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            if (isEditing) {
+                              const designation = (document.getElementById('edit-designation') as HTMLInputElement)?.value;
+                              const description = (document.getElementById('edit-description') as HTMLTextAreaElement)?.value;
+                              handleUpdateAnnouncement({
+                                ...selectedAnnouncement,
+                                designation: designation || selectedAnnouncement.designation,
+                                description: description || selectedAnnouncement.description
+                              });
+                            } else {
+                              setIsEditing(true);
+                            }
+                          }}
+                          className={isEditing ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                        >
+                          {isEditing ? "Enregistrer" : "Modifier"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogHeader>
 
-                    <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
-                      <div className="sm:col-span-1">
-                        <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                          <img alt="package" src="/placeholder-package.png" className="object-cover w-full h-full" onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.ico' }} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
+                    {/* Colonne Gauche : Infos Trajet & Carte */}
+                    <div className="space-y-6">
+                      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl space-y-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-bold">Point de Retrait (Expéditeur)</p>
+                            <p className="font-semibold">{selectedAnnouncement?.senderName}</p>
+                            <p className="text-sm text-gray-600">{selectedAnnouncement?.senderPhone}</p>
+                            <p className="text-sm text-gray-500">{selectedAnnouncement?.pickupAddress}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-bold">Point de Livraison (Destinataire)</p>
+                            <p className="font-semibold">{selectedAnnouncement?.recipientName}</p>
+                            <p className="text-sm text-gray-600">{selectedAnnouncement?.recipientPhone}</p>
+                            <p className="text-sm text-gray-500">{selectedAnnouncement?.deliveryAddress}</p>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="sm:col-span-2 space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">De</p>
-                          <p className="font-medium text-gray-900">{selectedAnnouncement?.pickupAddress}</p>
+                      {/* Carte */}
+                      <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm h-64 relative z-0">
+                        {selectedAnnouncement && selectedAnnouncement.senderCoords && (
+                          <MapLeaflet
+                            center={[
+                              (selectedAnnouncement.senderCoords.lat + selectedAnnouncement.recipientCoords.lat) / 2,
+                              (selectedAnnouncement.senderCoords.lon + selectedAnnouncement.recipientCoords.lon) / 2
+                            ]}
+                            zoom={10}
+                            markers={[
+                              { position: [selectedAnnouncement.senderCoords.lat, selectedAnnouncement.senderCoords.lon], label: "Retrait", color: "#f97316" },
+                              { position: [selectedAnnouncement.recipientCoords.lat, selectedAnnouncement.recipientCoords.lon], label: "Livraison", color: "#10b981" }
+                            ]}
+                          />
+                        )}
+                      </div>
+
+                      <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+                        <div className="flex items-center gap-2">
+                          <MapIcon className="w-5 h-5 text-orange-600" />
+                          <span className="font-bold">{selectedAnnouncement?.distance} km</span>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">À</p>
-                          <p className="font-medium text-gray-900">{selectedAnnouncement?.deliveryAddress}</p>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-orange-600" />
+                          <span className="font-bold">{selectedAnnouncement?.estimatedTime}</span>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Distance</p>
-                          <p className="font-medium text-gray-900">{selectedAnnouncement?.distance} km</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Temps estimé</p>
-                          <p className="font-medium text-gray-900">{selectedAnnouncement?.estimatedTime}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Prix</p>
-                          <p className="font-medium text-green-600 text-lg">{selectedAnnouncement?.price.toLocaleString()} FCFA</p>
+                        <div className="text-lg font-black text-orange-600">
+                          {selectedAnnouncement?.price?.toLocaleString()} FCFA
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-6 space-y-2 border-t pt-4">
-                      <h4 className="font-medium text-gray-900">Détails du colis</h4>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <p className="text-gray-500">Type</p>
-                          <p className="font-medium text-gray-900">{selectedAnnouncement?.packageType}</p>
+                    {/* Colonne Droite : Infos Colis & Logistique */}
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Détails du Colis</h4>
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                          <div>
+                            <p className="text-xs text-gray-500">Désignation</p>
+                            {isEditing ? (
+                              <Input id="edit-designation" defaultValue={selectedAnnouncement?.designation} className="h-8 text-sm" />
+                            ) : (
+                              <p className="font-medium">{selectedAnnouncement?.designation}</p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Type de colis</p>
+                            <p className="font-medium">{selectedAnnouncement?.packageType}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <p className="text-xs text-gray-500">Description</p>
+                            {isEditing ? (
+                              <textarea id="edit-description" className="w-full text-sm border rounded-md p-2 h-20 bg-transparent" defaultValue={selectedAnnouncement?.description} />
+                            ) : (
+                              <p className="text-sm italic text-gray-600">{selectedAnnouncement?.description}</p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Poids</p>
+                            <p className="font-medium">{selectedAnnouncement?.weight} kg</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Dimensions (Lxlxh)</p>
+                            <p className="font-medium">
+                              {selectedAnnouncement?.dimensions?.length}x{selectedAnnouncement?.dimensions?.width}x{selectedAnnouncement?.dimensions?.height} cm
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-gray-500">Désignation</p>
-                          <p className="font-medium text-gray-900">{selectedAnnouncement?.designation}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Options & Logistique</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline" className={selectedAnnouncement?.isFragile ? "border-red-500 text-red-600 bg-red-50" : "opacity-30"}>Fragile</Badge>
+                          <Badge variant="outline" className={selectedAnnouncement?.isPerishable ? "border-orange-500 text-orange-600 bg-orange-50" : "opacity-30"}>Périssable</Badge>
+                          <Badge variant="outline" className={selectedAnnouncement?.isInsured ? "border-green-500 text-green-600 bg-green-50" : "opacity-30"}>
+                            Assuré ({selectedAnnouncement?.declaredValue} FCFA)
+                          </Badge>
                         </div>
-                        <div>
-                          <p className="text-gray-500">Poids</p>
-                          <p className="font-medium text-gray-900">{selectedAnnouncement?.weight} kg</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">Volume</p>
-                          <p className="font-medium text-gray-900">{selectedAnnouncement?.volume} m³</p>
+                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">Logistique</p>
+                          <p className="text-sm font-medium">{selectedAnnouncement?.deliveryType}</p>
+                          <p className="text-xs text-blue-500 mt-1">Urgence : {selectedAnnouncement?.urgency === 'high' ? 'Haute' : 'Normale'}</p>
                         </div>
                       </div>
                     </div>
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>
@@ -378,177 +484,177 @@ export default function ClientLanding() {
 
         {/* Hero and How It Works Section */}
         {activeTab === 'accueil' && (
-        <>
-        
-        <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-amber-50 py-16 sm:py-24 lg:py-32">
-          {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-orange-100 to-transparent opacity-50 rounded-full translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-amber-100 to-transparent opacity-30 rounded-full -translate-x-1/3 translate-y-1/3"></div>
+          <>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              {/* Left Content */}
-              <div className="text-center lg:text-left">
-                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                  Vous avez un besoin ?
-                  <span className="block text-orange-600">Trouvez votre livreur</span>
-                </h2>
+            <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-amber-50 py-16 sm:py-24 lg:py-32">
+              {/* Decorative Elements */}
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-orange-100 to-transparent opacity-50 rounded-full translate-x-1/2 -translate-y-1/2"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-amber-100 to-transparent opacity-30 rounded-full -translate-x-1/3 translate-y-1/3"></div>
 
-                <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl">
-                  Postez votre annonce et choisissez parmi nos centaines de livreurs disponibles. Repas, courses, documents, colis, pharmacie ou service personnalisé.
-                </p>
+              <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="grid lg:grid-cols-2 gap-12 items-center">
+                  {/* Left Content */}
+                  <div className="text-center lg:text-left">
+                    <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                      Vous avez un besoin ?
+                      <span className="block text-orange-600">Trouvez votre livreur</span>
+                    </h2>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-8 shadow-xl shadow-orange-500/20 text-base h-12"
-                    onClick={() => {
-                      // Pré-remplir le formulaire d'expédition avec quelques infos client basiques
-                      try {
-                        const expeditionPrefill = {
-                          currentStep: 1,
-                          senderData: {
-                            senderName: `${clientInfo.lastName} ${clientInfo.firstName}`,
-                            senderPhone: '',
-                            senderEmail: '',
-                            senderCountry: 'cameroun',
-                            senderRegion: 'centre',
-                            senderCity: 'Yaoundé',
-                            senderAddress: '',
-                            senderLieuDit: ''
-                          },
-                          recipientData: {
-                            recipientName: '', recipientPhone: '', recipientEmail: '', recipientCountry: 'cameroun', recipientRegion: 'centre', recipientCity: 'Yaoundé', recipientAddress: '', recipientLieuDit: ''
-                          },
-                          packageData: {
-                            photo: null, designation: '', description: '', weight: '', length: '', width: '', height: '',
-                            isFragile: false, isPerishable: false, isLiquid: false, isInsured: false, declaredValue: '',
-                            transportMethod: '', logistics: 'standard', pickup: false, delivery: false
-                          },
-                          routeData: { departurePointId: null, arrivalPointId: null, departurePointName: '', arrivalPointName: '', distanceKm: 0 },
-                          signatureData: { signatureUrl: null },
-                          pricing: { basePrice: 0, travelPrice: 0, operatorFee: 0, totalPrice: 0 }
-                        };
-
-                        localStorage.setItem('expedition_form_in_progress', JSON.stringify(expeditionPrefill));
-                      } catch (e) { console.error('Erreur préfill expedition', e); }
-
-                      router.push('/expedition');
-                    }}
-                  >
-                    <Megaphone className="w-5 h-5 mr-2" />
-                    Publier une annonce
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-2 border-orange-300 text-orange-600 hover:bg-orange-50 font-semibold px-8 h-12 text-base"
-                    onClick={() => router.push('/inscription?role=livreur&step=2')}
-                  >
-                    <Truck className="w-5 h-5 mr-2" />
-                    Devenir livreur
-                  </Button>
-                </div>
-
-                {/* Stats */}
-                <div className="flex flex-wrap gap-6 mt-8 justify-center lg:justify-start">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-blue-500" />
-                    <span className="text-sm text-gray-700 font-medium">Suivi en temps réel</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span className="text-sm text-gray-700 font-medium">Paiement sécurisé</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Package className="w-5 h-5 text-red-500" />
-                    <span className="text-sm text-gray-700 font-medium">Service client 24/7</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Content - Tracking */}
-              <div className="hidden lg:block">
-                <Card className="shadow-2xl border-2 border-orange-100 bg-white">
-                  <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <MapPin className="w-6 h-6 text-orange-600" />
-                      Suivre une livraison
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="tracking" className="text-base font-semibold text-gray-800 mb-2">
-                          Numéro de suivi
-                        </Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="tracking"
-                            placeholder="Entrez votre numéro"
-                            value={trackingNumber}
-                            onChange={(e) => setTrackingNumber(e.target.value)}
-                            className="flex-1 text-base border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-                          />
-                          <Button size="icon" className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
-                            <ArrowRight className="w-5 h-5" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="text-sm text-gray-500">
-                        Exemple: TBP-2024-XXXXXXX
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-4 py-3 rounded-lg">
-                        <Clock className="w-4 h-4" />
-                        <span className="font-medium">Dernière livraison il y a 5 minutes</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* How It Works Section */}
-        <section className="py-16 sm:py-24 bg-gradient-to-b from-gray-50 to-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                Comment ça marche ?
-              </h3>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                En seulement 3 étapes simples
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {steps.map((step, index) => (
-                <div key={index} className="relative">
-                  <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full text-white text-2xl font-bold shadow-lg mb-6">
-                      {step.number}
-                    </div>
-                    <h4 className="text-xl font-bold text-gray-900 mb-3">
-                      {step.title}
-                    </h4>
-                    <p className="text-gray-600">
-                      {step.description}
+                    <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl">
+                      Postez votre annonce et choisissez parmi nos centaines de livreurs disponibles. Repas, courses, documents, colis, pharmacie ou service personnalisé.
                     </p>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                      <Button
+                        size="lg"
+                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-8 shadow-xl shadow-orange-500/20 text-base h-12"
+                        onClick={() => {
+                          // Pré-remplir le formulaire d'expédition avec quelques infos client basiques
+                          try {
+                            const expeditionPrefill = {
+                              currentStep: 1,
+                              senderData: {
+                                senderName: `${clientInfo.lastName} ${clientInfo.firstName}`,
+                                senderPhone: '',
+                                senderEmail: '',
+                                senderCountry: 'cameroun',
+                                senderRegion: 'centre',
+                                senderCity: 'Yaoundé',
+                                senderAddress: '',
+                                senderLieuDit: ''
+                              },
+                              recipientData: {
+                                recipientName: '', recipientPhone: '', recipientEmail: '', recipientCountry: 'cameroun', recipientRegion: 'centre', recipientCity: 'Yaoundé', recipientAddress: '', recipientLieuDit: ''
+                              },
+                              packageData: {
+                                photo: null, designation: '', description: '', weight: '', length: '', width: '', height: '',
+                                isFragile: false, isPerishable: false, isLiquid: false, isInsured: false, declaredValue: '',
+                                transportMethod: '', logistics: 'standard', pickup: false, delivery: false
+                              },
+                              routeData: { departurePointId: null, arrivalPointId: null, departurePointName: '', arrivalPointName: '', distanceKm: 0 },
+                              signatureData: { signatureUrl: null },
+                              pricing: { basePrice: 0, travelPrice: 0, operatorFee: 0, totalPrice: 0 }
+                            };
+
+                            localStorage.setItem('expedition_form_in_progress', JSON.stringify(expeditionPrefill));
+                          } catch (e) { console.error('Erreur préfill expedition', e); }
+
+                          router.push('/expedition');
+                        }}
+                      >
+                        <Megaphone className="w-5 h-5 mr-2" />
+                        Publier une annonce
+                      </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="border-2 border-orange-300 text-orange-600 hover:bg-orange-50 font-semibold px-8 h-12 text-base"
+                        onClick={() => router.push('/inscription?role=livreur&step=2')}
+                      >
+                        <Truck className="w-5 h-5 mr-2" />
+                        Devenir livreur
+                      </Button>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex flex-wrap gap-6 mt-8 justify-center lg:justify-start">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-blue-500" />
+                        <span className="text-sm text-gray-700 font-medium">Suivi en temps réel</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        <span className="text-sm text-gray-700 font-medium">Paiement sécurisé</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Package className="w-5 h-5 text-red-500" />
+                        <span className="text-sm text-gray-700 font-medium">Service client 24/7</span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Connector Line */}
-                  {index < steps.length - 1 && (
-                    <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-orange-200 to-transparent"></div>
-                  )}
+                  {/* Right Content - Tracking */}
+                  <div className="hidden lg:block">
+                    <Card className="shadow-2xl border-2 border-orange-100 bg-white">
+                      <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                          <MapPin className="w-6 h-6 text-orange-600" />
+                          Suivre une livraison
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="tracking" className="text-base font-semibold text-gray-800 mb-2">
+                              Numéro de suivi
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id="tracking"
+                                placeholder="Entrez votre numéro"
+                                value={trackingNumber}
+                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                className="flex-1 text-base border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                              />
+                              <Button size="icon" className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
+                                <ArrowRight className="w-5 h-5" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="text-sm text-gray-500">
+                            Exemple: TBP-2024-XXXXXXX
+                          </div>
+
+                          <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-4 py-3 rounded-lg">
+                            <Clock className="w-4 h-4" />
+                            <span className="font-medium">Dernière livraison il y a 5 minutes</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-        </>
+              </div>
+            </section>
+
+            {/* How It Works Section */}
+            <section className="py-16 sm:py-24 bg-gradient-to-b from-gray-50 to-white">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-16">
+                  <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                    Comment ça marche ?
+                  </h3>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    En seulement 3 étapes simples
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {steps.map((step, index) => (
+                    <div key={index} className="relative">
+                      <div className="text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full text-white text-2xl font-bold shadow-lg mb-6">
+                          {step.number}
+                        </div>
+                        <h4 className="text-xl font-bold text-gray-900 mb-3">
+                          {step.title}
+                        </h4>
+                        <p className="text-gray-600">
+                          {step.description}
+                        </p>
+                      </div>
+
+                      {/* Connector Line */}
+                      {index < steps.length - 1 && (
+                        <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-orange-200 to-transparent"></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </>
         )}
       </main>
 
@@ -558,9 +664,8 @@ export default function ClientLanding() {
           <div className="flex items-center justify-around py-3">
             <button
               onClick={() => setActiveTab('accueil')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-                activeTab === 'accueil' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
-              }`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === 'accueil' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
+                }`}
             >
               <Home className="w-6 h-6" />
               <span className="text-xs font-medium">Accueil</span>
@@ -568,9 +673,8 @@ export default function ClientLanding() {
 
             <button
               onClick={() => setActiveTab('annonces')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-                activeTab === 'annonces' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
-              }`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === 'annonces' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
+                }`}
             >
               <Megaphone className="w-6 h-6" />
               <span className="text-xs font-medium">Annonces</span>
@@ -578,9 +682,8 @@ export default function ClientLanding() {
 
             <button
               onClick={() => setActiveTab('reponses')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-                activeTab === 'reponses' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
-              }`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === 'reponses' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
+                }`}
             >
               <MessageSquare className="w-6 h-6" />
               <span className="text-xs font-medium">Réponses</span>
@@ -588,9 +691,8 @@ export default function ClientLanding() {
 
             <button
               onClick={() => setActiveTab('livraisons')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-                activeTab === 'livraisons' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
-              }`}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${activeTab === 'livraisons' ? 'text-orange-600' : 'text-gray-500 hover:text-orange-500'
+                }`}
             >
               <Package className="w-6 h-6" />
               <span className="text-xs font-medium">Livraisons</span>
