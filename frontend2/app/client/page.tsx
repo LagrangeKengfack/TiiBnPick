@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import { getRoute } from '@/services/routing'
+import { useEffect } from 'react'
 
 const MapLeaflet = dynamic(() => import('@/components/MapLeaflet'), {
   ssr: false,
@@ -44,6 +46,29 @@ export default function ClientLanding() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [activeRoute, setActiveRoute] = useState<any>(null)
+
+  useEffect(() => {
+    if (selectedAnnouncement && selectedAnnouncement.senderCoords && selectedAnnouncement.recipientCoords) {
+      const fetchRoute = async () => {
+        try {
+          const route = await getRoute(
+            selectedAnnouncement.senderCoords.lon,
+            selectedAnnouncement.senderCoords.lat,
+            selectedAnnouncement.recipientCoords.lon,
+            selectedAnnouncement.recipientCoords.lat
+          );
+          setActiveRoute(route);
+        } catch (e) {
+          console.error("Failed to fetch route", e);
+          setActiveRoute(null);
+        }
+      };
+      fetchRoute();
+    } else {
+      setActiveRoute(null);
+    }
+  }, [selectedAnnouncement]);
   const [myAnnouncements, setMyAnnouncements] = useState([
     {
       id: 'TBP-CLIENT-001',
@@ -402,6 +427,7 @@ export default function ClientLanding() {
                               { position: [selectedAnnouncement.senderCoords.lat, selectedAnnouncement.senderCoords.lon], label: "Retrait", color: "#f97316" },
                               { position: [selectedAnnouncement.recipientCoords.lat, selectedAnnouncement.recipientCoords.lon], label: "Livraison", color: "#10b981" }
                             ]}
+                            route={activeRoute}
                           />
                         )}
                       </div>

@@ -38,6 +38,18 @@ function ChangeView({ center }: { center: LatLngExpression }) {
   return null;
 }
 
+// Component to automatically fit bounds to markers
+function FitBounds({ markers }: { markers: { position: LatLngExpression }[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (markers.length > 0) {
+      const bounds = L.latLngBounds(markers.map(m => m.position));
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [markers, map]);
+  return null;
+}
+
 export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers = [], route = null }: Props) {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -51,6 +63,7 @@ export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers 
     <div className="w-full h-96 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
       <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
         <ChangeView center={center} />
+        <FitBounds markers={markers} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
