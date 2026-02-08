@@ -53,10 +53,11 @@ export default function ClientLanding() {
       const fetchRoute = async () => {
         try {
           const route = await getRoute(
-            selectedAnnouncement.senderCoords.lon,
             selectedAnnouncement.senderCoords.lat,
+            selectedAnnouncement.senderCoords.lon,
+            selectedAnnouncement.recipientCoords.lat,
             selectedAnnouncement.recipientCoords.lon,
-            selectedAnnouncement.recipientCoords.lat
+            selectedAnnouncement.vehicleType === 'velo' ? 'bike' : 'driving'
           );
           setActiveRoute(route);
         } catch (e) {
@@ -96,6 +97,7 @@ export default function ClientLanding() {
       declaredValue: '50000',
       deliveryType: 'Express 48h',
       urgency: 'high',
+      vehicleType: 'moteur', // 'moteur' ou 'velo'
       published: true
     },
     {
@@ -124,6 +126,7 @@ export default function ClientLanding() {
       declaredValue: '0',
       deliveryType: 'Standard 72h',
       urgency: 'normal',
+      vehicleType: 'velo',
       published: false
     }
   ])
@@ -494,10 +497,16 @@ export default function ClientLanding() {
                             Assuré ({selectedAnnouncement?.declaredValue} FCFA)
                           </Badge>
                         </div>
-                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                          <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">Logistique</p>
-                          <p className="text-sm font-medium">{selectedAnnouncement?.deliveryType}</p>
-                          <p className="text-xs text-blue-500 mt-1">Urgence : {selectedAnnouncement?.urgency === 'high' ? 'Haute' : 'Normale'}</p>
+                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg space-y-2">
+                          <div>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">Mode de Transport</p>
+                            <p className="text-sm font-medium capitalize">{selectedAnnouncement?.vehicleType || 'Non spécifié'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">Logistique</p>
+                            <p className="text-sm font-medium">{selectedAnnouncement?.deliveryType}</p>
+                            <p className="text-xs text-blue-500 mt-1">Urgence : {selectedAnnouncement?.urgency === 'high' ? 'Haute' : 'Normale'}</p>
+                          </div>
                         </div>
                       </div>
                     </div>

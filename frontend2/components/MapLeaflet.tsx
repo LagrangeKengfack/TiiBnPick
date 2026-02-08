@@ -29,24 +29,27 @@ const createCustomIcon = (color: string) => {
   });
 };
 
-// Component to handle map centering when center changes
-function ChangeView({ center }: { center: LatLngExpression }) {
+// Component to automatically fit bounds to markers and route
+function FitBounds({ markers, route }: { markers: { position: LatLngExpression }[], route?: GeoJSON.Feature | null }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center);
-  }, [center, map]);
-  return null;
-}
+    let points: any[] = markers.map(m => m.position);
 
-// Component to automatically fit bounds to markers
-function FitBounds({ markers }: { markers: { position: LatLngExpression }[] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (markers.length > 0) {
-      const bounds = L.latLngBounds(markers.map(m => m.position));
-      map.fitBounds(bounds, { padding: [50, 50] });
+    if (route) {
+      try {
+        // @ts-ignore
+        const coords = route.type === 'Feature' && route.geometry && (route.geometry as any).coordinates;
+        if (coords) {
+          points = [...points, ...coords.map((c: any) => [c[1], c[0]])];
+        }
+      } catch (e) { }
     }
-  }, [markers, map]);
+
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+    }
+  }, [markers, route, map]);
   return null;
 }
 
@@ -62,8 +65,7 @@ export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers 
   return (
     <div className="w-full h-96 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
       <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
-        <ChangeView center={center} />
-        <FitBounds markers={markers} />
+        <FitBounds markers={markers} route={route} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
