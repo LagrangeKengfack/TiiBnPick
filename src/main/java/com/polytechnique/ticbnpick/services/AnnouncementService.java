@@ -11,6 +11,8 @@ import com.polytechnique.ticbnpick.models.enums.announcement.AnnouncementStatus;
 import com.polytechnique.ticbnpick.repositories.AddressRepository;
 import com.polytechnique.ticbnpick.repositories.AnnouncementRepository;
 import com.polytechnique.ticbnpick.events.AnnouncementPublishedEvent;
+import com.polytechnique.ticbnpick.exceptions.ResourceNotFoundException;
+import com.polytechnique.ticbnpick.repositories.ClientRepository;
 import com.polytechnique.ticbnpick.repositories.PacketRepository;
 import com.polytechnique.ticbnpick.services.support.KafkaEventPublisher;
 import java.time.Instant;
@@ -28,10 +30,19 @@ public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
     private final AddressRepository addressRepository;
     private final PacketRepository packetRepository;
+    private final ClientRepository clientRepository;
     private final KafkaEventPublisher kafkaEventPublisher;
 
     @Transactional("connectionFactoryTransactionManager")
     public Mono<AnnouncementResponseDTO> createAnnouncement(AnnouncementRequestDTO request) {
+        // 0. Validate clientId exists in the clients table
+        return clientRepository.findById(request.getClientId())
+            .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                "Client not found with id: " + request.getClientId())))
+            .flatMap(client -> createAnnouncementInternal(request));
+    }
+
+    private Mono<AnnouncementResponseDTO> createAnnouncementInternal(AnnouncementRequestDTO request) {
         // 1. Save Packet
         Packet packet = new Packet();
         packet.setWeight(request.getPacket().getWeight());

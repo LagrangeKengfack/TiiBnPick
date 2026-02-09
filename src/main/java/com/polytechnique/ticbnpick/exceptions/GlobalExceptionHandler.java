@@ -1,5 +1,6 @@
 package com.polytechnique.ticbnpick.exceptions;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -157,6 +158,38 @@ public class GlobalExceptionHandler {
                                 exchange.getRequest().getPath().value());
 
                 return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error));
+        }
+
+        /**
+         * Handles database constraint violations (FK, NOT NULL, etc.).
+         * Returns 400 Bad Request with a descriptive message.
+         */
+        @ExceptionHandler(DataIntegrityViolationException.class)
+        public Mono<ResponseEntity<ErrorResponse>> handleDataIntegrityViolationException(
+                        DataIntegrityViolationException ex,
+                        ServerWebExchange exchange) {
+
+                String rawMessage = ex.getMostSpecificCause().getMessage();
+                String message = "Constraint violation in the database.";
+
+                if (rawMessage != null) {
+                        if (rawMessage.contains("foreign key") || rawMessage.contains("fk_")) {
+                                message = "A referenced entity does not exist (e.g. invalid clientId).";
+                        } else if (rawMessage.contains("not-null") || rawMessage.contains("null value in column")) {
+                                message = "A required field is missing or null: " + rawMessage;
+                        } else {
+                                message = "Data integrity error: " + rawMessage;
+                        }
+                }
+
+                ErrorResponse error = new ErrorResponse(
+                                LocalDateTime.now(),
+                                HttpStatus.BAD_REQUEST.value(),
+                                "Bad Request",
+                                message,
+                                exchange.getRequest().getPath().value());
+
+                return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
         }
 
         /**

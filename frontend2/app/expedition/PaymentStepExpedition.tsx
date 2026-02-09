@@ -303,8 +303,12 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
       // 2. Résolution du clientId réel depuis AuthContext
       // authUser.clientId est l'UUID du client dans la table clients
-      // Si l'utilisateur n'est pas connecté, on utilise un UUID nil (le backend peut le gérer)
-      const resolvedClientId = authUser?.clientId || currentUser?.id || "00000000-0000-0000-0000-000000000000";
+      const resolvedClientId = authUser?.clientId || authUser?.id || currentUser?.id;
+      if (!resolvedClientId) {
+        showNotification({ message: "Vous devez être connecté pour créer une annonce.", type: 'error' });
+        setIsProcessing(false);
+        return;
+      }
 
       // 3. CONSTRUCTION DU PAYLOAD - aligné exactement sur AnnouncementRequestDTO
       const payload: PackageCreationPayload = {
@@ -358,7 +362,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
           fragile: allData.isFragile,
           isPerishable: allData.isPerishable,
           description: allData.description || '',
-          photoPacket: allData.photo || undefined
+          photoPacket: allData.photo || ''
         }
       };
 

@@ -25,7 +25,7 @@ export type PacketDTO = {
   length: number;
   fragile: boolean;
   description?: string;
-  photoPacket?: string;
+  photoPacket: string;
   isPerishable: boolean;
   thickness: number;
   designation: string;
