@@ -48,6 +48,8 @@ interface FinalData {
   recipientRegion: string;
   recipientCity: string;
   recipientAddress?: string;
+  recipientLatitude?: number;
+  recipientLongitude?: number;
 
   photo: string | null;
   designation: string;
@@ -288,56 +290,48 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
   // --- SOUMISSION DES DONNÉES AU BACKEND ---
   const handleSubmit = async () => {
-    console.log("🚀 Début de la soumission du colis...");
+    console.log("--- Début de la soumission du colis ---");
     setIsProcessing(true);
 
     try {
-      // 1. Construction des dimensions JSON stringifié
-      const dimsObject = {
-        length: parseFloat(allData.length || '0'),
-        width: parseFloat(allData.width || '0'),
-        height: parseFloat(allData.height || '0')
-      };
-
-      // 2. Type de paquet
-      let pType = 'STANDARD';
-      if (allData.isFragile) pType = 'FRAGILE';
-      else if (allData.isPerishable) pType = 'PERISHABLE';
-
-      // 3. Nettoyage du téléphone (on enlève les espaces et on assure le +237)
+      // 1. Nettoyage des téléphones
       let cleanRecipientPhone = allData.recipientPhone.replace(/\s+/g, '');
       if (!cleanRecipientPhone.startsWith('+')) cleanRecipientPhone = '+237' + cleanRecipientPhone;
 
-      // Nettoyage Téléphone Sender (Optionnel, bon format pour API)
       let cleanSenderPhone = allData.senderPhone.replace(/\s+/g, '');
-      // Pas de force +237 si c'est déjà saisi, mais recommandé
+      if (!cleanSenderPhone.startsWith('+')) cleanSenderPhone = '+237' + cleanSenderPhone;
 
-      // 4. CONSTRUCTION DU PAYLOAD COMPLET
+      // 2. Résolution du clientId réel depuis AuthContext
+      // authUser.clientId est l'UUID du client dans la table clients
+      // Si l'utilisateur n'est pas connecté, on utilise un UUID nil (le backend peut le gérer)
+      const resolvedClientId = authUser?.clientId || currentUser?.id || "00000000-0000-0000-0000-000000000000";
+
+      // 3. CONSTRUCTION DU PAYLOAD - aligné exactement sur AnnouncementRequestDTO
       const payload: PackageCreationPayload = {
-        clientId: (currentUser?.id || authUser?.id || "00000000-0000-0000-0000-000000000000"),
+        clientId: resolvedClientId,
         title: `Envoi de ${allData.designation}`,
-        description: allData.description,
+        description: allData.description || '',
 
         recipientFirstName: allData.recipientFirstName,
         recipientLastName: allData.recipientLastName,
         recipientPhone: cleanRecipientPhone,
         recipientEmail: allData.recipientEmail,
+        recipientNumber: cleanRecipientPhone,
 
         shipperFirstName: allData.senderFirstName,
         shipperLastName: allData.senderLastName,
         shipperPhone: cleanSenderPhone,
         shipperEmail: allData.senderEmail,
 
-        amount: totalPrice,
+        amount: parseFloat(totalPrice.toFixed(2)),
         signatureUrl: allData.signatureUrl,
-        paymentMethod: selectedMethod,
+        paymentMethod: selectedMethod.toUpperCase(),
         transportMethod: allData.transportMethod,
-        distance: allData.distanceKm,
-        duration: allData.durationMinutes,
-        recipientNumber: cleanRecipientPhone,
+        distance: parseFloat(allData.distanceKm.toFixed(2)),
+        duration: Math.round(allData.durationMinutes || 0),
 
         pickupAddress: {
-          street: allData.senderAddress || "Adresse non précisée",
+          street: allData.senderAddress || 'Adresse non précisée',
           city: allData.senderCity,
           district: allData.senderRegion,
           country: allData.senderCountry,
@@ -346,48 +340,59 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
           longitude: allData.longitude || 0
         },
         deliveryAddress: {
-          street: allData.recipientAddress || "Adresse non précisée",
+          street: allData.recipientAddress || 'Adresse non précisée',
           city: allData.recipientCity,
           district: allData.recipientRegion,
           country: allData.recipientCountry,
           type: AddressType.SECONDARY,
-          latitude: 0,
-          longitude: 0
+          latitude: allData.recipientLatitude || 0,
+          longitude: allData.recipientLongitude || 0
         },
         packet: {
           designation: allData.designation,
-          weight: parseFloat(allData.weight),
+          weight: parseFloat(allData.weight) || 0,
           length: parseFloat(allData.length || '0'),
           width: parseFloat(allData.width || '0'),
           height: parseFloat(allData.height || '0'),
           thickness: parseFloat(allData.height || '0'),
           fragile: allData.isFragile,
           isPerishable: allData.isPerishable,
-          description: allData.description,
+          description: allData.description || '',
           photoPacket: allData.photo || undefined
         }
       };
 
-      console.log("📦 PAYLOAD ENVOYÉ AU BACKEND :", JSON.stringify(payload, null, 2));
+      console.log("PAYLOAD ENVOYÉ AU BACKEND :", JSON.stringify(payload, null, 2));
 
-      // 5. APPEL SERVICE
+      // 4. APPEL SERVICE
       const response = await packageService.createPackage(payload);
+      console.log("RÉPONSE BACKEND REÇUE :", response);
 
-      console.log("✅ RÉPONSE BACKEND REÇUE :", response);
+      // 5. Extraction du numéro de suivi
+      // Le backend retourne un AnnouncementResponseDTO avec un champ 'id' (UUID).
+      // On génère un tracking number lisible à partir de l'UUID retourné.
+      const announcementId: string = response.id;
+      if (!announcementId) throw new Error("Identifiant d'annonce manquant dans la réponse backend.");
 
-      const newTracking = response.trackingNumber || (response as any).tracking_number;
-
-      if (!newTracking) throw new Error("Numéro de suivi manquant dans la réponse backend.");
+      const newTracking = 'PDL-' + announcementId.substring(0, 8).toUpperCase();
 
       setTrackingNumber(newTracking);
       setPaymentSuccess(true);
-      showNotification({ message: `Colis créé ! Suivi : ${newTracking}`, type: 'success' });
+      showNotification({ message: `Colis créé avec succès ! Suivi : ${newTracking}`, type: 'success' });
+
+      // 6. Remonter le pricing final au parent
+      onPaymentFinalized({
+        basePrice: allData.basePrice,
+        travelPrice: allData.travelPrice,
+        operatorFee,
+        totalPrice,
+        trackingNumber: newTracking,
+      });
 
     } catch (err: any) {
-      console.error("❌ ERREUR D'ENVOI :", err);
-      // Affiche le message détaillé de l'erreur s'il existe (ex: validation backend)
-      const errorMsg = err.message || JSON.stringify(err);
-      showNotification({ message: "Erreur lors de la création: " + errorMsg, type: 'error' });
+      console.error("ERREUR D'ENVOI :", err);
+      const errorMsg = err.message || 'Une erreur inattendue est survenue.';
+      showNotification({ message: "Erreur lors de la création : " + errorMsg, type: 'error' });
     } finally {
       setIsProcessing(false);
     }
