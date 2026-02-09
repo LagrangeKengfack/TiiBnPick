@@ -1,15 +1,65 @@
-export type PackageCreationPayload = {
-  senderId: string;
-  recipientName: string;
-  weightKg?: number;
+import apiClient from '@/lib/axios';
+
+const API_URL = '/api/announcements';
+
+export enum AddressType {
+  PRIMARY = "PRIMARY",
+  SECONDARY = "SECONDARY"
+}
+
+export type AddressDTO = {
+  street: string;
+  city: string;
+  district: string;
+  country: string;
   description?: string;
+  type: AddressType;
+  latitude?: number;
+  longitude?: number;
+};
+
+export type PacketDTO = {
+  weight?: number;
+  width?: number;
+  height?: number;
+  length?: number;
+  fragile: boolean;
+  description?: string;
+  photoPacket?: string;
+  isPerishable: boolean;
+  thickness?: number;
+  designation: string;
+};
+
+export type PackageCreationPayload = {
+  clientId: string;
+  title: string;
+  description?: string;
+  recipientName: string;
+  recipientNumber?: string;
+  recipientEmail?: string;
+  recipientPhone: string;
+  shipperName: string;
+  shipperEmail?: string;
+  shipperPhone: string;
+  amount: number;
+  signatureUrl?: string | null;
+  paymentMethod: string;
+
+  pickupAddress: AddressDTO;
+  deliveryAddress: AddressDTO;
+  packet: PacketDTO;
 };
 
 export const packageService = {
   createPackage: async (payload: PackageCreationPayload) => {
-    // stub: simulate creation and return a tracking number to satisfy frontend
-    const tracking = 'TRK' + Date.now();
-    return Promise.resolve({ id: 'pkg-' + Date.now(), trackingNumber: tracking, tracking_number: tracking, ...payload });
+    try {
+      const response = await apiClient.post(API_URL, payload);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating package/announcement:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 

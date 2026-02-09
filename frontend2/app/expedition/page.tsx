@@ -27,7 +27,6 @@ import PackageInfoStep from './FormulaireColisExpedition';
 import RouteSelectionStep from './RouteExpedition';
 import SignatureStep from './SignatureStep';
 import PaymentStep from './PaymentStepExpedition';
-import NavbarHome from '@/components/NavbarHome';
 import { CheckCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { UserPlusIcon } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -56,12 +55,11 @@ interface SenderData {
   senderFirstName: string;
   senderLastName: string;
   senderPhone: string;
-  senderEmail: string;      // Ajouté
-  senderCountry: string;    // Ajouté
-  senderRegion: string;     // Ajouté
-  senderCity: string;       // Ajouté
+  senderEmail: string;
+  senderCountry: string;
+  senderRegion: string;
+  senderCity: string;
   senderAddress: string;
-  senderLieuDit: string;
   latitude?: number;
   longitude?: number;
 }
@@ -71,12 +69,10 @@ interface RecipientData {
   recipientName: string;
   recipientPhone: string;
   recipientEmail: string;
-  recipientCountry: string; // Ajouté
-  recipientRegion: string;  // Ajouté
-  recipientCity: string;    // Ajouté
+  recipientCountry: string;
+  recipientRegion: string;
+  recipientCity: string;
   recipientAddress: string;
-  recipientLieuDit: string;
-  // Les champs genre et age n'existent pas dans le composant enfant, on les retire pour la cohérence
 }
 // << CORRIGÉ: Mise à jour de l'interface PackageData >>
 interface PackageData {
@@ -188,11 +184,11 @@ export default function ShippingPage() {
   const [formData, setFormData] = useState<ExpeditionFormData>({
     currentStep: 1,
     senderData: {
-      senderFirstName: '', senderLastName: '', senderPhone: '', senderAddress: '', senderLieuDit: '',
+      senderFirstName: '', senderLastName: '', senderPhone: '', senderAddress: '',
       senderEmail: '', senderCountry: 'cameroun', senderRegion: 'centre', senderCity: 'Yaoundé'
     },
     recipientData: {
-      recipientName: '', recipientPhone: '', recipientEmail: '', recipientAddress: '', recipientLieuDit: '',
+      recipientName: '', recipientPhone: '', recipientEmail: '', recipientAddress: '',
       recipientCountry: 'cameroun', recipientRegion: 'centre', recipientCity: 'Yaoundé'
     },
     packageData: {
@@ -241,7 +237,7 @@ export default function ShippingPage() {
 
   useEffect(() => {
     const checkUserAndLoadData = async () => {
-      let restoredData = null;
+      let restoredData: Partial<ExpeditionFormData> | null = null;
       let shouldAskToRestore = false;
 
       try {
@@ -265,9 +261,9 @@ export default function ShippingPage() {
         localStorage.removeItem(EXPEDITION_FORM_STORAGE_KEY);
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      const { data: { session } } = await (supabase.auth.getSession() as any);
+      if (session?.user) {
+        const { data: profile } = await (supabase.from('profiles').select('*').eq('id', session.user.id).single() as any);
         if (profile) {
           const connectedUser: LoggedInUser = { id: profile.id, full_name: profile.full_name, phone: profile.phone, email: profile.email, address: profile.address, lieu_dit: profile.lieu_dit };
           setUser(connectedUser);
@@ -283,7 +279,6 @@ export default function ShippingPage() {
                 senderPhone: connectedUser.phone || '',
                 senderEmail: connectedUser.email || '', // Email ajouté
                 senderAddress: connectedUser.address || '',
-                senderLieuDit: connectedUser.lieu_dit || '',
               }
             }));
           }
@@ -449,6 +444,9 @@ export default function ShippingPage() {
         // Conversion forcée et nettoyage des types
         const fullDataForPayment = {
           ...formData.senderData,
+          senderName: `${formData.senderData.senderFirstName} ${formData.senderData.senderLastName}`.trim(),
+          senderPhone: formData.senderData.senderPhone,
+          senderEmail: formData.senderData.senderEmail,
           ...formData.recipientData,
           ...formData.packageData,
           // Gérer explicitement le type File/String de la photo

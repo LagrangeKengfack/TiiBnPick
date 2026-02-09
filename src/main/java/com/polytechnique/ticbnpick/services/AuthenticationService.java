@@ -30,10 +30,7 @@ public class AuthenticationService {
                         return Mono.error(new InvalidCredentialsException("Mot de passe incorrect"));
                     }
 
-                    String token = jwtUtil.generateToken(person.getEmail());
-
                     AuthResponseDTO response = new AuthResponseDTO();
-                    response.setToken(token);
                     response.setId(person.getId());
                     response.setLastName(person.getLastName());
                     response.setFirstName(person.getFirstName());
@@ -47,7 +44,7 @@ public class AuthenticationService {
                     response.setTotalDeliveries(person.getTotalDeliveries());
                     response.setIsActive(person.getIsActive());
 
-                    // Check if Client
+                    // Check user type and build response
                     return clientRepository.findByPersonId(person.getId())
                             .map(client -> {
                                 response.setClientId(client.getId());
@@ -55,16 +52,30 @@ public class AuthenticationService {
                                 response.setUserType("CLIENT");
                                 return response;
                             })
-                            .switchIfEmpty(
-                                    // Check if DeliveryPerson
-                                    deliveryPersonRepository.findByPersonId(person.getId())
-                                            .map(deliveryPerson -> {
-                                                response.setDeliveryPersonId(deliveryPerson.getId());
-                                                response.setUserType("LIVREUR");
-                                                response.setIsActive(deliveryPerson.getIsActive());
-                                                return response;
-                                            }))
-                            .defaultIfEmpty(response.getUserType() == null ? setDefaultAdmin(response) : response);
+                            .switchIfEmpty(deliveryPersonRepository.findByPersonId(person.getId())
+                                    .map(deliveryPerson -> {
+                                        response.setDeliveryPersonId(deliveryPerson.getId());
+                                        response.setUserType("LIVREUR");
+                                        response.setIsActive(deliveryPerson.getIsActive());
+                                        return response;
+                                    }))
+                            .defaultIfEmpty(response.getUserType() == null ? setDefaultAdmin(response) : response)
+                            .map(finalResponse -> {
+                                // Now generate token with claims
+                                java.util.Map<String, Object> claims = new java.util.HashMap<>();
+                                claims.put("userId", person.getId());
+                                claims.put("userType", finalResponse.getUserType());
+                                if (finalResponse.getClientId() != null) {
+                                    claims.put("clientId", finalResponse.getClientId());
+                                }
+                                if (finalResponse.getDeliveryPersonId() != null) {
+                                    claims.put("deliveryPersonId", finalResponse.getDeliveryPersonId());
+                                }
+
+                                String token = jwtUtil.generateToken(claims, person.getEmail());
+                                finalResponse.setToken(token);
+                                return finalResponse;
+                            });
                 });
     }
 

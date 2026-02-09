@@ -38,6 +38,15 @@ import {
 } from 'lucide-react'
 import { withAuth } from '@/components/hoc/withAuth'
 import { useAuth } from '@/context/AuthContext'
+import { useEffect, useCallback } from 'react'
+import {
+  getAnnouncementByClientId,
+  deleteAnnouncement,
+  publishAnnouncement,
+  AnnouncementResponseDTO
+} from '@/services/announcementService'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
 export function ClientLanding() {
   const router = useRouter()
@@ -48,77 +57,49 @@ export function ClientLanding() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [myAnnouncements, setMyAnnouncements] = useState([
-    {
-      id: 'TBP-CLIENT-001',
-      senderName: 'Marie Kouassi',
-      senderPhone: '699001122',
-      senderAddress: 'Quartier Bastos, Yaoundé',
-      senderCoords: { lat: 3.8767, lon: 11.5122 },
-      recipientName: 'Jean Dupont',
-      recipientPhone: '677889900',
-      recipientAddress: 'Douala, Centre-ville',
-      recipientCoords: { lat: 4.0511, lon: 9.7679 },
-      pickupAddress: 'Quartier Bastos, Yaoundé',
-      deliveryAddress: 'Douala, Centre-ville',
-      distance: 25.5,
-      estimatedTime: '45 min',
-      price: 5000,
-      packageType: 'Courses urgentes',
-      designation: 'Vêtements',
-      description: 'Sac de vêtements variés pour dons',
-      weight: 3,
-      dimensions: { length: 40, width: 30, height: 20 },
-      isFragile: false,
-      isPerishable: false,
-      isInsured: true,
-      declaredValue: '50000',
-      deliveryType: 'Express 48h',
-      urgency: 'high',
-      published: true
-    },
-    {
-      id: 'TBP-CLIENT-002',
-      senderName: 'Marie Kouassi',
-      senderPhone: '699001122',
-      senderAddress: 'Plateau, Stade Général De Gaulle',
-      senderCoords: { lat: 5.3245, lon: -4.0123 },
-      recipientName: 'Sophie Amiand',
-      recipientPhone: '0505050505',
-      recipientAddress: 'Cocody, Angre',
-      recipientCoords: { lat: 5.3789, lon: -3.9876 },
-      pickupAddress: 'Plateau, Stade Général De Gaulle',
-      deliveryAddress: 'Cocody, Angre',
-      distance: 6.8,
-      estimatedTime: '20 min',
-      price: 1800,
-      packageType: 'Documents',
-      designation: 'Papiers importants',
-      description: 'Dossier administratif urgent',
-      weight: 0.5,
-      dimensions: { length: 30, width: 21, height: 2 },
-      isFragile: false,
-      isPerishable: false,
-      isInsured: false,
-      declaredValue: '0',
-      deliveryType: 'Standard 72h',
-      urgency: 'normal',
-      published: false
+  const [loading, setLoading] = useState(false)
+  const [myAnnouncements, setMyAnnouncements] = useState<AnnouncementResponseDTO[]>([])
+
+  const fetchAnnouncements = useCallback(async () => {
+    if (!user?.clientId) return
+    setLoading(true)
+    try {
+      const data = await getAnnouncementByClientId(user.clientId)
+      setMyAnnouncements(data)
+    } catch (error) {
+      toast.error('Erreur lors du chargement de vos annonces')
+    } finally {
+      setLoading(false)
     }
-  ])
+  }, [user?.clientId])
+
+  useEffect(() => {
+    if (activeTab === 'annonces') {
+      fetchAnnouncements()
+    }
+  }, [activeTab, fetchAnnouncements])
 
   // Fonction pour publier une annonce
-  const handlePublishAnnouncement = (id: string) => {
-    setMyAnnouncements((prev) =>
-      prev.map((ann) =>
-        ann.id === id ? { ...ann, published: true } : ann
-      )
-    )
+  const handlePublishAnnouncement = async (id: string) => {
+    try {
+      await publishAnnouncement(id)
+      toast.success('Annonce publiée avec succès')
+      fetchAnnouncements()
+    } catch (error) {
+      toast.error('Erreur lors de la publication')
+    }
   }
 
   // Fonction pour supprimer une annonce
-  const handleDeleteAnnouncement = (id: string) => {
-    setMyAnnouncements((prev) => prev.filter((ann) => ann.id !== id))
+  const handleDeleteAnnouncement = async (id: string) => {
+    if (!confirm('Voulez-vous vraiment supprimer cette annonce ?')) return
+    try {
+      await deleteAnnouncement(id)
+      toast.success('Annonce supprimée')
+      setMyAnnouncements((prev) => prev.filter((ann) => ann.id !== id))
+    } catch (error) {
+      toast.error('Erreur lors de la suppression')
+    }
   }
 
   // Fonction pour mettre à jour une annonce
@@ -247,96 +228,122 @@ export function ClientLanding() {
       <main className="flex-1">
         {/* Announcements Section */}
         {activeTab === 'annonces' && (
-          <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-white">
+          <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-white min-h-[60vh]">
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Mes Annonces</h2>
-                <Button
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold"
-                  onClick={() => router.push('/expedition')}
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Ajouter une annonce
-                </Button>
-              </div>
-              <div className="grid lg:grid-cols-2 gap-4">
-                {myAnnouncements.map((announcement) => (
-                  <Card key={announcement.id} className="border-2 border-orange-500 bg-orange-50 hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className="text-base">{announcement.id}</CardTitle>
-                        </div>
-                        <Badge variant={announcement.published ? "default" : "secondary"} className={announcement.published ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"}>
-                          {announcement.published ? "Publiée" : "Non publiée"}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <p className="text-sm text-gray-700">
-                              <span className="font-medium">Retrait:</span> {announcement.pickupAddress}
-                            </p>
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="w-10 h-10 text-orange-500 animate-spin mb-4" />
+                  <p className="text-gray-500">Chargement de vos annonces...</p>
+                </div>
+              ) : myAnnouncements.length > 0 ? (
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">Mes Annonces</h2>
+                    <Button
+                      className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold"
+                      onClick={() => router.push('/expedition')}
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      Ajouter une annonce
+                    </Button>
+                  </div>
+                  <div className="grid lg:grid-cols-2 gap-4">
+                    {myAnnouncements.map((announcement: AnnouncementResponseDTO) => (
+                      <Card key={announcement.id} className="border-2 border-orange-500 bg-orange-50 hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <CardTitle className="text-base">{announcement.id.substring(0, 8).toUpperCase()}</CardTitle>
+                            </div>
+                            <Badge variant={announcement.status === 'PUBLISHED' ? "default" : "secondary"} className={announcement.status === 'PUBLISHED' ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"}>
+                              {announcement.status === 'PUBLISHED' ? "Publiée" : "Non publiée"}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-red-500 rounded-full" />
-                            <p className="text-sm text-gray-700">
-                              <span className="font-medium">Livraison:</span> {announcement.deliveryAddress}
-                            </p>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                            <div className="space-y-2 flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Retrait:</span> {announcement.pickupAddress?.district}, {announcement.pickupAddress?.city}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-red-500 rounded-full" />
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Livraison:</span> {announcement.deliveryAddress?.district}, {announcement.deliveryAddress?.city}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
-                        <div className="flex items-center gap-2">
-                          <MapIcon className="w-4 h-4" />
-                          <span>{announcement.distance} km</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          <span>{announcement.estimatedTime}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          <span className="font-semibold text-green-600">{announcement.price.toLocaleString()} FCFA</span>
-                        </div>
-                      </div>
+                          <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
+                            <div className="flex items-center gap-2">
+                              <MapIcon className="w-4 h-4" />
+                              <span>25.5 km</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              <span>45 min</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4 text-green-600" />
+                              <span className="font-semibold text-green-600">{announcement.amount?.toLocaleString() || 0} FCFA</span>
+                            </div>
+                          </div>
 
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => { setSelectedAnnouncement(announcement); setDetailsOpen(true) }}
-                        >
-                          Voir Détails
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 border-red-500 text-red-600 hover:bg-red-100"
-                          onClick={() => handleDeleteAnnouncement(announcement.id)}
-                        >
-                          Supprimer
-                        </Button>
-                        {!announcement.published && (
-                          <Button
-                            size="sm"
-                            className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-                            onClick={() => handlePublishAnnouncement(announcement.id)}
-                          >
-                            Publier
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => { setSelectedAnnouncement(announcement); setDetailsOpen(true) }}
+                            >
+                              Voir Détails
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 border-red-500 text-red-600 hover:bg-red-100"
+                              onClick={() => handleDeleteAnnouncement(announcement.id)}
+                            >
+                              Supprimer
+                            </Button>
+                            {announcement.status !== 'PUBLISHED' && (
+                              <Button
+                                size="sm"
+                                className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                                onClick={() => handlePublishAnnouncement(announcement.id)}
+                              >
+                                Publier
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                    <Package className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Aucune annonce disponible</h3>
+                  <p className="text-gray-500 text-center max-w-sm mb-8">
+                    Vous n'avez pas encore publié d'annonce. Commencez dès maintenant pour trouver un livreur !
+                  </p>
+                  <Button
+                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-12 px-8 shadow-lg shadow-orange-500/20"
+                    onClick={() => router.push('/expedition')}
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Créer ma première annonce
+                  </Button>
+                </div>
+              )}
 
               <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) { setSelectedAnnouncement(null); setIsEditing(false); } }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -384,50 +391,58 @@ export function ClientLanding() {
                           <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
                           <div>
                             <p className="text-xs text-gray-500 uppercase font-bold">Point de Retrait (Expéditeur)</p>
-                            <p className="font-semibold">{selectedAnnouncement?.senderName}</p>
-                            <p className="text-sm text-gray-600">{selectedAnnouncement?.senderPhone}</p>
-                            <p className="text-sm text-gray-500">{selectedAnnouncement?.pickupAddress}</p>
+                            <p className="font-semibold">{selectedAnnouncement?.shipperName || 'N/A'}</p>
+                            <p className="text-sm text-gray-600">{selectedAnnouncement?.shipperPhone || 'N/A'}</p>
+                            <p className="text-sm text-gray-500">
+                              {selectedAnnouncement?.pickupAddress?.street}, {selectedAnnouncement?.pickupAddress?.district}, {selectedAnnouncement?.pickupAddress?.city}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
                           <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
                           <div>
                             <p className="text-xs text-gray-500 uppercase font-bold">Point de Livraison (Destinataire)</p>
-                            <p className="font-semibold">{selectedAnnouncement?.recipientName}</p>
-                            <p className="text-sm text-gray-600">{selectedAnnouncement?.recipientPhone}</p>
-                            <p className="text-sm text-gray-500">{selectedAnnouncement?.deliveryAddress}</p>
+                            <p className="font-semibold">{selectedAnnouncement?.recipientName || 'N/A'}</p>
+                            <p className="text-sm text-gray-600">{selectedAnnouncement?.recipientPhone || 'N/A'}</p>
+                            <p className="text-sm text-gray-500">
+                              {selectedAnnouncement?.deliveryAddress?.street}, {selectedAnnouncement?.deliveryAddress?.district}, {selectedAnnouncement?.deliveryAddress?.city}
+                            </p>
                           </div>
                         </div>
                       </div>
 
                       {/* Carte */}
                       <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm h-64 relative z-0">
-                        {selectedAnnouncement && selectedAnnouncement.senderCoords && (
+                        {selectedAnnouncement && selectedAnnouncement.pickupCoords && selectedAnnouncement.deliveryCoords ? (
                           <MapLeaflet
                             center={[
-                              (selectedAnnouncement.senderCoords.lat + selectedAnnouncement.recipientCoords.lat) / 2,
-                              (selectedAnnouncement.senderCoords.lon + selectedAnnouncement.recipientCoords.lon) / 2
+                              (selectedAnnouncement.pickupCoords.lat + selectedAnnouncement.deliveryCoords.lat) / 2,
+                              (selectedAnnouncement.pickupCoords.lon + selectedAnnouncement.deliveryCoords.lon) / 2
                             ]}
                             zoom={10}
                             markers={[
-                              { position: [selectedAnnouncement.senderCoords.lat, selectedAnnouncement.senderCoords.lon], label: "Retrait", color: "#f97316" },
-                              { position: [selectedAnnouncement.recipientCoords.lat, selectedAnnouncement.recipientCoords.lon], label: "Livraison", color: "#10b981" }
+                              { position: [selectedAnnouncement.pickupCoords.lat, selectedAnnouncement.pickupCoords.lon], label: "Retrait", color: "#f97316" },
+                              { position: [selectedAnnouncement.deliveryCoords.lat, selectedAnnouncement.deliveryCoords.lon], label: "Livraison", color: "#10b981" }
                             ]}
                           />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+                            Carte non disponible
+                          </div>
                         )}
                       </div>
 
                       <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
                         <div className="flex items-center gap-2">
                           <MapIcon className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold">{selectedAnnouncement?.distance} km</span>
+                          <span className="font-bold">25.5 km</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold">{selectedAnnouncement?.estimatedTime}</span>
+                          <span className="font-bold">45 min</span>
                         </div>
                         <div className="text-lg font-black text-orange-600">
-                          {selectedAnnouncement?.price?.toLocaleString()} FCFA
+                          {selectedAnnouncement?.amount?.toLocaleString() || 0} FCFA
                         </div>
                       </div>
                     </div>
@@ -440,31 +455,31 @@ export function ClientLanding() {
                           <div>
                             <p className="text-xs text-gray-500">Désignation</p>
                             {isEditing ? (
-                              <Input id="edit-designation" defaultValue={selectedAnnouncement?.designation} className="h-8 text-sm" />
+                              <Input id="edit-designation" defaultValue={selectedAnnouncement?.packet?.designation} className="h-8 text-sm" />
                             ) : (
-                              <p className="font-medium">{selectedAnnouncement?.designation}</p>
+                              <p className="font-medium">{selectedAnnouncement?.packet?.designation}</p>
                             )}
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Type de colis</p>
-                            <p className="font-medium">{selectedAnnouncement?.packageType}</p>
+                            <p className="font-medium">{selectedAnnouncement?.packet?.description?.substring(0, 20)}...</p>
                           </div>
                           <div className="col-span-2">
                             <p className="text-xs text-gray-500">Description</p>
                             {isEditing ? (
-                              <textarea id="edit-description" className="w-full text-sm border rounded-md p-2 h-20 bg-transparent" defaultValue={selectedAnnouncement?.description} />
+                              <textarea id="edit-description" className="w-full text-sm border rounded-md p-2 h-20 bg-transparent" defaultValue={selectedAnnouncement?.packet?.description} />
                             ) : (
-                              <p className="text-sm italic text-gray-600">{selectedAnnouncement?.description}</p>
+                              <p className="text-sm italic text-gray-600">{selectedAnnouncement?.packet?.description}</p>
                             )}
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Poids</p>
-                            <p className="font-medium">{selectedAnnouncement?.weight} kg</p>
+                            <p className="font-medium">3 kg</p> {/* Weight not in DTO currently */}
                           </div>
                           <div>
                             <p className="text-xs text-gray-500">Dimensions (Lxlxh)</p>
                             <p className="font-medium">
-                              {selectedAnnouncement?.dimensions?.length}x{selectedAnnouncement?.dimensions?.width}x{selectedAnnouncement?.dimensions?.height} cm
+                              {selectedAnnouncement?.packet?.length}x{selectedAnnouncement?.packet?.width}x{selectedAnnouncement?.packet?.thickness} cm
                             </p>
                           </div>
                         </div>
@@ -473,10 +488,10 @@ export function ClientLanding() {
                       <div>
                         <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Options & Logistique</h4>
                         <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline" className={selectedAnnouncement?.isFragile ? "border-red-500 text-red-600 bg-red-50" : "opacity-30"}>Fragile</Badge>
-                          <Badge variant="outline" className={selectedAnnouncement?.isPerishable ? "border-orange-500 text-orange-600 bg-orange-50" : "opacity-30"}>Périssable</Badge>
+                          <Badge variant="outline" className={selectedAnnouncement?.packet?.fragile ? "border-red-500 text-red-600 bg-red-50" : "opacity-30"}>Fragile</Badge>
+                          <Badge variant="outline" className={selectedAnnouncement?.packet?.isPerishable ? "border-orange-500 text-orange-600 bg-orange-50" : "opacity-30"}>Périssable</Badge>
                           <Badge variant="outline" className={selectedAnnouncement?.isInsured ? "border-green-500 text-green-600 bg-green-50" : "opacity-30"}>
-                            Assuré ({selectedAnnouncement?.declaredValue} FCFA)
+                            Assuré ({selectedAnnouncement?.declaredValue || 0} FCFA)
                           </Badge>
                         </div>
                         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">

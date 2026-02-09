@@ -34,7 +34,9 @@ public class AnnouncementService {
     public Mono<AnnouncementResponseDTO> createAnnouncement(AnnouncementRequestDTO request) {
         // 1. Save Packet
         Packet packet = new Packet();
+        packet.setWeight(request.getPacket().getWeight());
         packet.setWidth(request.getPacket().getWidth());
+        packet.setHeight(request.getPacket().getHeight());
         packet.setLength(request.getPacket().getLength());
         packet.setFragile(request.getPacket().getFragile());
         packet.setDescription(request.getPacket().getDescription());
@@ -58,7 +60,7 @@ public class AnnouncementService {
                     announcement.setDeliveryAddressId(savedDelivery.getId());
                     announcement.setTitle(request.getTitle());
                     announcement.setDescription(request.getDescription());
-                    announcement.setStatus(AnnouncementStatus.PUBLISHED); // Default status
+                    announcement.setStatus(AnnouncementStatus.DRAFT); // Default status
                     announcement.setCreatedAt(Instant.now());
                     announcement.setRecipientName(request.getRecipientName());
                     announcement.setRecipientNumber(request.getRecipientNumber());
@@ -68,6 +70,8 @@ public class AnnouncementService {
                     announcement.setShipperEmail(request.getShipperEmail());
                     announcement.setShipperPhone(request.getShipperPhone());
                     announcement.setAmount(request.getAmount());
+                    announcement.setSignatureUrl(request.getSignatureUrl());
+                    announcement.setPaymentMethod(request.getPaymentMethod());
 
                     return announcementRepository.save(announcement)
                             .map(savedAnnouncement -> mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
@@ -79,6 +83,10 @@ public class AnnouncementService {
 
     public Flux<AnnouncementResponseDTO> getAllAnnouncements() {
         return announcementRepository.findAll().flatMap(this::populateDetails);
+    }
+
+    public Flux<AnnouncementResponseDTO> getAnnouncementsByClientId(UUID clientId) {
+        return announcementRepository.findAllByClientId(clientId).flatMap(this::populateDetails);
     }
 
     public Mono<AnnouncementResponseDTO> getAnnouncement(UUID id) {
@@ -129,6 +137,8 @@ public class AnnouncementService {
         response.setShipperEmail(announcement.getShipperEmail());
         response.setShipperPhone(announcement.getShipperPhone());
         response.setAmount(announcement.getAmount());
+        response.setSignatureUrl(announcement.getSignatureUrl());
+        response.setPaymentMethod(announcement.getPaymentMethod());
 
         response.setPickupAddress(mapToAddressDTO(pickup));
         response.setDeliveryAddress(mapToAddressDTO(delivery));
@@ -154,7 +164,9 @@ public class AnnouncementService {
         if (packet == null)
             return null;
         PacketDTO dto = new PacketDTO();
+        dto.setWeight(packet.getWeight());
         dto.setWidth(packet.getWidth());
+        dto.setHeight(packet.getHeight());
         dto.setLength(packet.getLength());
         dto.setFragile(packet.getFragile());
         dto.setDescription(packet.getDescription());
@@ -181,6 +193,8 @@ public class AnnouncementService {
                     announcement.setShipperEmail(request.getShipperEmail());
                     announcement.setShipperPhone(request.getShipperPhone());
                     announcement.setAmount(request.getAmount());
+                    announcement.setSignatureUrl(request.getSignatureUrl());
+                    announcement.setPaymentMethod(request.getPaymentMethod());
                     announcement.setUpdatedAt(Instant.now());
 
                     return announcementRepository.save(announcement).flatMap(savedAnnouncement -> {
@@ -189,7 +203,9 @@ public class AnnouncementService {
                             packetUpdate = packetRepository.findById(savedAnnouncement.getPacketId())
                                     .flatMap(packet -> {
                                         if (request.getPacket() != null) {
+                                            packet.setWeight(request.getPacket().getWeight());
                                             packet.setWidth(request.getPacket().getWidth());
+                                            packet.setHeight(request.getPacket().getHeight());
                                             packet.setLength(request.getPacket().getLength());
                                             packet.setFragile(request.getPacket().getFragile());
                                             packet.setDescription(request.getPacket().getDescription());

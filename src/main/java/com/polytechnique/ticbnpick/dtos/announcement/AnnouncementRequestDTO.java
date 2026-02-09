@@ -18,6 +18,8 @@ public class AnnouncementRequestDTO {
     private String shipperEmail;
     private String shipperPhone;
     private Float amount;
+    private String signatureUrl;
+    private String paymentMethod;
 
     private AddressDTO pickupAddress;
     private AddressDTO deliveryAddress;

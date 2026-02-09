@@ -1,9 +1,11 @@
 package com.polytechnique.ticbnpick.repositories;
 
 import com.polytechnique.ticbnpick.models.Announcement;
-import java.util.UUID;
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
+
+import java.util.UUID;
 
 /**
  * Reactive repository for Announcement entity.
@@ -19,5 +21,6 @@ public interface AnnouncementRepository extends ReactiveCrudRepository<Announcem
      * @param client_id client identifier
      * @return list of announcements
      */
-    Flux<Announcement> findAllByClientId(UUID client_id);
+    @Query("SELECT * FROM announcements WHERE client_id = :clientId")
+    Flux<Announcement> findAllByClientId(UUID clientId);
 }

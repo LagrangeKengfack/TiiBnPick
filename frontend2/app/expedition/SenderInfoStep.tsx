@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Phone, Mail, MapPin, Home, ArrowRight, Send, Sparkles, Circle, UserPlus, X, Globe, Building, Navigation } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -14,7 +15,6 @@ interface SenderData {
   senderRegion: string;
   senderCity: string;
   senderAddress: string;
-  senderLieuDit: string;
   latitude?: number;
   longitude?: number;
 }
@@ -291,7 +291,6 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
       if (!formData.senderRegion) newErrors.senderRegion = "Région requise";
       if (!formData.senderCity) newErrors.senderCity = "Ville requise";
       if (!formData.senderAddress.trim()) newErrors.senderAddress = "Adresse requise";
-      if (!formData.senderLieuDit.trim()) newErrors.senderLieuDit = "Lieu-dit requis";
     }
     return newErrors;
   };
@@ -458,18 +457,47 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
                         <option value="">Sélectionner un pays</option>
                         {Object.entries(countries).map(([key, country]) => (<option key={key} value={key}>{country.name}</option>))}
                       </SelectField>
-                      <SelectField icon={Building} id="senderRegion" name="senderRegion" value={formData.senderRegion} onChange={handleChange} label="Région" error={errors.senderRegion} disabled={!formData.senderCountry}>
-                        <option value="">Sélectionner une région</option>
-                        {Object.entries(availableRegions).map(([key, region]) => (<option key={key} value={key}>{(region as { name: string }).name}</option>))}
-                      </SelectField>
-                      <SelectField icon={Navigation} id="senderCity" name="senderCity" value={formData.senderCity} onChange={handleChange} label="Ville" error={errors.senderCity} disabled={!formData.senderRegion}>
-                        <option value="">Sélectionner une ville</option>
-                        {availableCities.map((city: string) => (<option key={city} value={city}>{city}</option>))}
-                      </SelectField>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <SelectField icon={Building} id="senderRegion" name="senderRegion" value={formData.senderRegion} onChange={(e: any) => {
+                          const region = e.target.value;
+                          const city = region === 'centre' ? 'Yaoundé' : 'Douala';
+                          setFormData(prev => ({
+                            ...prev,
+                            senderRegion: region,
+                            senderCity: city,
+                            senderAddress: ''
+                          }));
+                        }} label="Région" error={errors.senderRegion} disabled={!formData.senderCountry}>
+                          <option value="">Sélectionner une région</option>
+                          <option value="centre">Centre</option>
+                          <option value="littoral">Littoral</option>
+                        </SelectField>
+                        <SelectField icon={Navigation} id="senderCity" name="senderCity" value={formData.senderCity} label="Ville" error={errors.senderCity} disabled>
+                          <option value={formData.senderCity}>{formData.senderCity || "Sélectionner une ville"}</option>
+                        </SelectField>
+                      </div>
                     </div>
 
-                    <InputField icon={MapPin} id="senderAddress" name="senderAddress" value={formData.senderAddress} onChange={handleChange} label="Adresse Complète" placeholder="Mvan, Yaoundé" error={errors.senderAddress} />
-                    <InputField icon={Home} id="senderLieuDit" name="senderLieuDit" value={formData.senderLieuDit} onChange={handleChange} label="Lieu-dit" placeholder="Face Boulangerie Mvan, portail rouge" error={errors.senderLieuDit} />
+
+                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 tracking-wider">
+                      Adresse Complète
+                    </label>
+                    <AddressAutocomplete
+                      onSelect={(address) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          senderAddress: address.street,
+                          latitude: address.latitude,
+                          longitude: address.longitude
+                        }));
+                        if (errors.senderAddress) setErrors(prev => ({ ...prev, senderAddress: '' }));
+                      }}
+                      defaultValue={formData.senderAddress}
+                      city={formData.senderCity}
+                      placeholder="Rue, Quartier..."
+                      className={errors.senderAddress ? 'border-red-300' : ''}
+                    />
+                    {errors.senderAddress && <p className="text-[10px] text-red-500 mt-1">{errors.senderAddress}</p>}
                   </>
                 )}
 

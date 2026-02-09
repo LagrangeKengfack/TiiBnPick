@@ -51,6 +51,13 @@ public class AddressController {
         return lectureAddressService.getAllAddresses();
     }
 
+    @GetMapping("/search")
+    public Flux<Address> searchAddresses(
+            @RequestParam String query,
+            @RequestParam(required = false) String city) {
+        return lectureAddressService.searchAddresses(query, city);
+    }
+
     @PutMapping("/{id}")
     public Mono<ResponseEntity<Address>> updateAddress(@PathVariable UUID id,
             @RequestBody AddressCreateRequest request) {

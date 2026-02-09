@@ -23,7 +23,7 @@ import { PhoneIcon, PlusIcon, StarIcon, UserPlusIcon } from 'lucide-react';
 import { ProcessingAnimation } from './demo';
 import { useRouter } from 'next/navigation';
 // --- IMPORTATIONS CRUCIALES POUR LE BACKEND ---
-import { packageService, PackageCreationPayload } from '@/services/packageService';
+import { packageService, PackageCreationPayload, AddressType } from '@/services/packageService';
 import { Loader2, CheckCircle, UserPlus, Star } from 'lucide-react';
 import { useNotification } from '@/context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
@@ -32,16 +32,24 @@ interface FinalData {
   senderName: string;
   senderPhone: string;
   senderEmail: string;
+  senderCountry: string;
+  senderRegion: string;
+  senderCity: string;
+  senderAddress: string;
+  latitude?: number;
+  longitude?: number;
+
   recipientName: string;
   recipientPhone: string;
   recipientEmail: string;
-  senderAddress: string; // On utilisera ça
-  // --- AJOUT : On supporte aussi recipientAddress ---
+  recipientCountry: string;
+  recipientRegion: string;
+  recipientCity: string;
   recipientAddress?: string;
 
-  photo: string | null; // Pour l'instant géré localement ou via un autre endpoint
+  photo: string | null;
   designation: string;
-  description?: string; // Mapping designation vers description si besoin
+  description?: string;
   weight: string;
   length?: string;
   width?: string;
@@ -104,7 +112,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
   const [mobilePhone, setMobilePhone] = useState('');
 
   const router = useRouter();
-  const { addNotification } = useNotification();
+  const { showNotification } = useNotification();
 
   const operatorFee = selectedMethod === 'mobile' ? PAYMENT_OPERATOR_FEE : 0;
   const totalPrice = allData.basePrice + allData.travelPrice + operatorFee;
@@ -305,34 +313,52 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
       // 4. CONSTRUCTION DU PAYLOAD COMPLET
       const payload: PackageCreationPayload = {
-        senderName: allData.senderName,
-        senderPhone: cleanSenderPhone,
+        clientId: (currentUser?.id || authUser?.id || "anonymous"),
+        title: `Envoi de ${allData.designation}`,
+        description: allData.description,
 
-        // Infos Destinataire
         recipientName: allData.recipientName,
         recipientPhone: cleanRecipientPhone,
-        recipientAddress: allData.recipientAddress || "Adresse non précisée",
+        recipientEmail: allData.recipientEmail,
 
-        // Infos Lieux (Noms affichés dans l'historique ou sur le bordereau)
-        // Important : Ce sont des strings, le backend stocke l'historique ou les détails d'adresse
-        pickupAddress: allData.departurePointName,
-        deliveryAddress: allData.arrivalPointName,
+        shipperName: allData.senderName,
+        shipperPhone: cleanSenderPhone,
+        shipperEmail: allData.senderEmail,
 
-        // IDs techniques pour la relation SQL
-        departureRelayPointId: String(allData.departurePointId),
-        arrivalRelayPointId: String(allData.arrivalPointId),
+        amount: totalPrice,
+        signatureUrl: allData.signatureUrl,
+        paymentMethod: selectedMethod,
 
-        // Caractéristiques physiques
-        packageType: pType,
-        weight: parseFloat(allData.weight),
-        dimensions: JSON.stringify(dimsObject), // Format String JSON "{\"length\":...}"
-        description: allData.designation + (allData.description ? ` - ${allData.description}` : ''),
-        value: allData.isInsured ? (parseFloat(allData.declaredValue) || 0) : 0,
-
-        // Logistique
-        deliveryOption: 'RELAY_POINT_DELIVERY',
-        specialInstructions: `Paiement: ${selectedMethod === 'recipient' ? 'Destinataire' : 'Expéditeur'}. Logistique: ${allData.logistics}`,
-        deliveryFee: Number(totalPrice)
+        pickupAddress: {
+          street: allData.senderAddress || "Adresse non précisée",
+          city: allData.senderCity,
+          district: allData.senderRegion,
+          country: allData.senderCountry,
+          type: AddressType.PRIMARY,
+          latitude: allData.latitude || 0,
+          longitude: allData.longitude || 0
+        },
+        deliveryAddress: {
+          street: allData.recipientAddress || "Adresse non précisée",
+          city: allData.recipientCity,
+          district: allData.recipientRegion,
+          country: allData.recipientCountry,
+          type: AddressType.SECONDARY,
+          latitude: 0,
+          longitude: 0
+        },
+        packet: {
+          designation: allData.designation,
+          weight: parseFloat(allData.weight),
+          length: parseFloat(allData.length || '0'),
+          width: parseFloat(allData.width || '0'),
+          height: parseFloat(allData.height || '0'),
+          thickness: parseFloat(allData.height || '0'),
+          fragile: allData.isFragile,
+          isPerishable: allData.isPerishable,
+          description: allData.description,
+          photoPacket: allData.photo || undefined
+        }
       };
 
       console.log("📦 PAYLOAD ENVOYÉ AU BACKEND :", JSON.stringify(payload, null, 2));
@@ -348,13 +374,13 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
       setTrackingNumber(newTracking);
       setPaymentSuccess(true);
-      addNotification(`Colis créé ! Suivi : ${newTracking}`, 'success');
+      showNotification({ message: `Colis créé ! Suivi : ${newTracking}`, type: 'success' });
 
     } catch (err: any) {
       console.error("❌ ERREUR D'ENVOI :", err);
       // Affiche le message détaillé de l'erreur s'il existe (ex: validation backend)
       const errorMsg = err.message || JSON.stringify(err);
-      addNotification("Erreur lors de la création: " + errorMsg, 'error');
+      showNotification({ message: "Erreur lors de la création: " + errorMsg, type: 'error' });
     } finally {
       setIsProcessing(false);
     }
@@ -689,7 +715,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
             disabled={isProcessing || !canConfirmPayment()}
             className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 disabled:bg-orange-400 dark:disabled:bg-orange-800 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transition-all transform hover:scale-105 disabled:scale-100 order-1 sm:order-2"
           >
-            {isProcessing ? 'Traitement...' : 'Publier l\'annonce'}
+            {isProcessing ? 'Traitement...' : 'Confirmer l\'expédition'}
           </button>
         </motion.div>
       </div>

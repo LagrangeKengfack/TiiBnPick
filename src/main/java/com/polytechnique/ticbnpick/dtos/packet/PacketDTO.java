@@ -4,7 +4,9 @@ import lombok.Data;
 
 @Data
 public class PacketDTO {
+    private Double weight;
     private Double width;
+    private Double height;
     private Double length;
     private Boolean fragile;
     private String description;

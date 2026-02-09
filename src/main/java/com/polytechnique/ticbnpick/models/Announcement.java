@@ -81,6 +81,12 @@ public class Announcement {
     @Column("amount")
     private Float amount;
 
+    @Column("signature_url")
+    private String signatureUrl;
+
+    @Column("payment_method")
+    private String paymentMethod;
+
     @Column("created_at")
     private Instant createdAt;
 

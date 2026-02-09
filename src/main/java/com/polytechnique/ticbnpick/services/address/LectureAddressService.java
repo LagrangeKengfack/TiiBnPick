@@ -37,4 +37,18 @@ public class LectureAddressService {
     public Flux<Address> getAllAddresses() {
         return addressRepository.findAll();
     }
+
+    /**
+     * Searches for addresses by street name, optionally filtered by city.
+     *
+     * @param query the street name fragment to search for
+     * @param city  the optional city name
+     * @return a Flux of matching addresses
+     */
+    public Flux<Address> searchAddresses(String query, String city) {
+        if (city == null || city.isBlank()) {
+            return addressRepository.findByStreetContainingIgnoreCase(query);
+        }
+        return addressRepository.findByStreetContainingIgnoreCaseAndCityIgnoreCase(query, city);
+    }
 }

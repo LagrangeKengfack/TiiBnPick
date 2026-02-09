@@ -21,8 +21,11 @@ public class JwtUtil {
     private final long expiration = 1000L * 60 * 60 * 24 * 365 * 100; // 100 years (Permanent)
 
     public String generateToken(String username) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, username);
+        return generateToken(new HashMap<>(), username);
+    }
+
+    public String generateToken(Map<String, Object> extraClaims, String username) {
+        return createToken(extraClaims, username);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
