@@ -38,9 +38,6 @@ export interface PackageData {
   height: string;
   isFragile: boolean;
   isPerishable: boolean;
-  isLiquid: boolean;
-  isInsured: boolean;
-  declaredValue: string;
   transportMethod: 'truck' | 'tricycle' | 'moto' | 'bike' | 'car' | '';
   logistics: 'standard' | 'express_48h' | 'express_24h';
   pickup: boolean;
@@ -135,19 +132,26 @@ export interface PaymentStepProps {
 }
 
 export interface PaymentOptionProps {
-  id: 'cash' | 'mobile' | 'recipient';
+  id: 'mobile' | 'recipient';
   label: string;
   description: string;
   icon: ElementType;
   fee: number;
-  selected: 'cash' | 'mobile' | 'recipient';
-  setSelected: (id: 'cash' | 'mobile' | 'recipient') => void;
+  selected: 'mobile' | 'recipient';
+  setSelected: (id: 'mobile' | 'recipient') => void;
   badge?: string;
 }
 
 export interface SignatureStepProps {
   onBack: () => void;
   onSubmit: (signatureData: string) => void;
+}
+
+export interface SuccessStepProps {
+  trackingNumber: string;
+  isUserLoggedIn: boolean;
+  onDownloadPDF: () => void;
+  onReset: () => void;
 }
 
 

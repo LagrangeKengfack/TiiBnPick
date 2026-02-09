@@ -1,35 +1,27 @@
 'use client';
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CreditCardIcon, 
-  DevicePhoneMobileIcon, 
-  BanknotesIcon, 
-  GiftIcon,
-  ArrowLeftIcon, 
-  CheckCircleIcon, 
-  ShareIcon, 
+  ArrowLeftIcon,
   ArrowPathIcon,
-  DocumentTextIcon,
+  CheckCircleIcon,
   ClockIcon,
-  ShieldCheckIcon,
-  PrinterIcon,
-  EllipsisHorizontalIcon
+  CreditCardIcon,
+  DevicePhoneMobileIcon,
+  DocumentTextIcon,
+  GiftIcon,
+  PrinterIcon
 } from '@heroicons/react/24/outline';
-import jsPDF from 'jspdf';
-import OriginalQRCode from 'qrcode'; 
-import { supabase } from '@/lib/supabase';
-import { PhoneIcon, PlusIcon, StarIcon, UserPlusIcon } from 'lucide-react';
-import { ProcessingAnimation } from '../../app/expedition/demo';
+import { AnimatePresence, motion } from 'framer-motion';
+import { PhoneIcon, StarIcon, UserPlusIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { ProcessingAnimation } from '../../app/expedition/demo';
 // --- IMPORTATIONS CRUCIALES POUR LE BACKEND ---
-import { packageService, PackageCreationPayload } from '@/services/packageService';
-import { Loader2, CheckCircle, UserPlus, Star } from 'lucide-react';
-import { useNotification } from '@/context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
+import { useNotification } from '@/context/NotificationContext';
+import { PackageCreationPayload, packageService } from '@/services/packageService';
 
-import { PaymentStepProps, PaymentOptionProps } from '@/types/package';
 import { pdfService } from '@/services/pdfService';
+import { PaymentOptionProps, PaymentStepProps } from '@/types/package';
 
 
 const PAYMENT_OPERATOR_FEE = 100;
@@ -40,11 +32,8 @@ export default function PaymentStep({
   onPaymentFinalized,
   currentUser,
 }: PaymentStepProps) {
-  const [selectedMethod, setSelectedMethod] = useState<
-    "cash" | "mobile" | "recipient"
-  >("cash");
+  const [selectedMethod, setSelectedMethod] = useState< "mobile" | "recipient">("recipient");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStep, setProcessingStep] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState(""); // Stockera le vrai tracking number du backend
   const [mobileOperator, setMobileOperator] = useState<"orange" | "mtn">(
@@ -152,7 +141,7 @@ export default function PaymentStep({
         description:
           allData.designation +
           (allData.description ? ` - ${allData.description}` : ""),
-        value: allData.isInsured ? parseFloat(allData.declaredValue) || 0 : 0,
+
 
         // Logistique
         deliveryOption: "RELAY_POINT_DELIVERY",
@@ -328,17 +317,6 @@ export default function PaymentStep({
               </h2>
 
               <div className="space-y-4">
-                <PaymentOption
-                  id="cash"
-                  label="Paiement en espèces"
-                  description="Payez directement à notre agent"
-                  icon={BanknotesIcon}
-                  fee={0}
-                  selected={selectedMethod}
-                  setSelected={setSelectedMethod}
-                  badge="Recommandé"
-                />
-
                 <PaymentOption
                   id="mobile"
                   label="Paiement Mobile"
@@ -517,14 +495,6 @@ export default function PaymentStep({
                     <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded-xl">
                       <span className="text-sm font-medium text-red-700 dark:text-red-400">
                         Fragile
-                      </span>
-                    </div>
-                  )}
-                  {allData.isInsured && (
-                    <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/30 px-3 py-2 rounded-xl">
-                      <ShieldCheckIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                        Assuré
                       </span>
                     </div>
                   )}

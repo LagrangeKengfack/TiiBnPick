@@ -1,36 +1,51 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  TruckIcon, 
-  PhotoIcon, 
-  XCircleIcon, 
-  ScaleIcon, 
-  ExclamationTriangleIcon, 
-  ClockIcon,
-  ShieldCheckIcon, 
+import {
   CheckCircleIcon,
-  ShoppingBagIcon,
+  ExclamationTriangleIcon,
   HomeIcon,
-  MapPinIcon
-} from '@heroicons/react/24/outline';
-import { ArrowLeft, ArrowRight, Package, Flame, Shield, Zap, Droplets, Truck, Bike, Car } from 'lucide-react';
-import { 
-  BsBicycle           // Vélo Bootstrap
-} from 'react-icons/bs';
-import { 
-  MdDeliveryDining
-} from 'react-icons/md';
+  MapPinIcon,
+  PhotoIcon,
+  ScaleIcon,
+  ShoppingBagIcon,
+  TruckIcon,
+  XCircleIcon
+} from "@heroicons/react/24/outline";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bike,
+  Car,
+  Flame,
+  Package
+} from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  BsBicycle, // Vélo Bootstrap
+} from "react-icons/bs";
+import { MdDeliveryDining } from "react-icons/md";
 
-import { PackageData, PackageRegistrationProps } from '@/types/package';
+import { PackageData, PackageRegistrationProps } from "@/types/package";
 
 const LoadingDots = () => (
   <div className="flex space-x-1">
     {[0, 0.1, 0.2].map((delay, i) => (
-      <div key={i} className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: `${delay}s` }}></div>
+      <div
+        key={i}
+        className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"
+        style={{ animationDelay: `${delay}s` }}
+      ></div>
     ))}
   </div>
 );
 
-const OptionCard = ({ title, subtitle, icon, additionalCost, isSelected, onClick, compact = false }: { 
+const OptionCard = ({
+  title,
+  subtitle,
+  icon,
+  additionalCost,
+  isSelected,
+  onClick,
+  compact = false,
+}: {
   title: string;
   subtitle?: string;
   icon: React.ReactNode;
@@ -42,49 +57,59 @@ const OptionCard = ({ title, subtitle, icon, additionalCost, isSelected, onClick
   <div
     onClick={onClick}
     className={`relative p-3 border-2 rounded-xl cursor-pointer transition-all hover:scale-105 ${
-      isSelected 
-        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-400 shadow-lg' 
-        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-500 hover:shadow-md'
-    } ${compact ? 'text-center' : ''}`}
+      isSelected
+        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-400 shadow-lg"
+        : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-orange-300 dark:hover:border-orange-500 hover:shadow-md"
+    } ${compact ? "text-center" : ""}`}
   >
-    <div className={`flex ${compact ? 'flex-col' : 'items-center'} ${compact ? 'space-y-2' : 'space-x-3'}`}>
-      <div className={`p-2 rounded-lg ${
-        isSelected 
-          ? 'bg-orange-500 text-white' 
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-        } ${compact ? 'mx-auto' : ''}`}>
+    <div
+      className={`flex ${compact ? "flex-col" : "items-center"} ${compact ? "space-y-2" : "space-x-3"}`}
+    >
+      <div
+        className={`p-2 rounded-lg ${
+          isSelected
+            ? "bg-orange-500 text-white"
+            : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+        } ${compact ? "mx-auto" : ""}`}
+      >
         {icon}
       </div>
-      <div className={compact ? 'text-center' : 'flex-1'}>
-        <h4 className={`font-semibold text-sm ${
-          isSelected 
-            ? 'text-orange-800 dark:text-orange-200' 
-            : 'text-gray-800 dark:text-gray-200'
-        }`}>
+      <div className={compact ? "text-center" : "flex-1"}>
+        <h4
+          className={`font-semibold text-sm ${
+            isSelected
+              ? "text-orange-800 dark:text-orange-200"
+              : "text-gray-800 dark:text-gray-200"
+          }`}
+        >
           {title}
         </h4>
         {subtitle && (
-          <p className={`text-xs ${
-            isSelected 
-              ? 'text-orange-600 dark:text-orange-300' 
-              : 'text-gray-500 dark:text-gray-400'
-          }`}>
+          <p
+            className={`text-xs ${
+              isSelected
+                ? "text-orange-600 dark:text-orange-300"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
             {subtitle}
           </p>
         )}
       </div>
     </div>
-    
+
     {additionalCost && additionalCost > 0 && (
-      <div className={`mt-2 text-xs font-medium ${
-        isSelected 
-          ? 'text-orange-700 dark:text-orange-300' 
-          : 'text-gray-600 dark:text-gray-400'
-        } ${compact ? 'text-center' : ''}`}>
+      <div
+        className={`mt-2 text-xs font-medium ${
+          isSelected
+            ? "text-orange-700 dark:text-orange-300"
+            : "text-gray-600 dark:text-gray-400"
+        } ${compact ? "text-center" : ""}`}
+      >
         + {additionalCost.toLocaleString()} FCFA
       </div>
     )}
-    
+
     {isSelected && (
       <div className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1">
         <CheckCircleIcon className="w-3 h-3" />
@@ -109,9 +134,6 @@ export default function PackageRegistration({
     height: "",
     isFragile: false,
     isPerishable: false,
-    isLiquid: false,
-    isInsured: false,
-    declaredValue: "",
     transportMethod: "",
     logistics: "standard",
     pickup: false,
@@ -195,24 +217,13 @@ export default function PackageRegistration({
 
       if (packageData.isFragile) basePrice += 1200;
       if (packageData.isPerishable) basePrice += 800;
-      if (packageData.isLiquid) basePrice += 500;
-      if (packageData.isInsured && parseFloat(packageData.declaredValue) > 0) {
-        basePrice += parseFloat(packageData.declaredValue) * 0.02;
-      }
-
       if (packageData.pickup) basePrice += 1000;
       if (packageData.delivery) basePrice += 1000;
 
-      let expressMultiplier = 1;
-      if (expressOption === "24h") expressMultiplier = 2.0;
-      else if (expressOption === "48h") expressMultiplier = 1.5;
-
-      const finalPrice = Math.round(basePrice * expressMultiplier);
-
       setTimeout(() => {
-        setPrice(finalPrice);
+        setPrice(basePrice);
         setPriceLoading(false);
-      }, 600);
+      }, 500);
     };
 
     calculatePrice();
@@ -541,52 +552,13 @@ export default function PackageRegistration({
                 }
                 compact={true}
               />
-
-              <OptionCard
-                title="Liquide"
-                icon={<Droplets className="w-4 h-4" />}
-                additionalCost={500}
-                isSelected={packageData.isLiquid}
-                onClick={() =>
-                  handleInputChange("isLiquid", !packageData.isLiquid)
-                }
-                compact={true}
-              />
-
-              <OptionCard
-                title="Assuré"
-                icon={<Shield className="w-4 h-4" />}
-                isSelected={packageData.isInsured}
-                onClick={() =>
-                  handleInputChange("isInsured", !packageData.isInsured)
-                }
-                compact={true}
-              />
             </div>
-
-            {packageData.isInsured && (
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Valeur déclarée (FCFA)
-                </label>
-                <input
-                  type="text"
-                  value={packageData.declaredValue}
-                  onChange={(e) =>
-                    handleInputChange("declaredValue", e.target.value)
-                  }
-                  onKeyDown={validateNumberInput}
-                  placeholder="50000"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-                />
-              </div>
-            )}
           </div>
 
           {/* Choix de la logistique */}
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
-              Moyen de transport (optionnel)
+              Moyen de transport
             </h3>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
               {logisticsOptions.map((option) => (
@@ -693,42 +665,6 @@ export default function PackageRegistration({
               />
             </div>
           </div>
-
-          {/* Livraison express */}
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
-              Livraison express
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <OptionCard
-                title="Standard"
-                subtitle="3-5 jours ouvrables"
-                icon={<TruckIcon className="w-4 h-4" />}
-                isSelected={expressOption === "none"}
-                onClick={() => setExpressOption("none")}
-                compact={true}
-              />
-
-              <OptionCard
-                title="Express 48h"
-                subtitle="Livraison en 2 jours"
-                icon={<ClockIcon className="w-4 h-4" />}
-                isSelected={expressOption === "48h"}
-                onClick={() => setExpressOption("48h")}
-                compact={true}
-              />
-
-              <OptionCard
-                title="Express 24h"
-                subtitle="Livraison en 1 jour"
-                icon={<Zap className="w-4 h-4" />}
-                isSelected={expressOption === "24h"}
-                onClick={() => setExpressOption("24h")}
-                compact={true}
-              />
-            </div>
-          </div>
         </div>
 
         {/* Résumé du colis - Sticky */}
@@ -783,8 +719,6 @@ export default function PackageRegistration({
               {/* Options actives */}
               {(packageData.isFragile ||
                 packageData.isPerishable ||
-                packageData.isLiquid ||
-                packageData.isInsured ||
                 packageData.pickup ||
                 packageData.delivery) && (
                 <div>
@@ -802,16 +736,6 @@ export default function PackageRegistration({
                         Périssable
                       </span>
                     )}
-                    {packageData.isLiquid && (
-                      <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 text-xs rounded-full">
-                        Liquide
-                      </span>
-                    )}
-                    {packageData.isInsured && (
-                      <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 text-xs rounded-full">
-                        Assuré
-                      </span>
-                    )}
                     {packageData.pickup && (
                       <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 text-xs rounded-full">
                         Récupération
@@ -826,16 +750,6 @@ export default function PackageRegistration({
                 </div>
               )}
 
-              {expressOption !== "none" && (
-                <div>
-                  <span className="font-medium text-gray-600 dark:text-gray-400">
-                    Livraison:
-                  </span>
-                  <p className="text-gray-800 dark:text-gray-200 font-semibold">
-                    Express {expressOption === "24h" ? "24h" : "48h"}
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Prix de manutention */}

@@ -1,20 +1,19 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { calculateTravelPrice } from '@/lib/utils'
 import { geocode } from '@/services/geocoding'
 import { getRoute } from '@/services/routing'
-import type { GeoJSON } from 'geojson'
 import { RouteData, RouteSelectionStepProps } from '@/types/package'
-import { calculateTravelPrice } from '@/lib/utils'
+import { motion } from 'framer-motion'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 // TO FIX THE ERROR: "window is not defined" when importing MapLeaflet, we need to dynamically import it with SSR disabled.
 // 1. Remove the direct import: 
 // import MapLeaflet from '@/components/MapLeaflet'
 
 // 2. Add this dynamic import at the top (after other imports):
-import dynamic from 'next/dynamic';
+import dynamic from 'next/dynamic'
 
 const MapLeaflet = dynamic(
   () => import('@/components/MapLeaflet'),

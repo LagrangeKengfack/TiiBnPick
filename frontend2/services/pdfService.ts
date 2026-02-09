@@ -44,7 +44,7 @@ export const pdfService = {
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`${label}:`, x, yPos);
+        pdf.text(`${label}: `, x, yPos);
 
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
@@ -136,10 +136,6 @@ export const pdfService = {
       let caracteristiques = [];
       if (allData.isFragile) caracteristiques.push("Fragile");
       if (allData.isPerishable) caracteristiques.push("Périssable");
-      if (allData.isInsured)
-        caracteristiques.push(
-          `Assuré (Valeur: ${allData.declaredValue || 0} FCFA)`,
-        );
       addGridField(
         "Spécificités",
         caracteristiques.join(", ") || "Aucune",
@@ -187,8 +183,8 @@ export const pdfService = {
       pdf.setFont("helvetica", "bold");
       const paymentStatusText =
         selectedMethod === "recipient"
-          ? "Total à payer par le Destinataire"
-          : "Total payé par l'Expéditeur";
+          ? "Total à payer par le Destinataire "
+          : "Total payé par l'Expéditeur ";
       addGridField(
         paymentStatusText,
         `${totalPrice.toLocaleString()} FCFA`,

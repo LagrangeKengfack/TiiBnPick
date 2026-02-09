@@ -1,7 +1,7 @@
 'use client';
-import React, { useRef, useState, useEffect } from 'react';
-import { PencilIcon, TrashIcon, CheckCircleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CheckCircleIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { SignatureStepProps } from '@/types/package';
 
