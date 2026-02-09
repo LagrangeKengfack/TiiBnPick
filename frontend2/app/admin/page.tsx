@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -87,15 +88,31 @@ export default function SuperAdminDashboard() {
 
   const [registrationRequests, setRegistrationRequests] = useState<DeliveryPersonRequest[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
-  
+
   // Filtres pour la page comptes
   const [accountTypeFilter, setAccountTypeFilter] = useState<'all' | 'DELIVERY' | 'CLIENT'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Super admin info
-  const superAdminName = 'Charles Henry'
+  // Super admin info - from auth context
+  const { user, isLoggedIn, isLoading: authLoading, logout, checkAuth } = useAuth()
+  const adminName = user ? `${user.firstName} ${user.lastName}` : 'Admin'
+  const adminEmail = user?.email || 'admin@tiibnpick.com'
 
-  const handleLogout = () => {
+  // Check authentication on mount
+  useEffect(() => {
+    const verifyAuth = async () => {
+      if (!authLoading) {
+        const isValid = await checkAuth()
+        if (!isValid) {
+          router.push('/')
+        }
+      }
+    }
+    verifyAuth()
+  }, [authLoading, checkAuth, router])
+
+  const handleLogout = async () => {
+    await logout()
     router.push('/')
   }
 
@@ -154,7 +171,7 @@ export default function SuperAdminDashboard() {
         vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
       },
     ]
-    
+
     setRegistrationRequests(testData)
     setLoading(false)
     fetchAccounts()
@@ -515,8 +532,8 @@ export default function SuperAdminDashboard() {
                 onClick={() => setActiveView(item.id)}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all',
-                  isActive 
-                    ? 'bg-white text-orange-600 font-semibold shadow-md' 
+                  isActive
+                    ? 'bg-white text-orange-600 font-semibold shadow-md'
                     : 'text-white hover:bg-orange-500/50 hover:text-white'
                 )}
               >
@@ -531,15 +548,15 @@ export default function SuperAdminDashboard() {
         <div className="p-4 border-t border-orange-700">
           <div className="flex items-center gap-3 text-white">
             <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-semibold flex-shrink-0">
-              {superAdminName.split(' ').map(n => n[0]).join('')}
+              {adminName.split(' ').map(n => n[0]).join('')}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate text-sm">{superAdminName}</p>
-              <p className="text-xs text-orange-100 truncate">admin@tiibnpick.com</p>
+              <p className="font-medium truncate text-sm">{adminName}</p>
+              <p className="text-xs text-orange-100 truncate">{adminEmail}</p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="flex-shrink-0 text-white hover:text-white hover:bg-orange-500/50"
               onClick={handleLogout}
             >
@@ -560,7 +577,7 @@ export default function SuperAdminDashboard() {
               {activeView === 'accounts' && 'Gestion des comptes'}
             </h2>
           </div>
-          <Button 
+          <Button
             onClick={() => { fetchRegistrations(); fetchAccounts() }}
             variant="outline"
             size="sm"
@@ -578,7 +595,7 @@ export default function SuperAdminDashboard() {
               {/* Welcome Section */}
               <div className="mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold">
-                  Bienvenue, <span className="text-orange-600">{superAdminName}</span>
+                  Bienvenue, <span className="text-orange-600">{adminName}</span>
                 </h2>
               </div>
 
@@ -738,31 +755,28 @@ export default function SuperAdminDashboard() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setAccountTypeFilter('all')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          accountTypeFilter === 'all'
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'all'
                             ? 'bg-orange-600 text-white'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
+                          }`}
                       >
                         Tous ({accounts.length})
                       </button>
                       <button
                         onClick={() => setAccountTypeFilter('DELIVERY')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          accountTypeFilter === 'DELIVERY'
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'DELIVERY'
                             ? 'bg-orange-600 text-white'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
+                          }`}
                       >
                         Livreurs ({accounts.filter(a => a.role === 'DELIVERY').length})
                       </button>
                       <button
                         onClick={() => setAccountTypeFilter('CLIENT')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          accountTypeFilter === 'CLIENT'
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'CLIENT'
                             ? 'bg-orange-600 text-white'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
+                          }`}
                       >
                         Clients ({accounts.filter(a => a.role === 'CLIENT').length})
                       </button>
@@ -934,8 +948,8 @@ export default function SuperAdminDashboard() {
                     <div>
                       <h3 className="text-sm font-semibold mb-3 text-gray-900">Photo du Livreur</h3>
                       <div className="flex justify-center">
-                        <img 
-                          src={selectedRequest.profilePhoto} 
+                        <img
+                          src={selectedRequest.profilePhoto}
                           alt="Photo du livreur"
                           className="w-32 h-32 rounded-lg object-cover border border-gray-200"
                         />
@@ -979,8 +993,8 @@ export default function SuperAdminDashboard() {
                       {selectedRequest.idCardPhoto && (
                         <div>
                           <label className="text-xs text-gray-500 block mb-2">Photo CNI</label>
-                          <img 
-                            src={selectedRequest.idCardPhoto} 
+                          <img
+                            src={selectedRequest.idCardPhoto}
                             alt="Photo CNI"
                             className="w-full max-h-48 rounded-lg object-cover border border-gray-200"
                           />
@@ -1019,8 +1033,8 @@ export default function SuperAdminDashboard() {
                           {selectedRequest.vehicleFrontPhoto && (
                             <div>
                               <label className="text-xs text-gray-500 block mb-2">Vue Avant</label>
-                              <img 
-                                src={selectedRequest.vehicleFrontPhoto} 
+                              <img
+                                src={selectedRequest.vehicleFrontPhoto}
                                 alt="Vue avant du véhicule"
                                 className="w-full h-32 rounded-lg object-cover border border-gray-200"
                               />
@@ -1029,8 +1043,8 @@ export default function SuperAdminDashboard() {
                           {selectedRequest.vehicleBackPhoto && (
                             <div>
                               <label className="text-xs text-gray-500 block mb-2">Vue Arrière</label>
-                              <img 
-                                src={selectedRequest.vehicleBackPhoto} 
+                              <img
+                                src={selectedRequest.vehicleBackPhoto}
                                 alt="Vue arrière du véhicule"
                                 className="w-full h-32 rounded-lg object-cover border border-gray-200"
                               />
