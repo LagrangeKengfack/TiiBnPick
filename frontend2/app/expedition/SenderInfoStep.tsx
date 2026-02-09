@@ -285,6 +285,7 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
     if (formData.senderFirstName.trim().length < 2) newErrors.senderFirstName = "Prénom requis";
     if (formData.senderLastName.trim().length < 2) newErrors.senderLastName = "Nom requis";
     if (!/^(6|2)(?:[235-9]\d{7})$/.test(formData.senderPhone.replace(/\s/g, ''))) newErrors.senderPhone = "Format invalide";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.senderEmail)) newErrors.senderEmail = "Email invalide";
 
     if (!isSender) {
       if (!formData.senderCountry) newErrors.senderCountry = "Pays requis";
@@ -447,7 +448,7 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField icon={Phone} id="senderPhone" name="senderPhone" value={formData.senderPhone} onChange={handleChange} label="Téléphone" placeholder="699123456" error={errors.senderPhone} />
-                  <InputField icon={Mail} type="email" id="senderEmail" name="senderEmail" value={formData.senderEmail} onChange={handleChange} label="Email (optionnel)" placeholder="nom@exemple.com" />
+                  <InputField icon={Mail} type="email" id="senderEmail" name="senderEmail" value={formData.senderEmail} onChange={handleChange} label="Email" placeholder="nom@exemple.com" error={errors.senderEmail} />
                 </div>
 
                 {!isSender && (

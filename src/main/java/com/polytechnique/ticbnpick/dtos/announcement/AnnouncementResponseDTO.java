@@ -26,16 +26,21 @@ public class AnnouncementResponseDTO {
     private AnnouncementStatus status;
     private Instant createdAt;
     private Instant updatedAt;
-    private String recipientName;
+    private String recipientFirstName;
+    private String recipientLastName;
     private String recipientNumber;
     private String recipientEmail;
     private String recipientPhone;
-    private String shipperName;
+    private String shipperFirstName;
+    private String shipperLastName;
     private String shipperEmail;
     private String shipperPhone;
     private Float amount;
     private String signatureUrl;
     private String paymentMethod;
+    private String transportMethod;
+    private Double distance;
+    private Integer duration;
 
     private AddressDTO pickupAddress;
     private AddressDTO deliveryAddress;

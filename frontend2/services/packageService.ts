@@ -35,16 +35,21 @@ export type PackageCreationPayload = {
   clientId: string;
   title: string;
   description?: string;
-  recipientName: string;
+  recipientFirstName: string;
+  recipientLastName: string;
   recipientNumber?: string;
-  recipientEmail?: string;
+  recipientEmail: string;
   recipientPhone: string;
-  shipperName: string;
-  shipperEmail?: string;
+  shipperFirstName: string;
+  shipperLastName: string;
+  shipperEmail: string;
   shipperPhone: string;
   amount: number;
   signatureUrl?: string | null;
   paymentMethod: string;
+  transportMethod: string;
+  distance?: number;
+  duration?: number;
 
   pickupAddress: AddressDTO;
   deliveryAddress: AddressDTO;

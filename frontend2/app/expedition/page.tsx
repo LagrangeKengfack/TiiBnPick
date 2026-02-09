@@ -66,7 +66,8 @@ interface SenderData {
 
 // 2. Mise à jour de l'interface RecipientData
 interface RecipientData {
-  recipientName: string;
+  recipientFirstName: string;
+  recipientLastName: string;
   recipientPhone: string;
   recipientEmail: string;
   recipientCountry: string;
@@ -85,13 +86,7 @@ interface PackageData {
   height: string;
   isFragile: boolean;
   isPerishable: boolean;
-  isLiquid: boolean;
-  isInsured: boolean;
-  declaredValue: string;
-  transportMethod: 'truck' | 'tricycle' | 'moto' | 'bike' | 'car' | ''; // Renommage
-  logistics: 'standard' | 'express_48h' | 'express_24h';              // Nouveau champ
-  pickup: boolean;
-  delivery: boolean;
+  transportMethod: 'TRUCK' | 'MOTORBIKE' | 'BIKE' | 'CAR' | 'SCOOTER' | '';
 }
 interface RouteData {
   departurePointId: string | null;
@@ -188,15 +183,13 @@ export default function ShippingPage() {
       senderEmail: '', senderCountry: 'cameroun', senderRegion: 'centre', senderCity: 'Yaoundé'
     },
     recipientData: {
-      recipientName: '', recipientPhone: '', recipientEmail: '', recipientAddress: '',
+      recipientFirstName: '', recipientLastName: '', recipientPhone: '', recipientEmail: '', recipientAddress: '',
       recipientCountry: 'cameroun', recipientRegion: 'centre', recipientCity: 'Yaoundé'
     },
     packageData: {
       photo: null, designation: '', description: '', weight: '', length: '', width: '', height: '',
-      isFragile: false, isPerishable: false, isLiquid: false, isInsured: false, declaredValue: '',
-      transportMethod: '',
-      logistics: 'standard',
-      pickup: false, delivery: false
+      isFragile: false, isPerishable: false,
+      transportMethod: ''
     },
     routeData: { departurePointId: null, arrivalPointId: null, departurePointName: '', arrivalPointName: '', distanceKm: 0 },
     signatureData: { signatureUrl: null },
@@ -360,7 +353,7 @@ export default function ShippingPage() {
 
       addSectionTitle('Intervenants');
       addField('Expéditeur:', `${formData.senderData.senderFirstName} ${formData.senderData.senderLastName}`);
-      addField('Destinataire:', formData.recipientData.recipientName);
+      addField('Destinataire:', `${formData.recipientData.recipientFirstName} ${formData.recipientData.recipientLastName}`);
 
       addSectionTitle('Financier');
       addField('Total:', `${formData.pricing.totalPrice} FCFA`);
@@ -442,13 +435,20 @@ export default function ShippingPage() {
       case 6:
         // Construction de l'objet final pour le composant de paiement
         // Conversion forcée et nettoyage des types
-        const fullDataForPayment = {
+        const fullDataForPayment: any = {
           ...formData.senderData,
-          senderName: `${formData.senderData.senderFirstName} ${formData.senderData.senderLastName}`.trim(),
-          senderPhone: formData.senderData.senderPhone,
-          senderEmail: formData.senderData.senderEmail,
-          ...formData.recipientData,
+          senderFirstName: formData.senderData.senderFirstName,
+          senderLastName: formData.senderData.senderLastName,
+          recipientFirstName: formData.recipientData.recipientFirstName,
+          recipientLastName: formData.recipientData.recipientLastName,
+          recipientPhone: formData.recipientData.recipientPhone,
+          recipientEmail: formData.recipientData.recipientEmail,
+          recipientCountry: formData.recipientData.recipientCountry,
+          recipientRegion: formData.recipientData.recipientRegion,
+          recipientCity: formData.recipientData.recipientCity,
+          recipientAddress: formData.recipientData.recipientAddress,
           ...formData.packageData,
+          transportMethod: formData.packageData.transportMethod,
           // Gérer explicitement le type File/String de la photo
           photo: typeof formData.packageData.photo === 'string' ? formData.packageData.photo : null,
           ...formData.routeData,

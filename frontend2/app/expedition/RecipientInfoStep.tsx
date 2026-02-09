@@ -5,7 +5,8 @@ import { User, Phone, Mail, MapPin, Home, ArrowRight, ArrowLeft, Target, Sparkle
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 interface RecipientData {
-  recipientName: string;
+  recipientFirstName: string;
+  recipientLastName: string;
   recipientPhone: string;
   recipientEmail: string;
   recipientCountry: string;
@@ -239,8 +240,14 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (formData.recipientName.trim().length < 2) {
-      newErrors.recipientName = "Nom requis";
+    if (formData.recipientFirstName.trim().length < 2) {
+      newErrors.recipientFirstName = "Prénom requis";
+    }
+    if (formData.recipientLastName.trim().length < 2) {
+      newErrors.recipientLastName = "Nom requis";
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.recipientEmail)) {
+      newErrors.recipientEmail = "Email invalide";
     }
     if (!/^(6|2)(?:[235-9]\d{7})$/.test(formData.recipientPhone.replace(/\s/g, ''))) {
       newErrors.recipientPhone = "Format invalide";
@@ -345,14 +352,27 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   icon={User}
-                  id="recipientName"
-                  name="recipientName"
-                  value={formData.recipientName}
+                  id="recipientLastName"
+                  name="recipientLastName"
+                  value={formData.recipientLastName}
                   onChange={handleChange}
-                  label="Nom Complet"
-                  placeholder="Marie Mbarga"
-                  error={errors.recipientName}
+                  label="Nom"
+                  placeholder="Mbarga"
+                  error={errors.recipientLastName}
                 />
+                <InputField
+                  icon={User}
+                  id="recipientFirstName"
+                  name="recipientFirstName"
+                  value={formData.recipientFirstName}
+                  onChange={handleChange}
+                  label="Prénom"
+                  placeholder="Marie"
+                  error={errors.recipientFirstName}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   icon={Phone}
                   id="recipientPhone"
@@ -363,18 +383,18 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
                   placeholder="677123456"
                   error={errors.recipientPhone}
                 />
+                <InputField
+                  icon={Mail}
+                  type="email"
+                  id="recipientEmail"
+                  name="recipientEmail"
+                  value={formData.recipientEmail}
+                  onChange={handleChange}
+                  label="Email"
+                  placeholder="nom@exemple.com"
+                  error={errors.recipientEmail}
+                />
               </div>
-
-              <InputField
-                icon={Mail}
-                type="email"
-                id="recipientEmail"
-                name="recipientEmail"
-                value={formData.recipientEmail}
-                onChange={handleChange}
-                label="Email (optionnel)"
-                placeholder="nom@exemple.com"
-              />
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <SelectField

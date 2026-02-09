@@ -62,16 +62,21 @@ public class AnnouncementService {
                     announcement.setDescription(request.getDescription());
                     announcement.setStatus(AnnouncementStatus.DRAFT); // Default status
                     announcement.setCreatedAt(Instant.now());
-                    announcement.setRecipientName(request.getRecipientName());
+                    announcement.setRecipientFirstName(request.getRecipientFirstName());
+                    announcement.setRecipientLastName(request.getRecipientLastName());
                     announcement.setRecipientNumber(request.getRecipientNumber());
                     announcement.setRecipientEmail(request.getRecipientEmail());
                     announcement.setRecipientPhone(request.getRecipientPhone());
-                    announcement.setShipperName(request.getShipperName());
+                    announcement.setShipperFirstName(request.getShipperFirstName());
+                    announcement.setShipperLastName(request.getShipperLastName());
                     announcement.setShipperEmail(request.getShipperEmail());
                     announcement.setShipperPhone(request.getShipperPhone());
                     announcement.setAmount(request.getAmount());
                     announcement.setSignatureUrl(request.getSignatureUrl());
                     announcement.setPaymentMethod(request.getPaymentMethod());
+                    announcement.setTransportMethod(request.getTransportMethod());
+                    announcement.setDistance(request.getDistance());
+                    announcement.setDuration(request.getDuration());
 
                     return announcementRepository.save(announcement)
                             .map(savedAnnouncement -> mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
@@ -116,6 +121,8 @@ public class AnnouncementService {
         address.setCountry(dto.getCountry());
         address.setDescription(dto.getDescription());
         address.setType(dto.getType());
+        address.setLatitude(dto.getLatitude());
+        address.setLongitude(dto.getLongitude());
         return address;
     }
 
@@ -129,16 +136,21 @@ public class AnnouncementService {
         response.setStatus(announcement.getStatus());
         response.setCreatedAt(announcement.getCreatedAt());
         response.setUpdatedAt(announcement.getUpdatedAt());
-        response.setRecipientName(announcement.getRecipientName());
+        response.setRecipientFirstName(announcement.getRecipientFirstName());
+        response.setRecipientLastName(announcement.getRecipientLastName());
         response.setRecipientNumber(announcement.getRecipientNumber());
         response.setRecipientEmail(announcement.getRecipientEmail());
         response.setRecipientPhone(announcement.getRecipientPhone());
-        response.setShipperName(announcement.getShipperName());
+        response.setShipperFirstName(announcement.getShipperFirstName());
+        response.setShipperLastName(announcement.getShipperLastName());
         response.setShipperEmail(announcement.getShipperEmail());
         response.setShipperPhone(announcement.getShipperPhone());
         response.setAmount(announcement.getAmount());
         response.setSignatureUrl(announcement.getSignatureUrl());
         response.setPaymentMethod(announcement.getPaymentMethod());
+        response.setTransportMethod(announcement.getTransportMethod());
+        response.setDistance(announcement.getDistance());
+        response.setDuration(announcement.getDuration());
 
         response.setPickupAddress(mapToAddressDTO(pickup));
         response.setDeliveryAddress(mapToAddressDTO(delivery));
@@ -157,6 +169,8 @@ public class AnnouncementService {
         dto.setCountry(address.getCountry());
         dto.setDescription(address.getDescription());
         dto.setType(address.getType());
+        dto.setLatitude(address.getLatitude());
+        dto.setLongitude(address.getLongitude());
         return dto;
     }
 
@@ -185,16 +199,22 @@ public class AnnouncementService {
                     announcement.setDescription(request.getDescription());
                     announcement.setTitle(request.getTitle());
                     announcement.setDescription(request.getDescription());
-                    announcement.setRecipientName(request.getRecipientName());
+                    announcement.setRecipientFirstName(request.getRecipientFirstName());
+                    announcement.setRecipientLastName(request.getRecipientLastName());
                     announcement.setRecipientNumber(request.getRecipientNumber());
                     announcement.setRecipientEmail(request.getRecipientEmail());
                     announcement.setRecipientPhone(request.getRecipientPhone());
-                    announcement.setShipperName(request.getShipperName());
+                    announcement.setShipperFirstName(request.getShipperFirstName());
+                    announcement.setShipperLastName(request.getShipperLastName());
                     announcement.setShipperEmail(request.getShipperEmail());
                     announcement.setShipperPhone(request.getShipperPhone());
                     announcement.setAmount(request.getAmount());
                     announcement.setSignatureUrl(request.getSignatureUrl());
                     announcement.setPaymentMethod(request.getPaymentMethod());
+                    announcement.setTransportMethod(request.getTransportMethod());
+                    announcement.setDistance(request.getDistance());
+                    announcement.setDuration(request.getDuration());
+                    announcement.setRecipientNumber(request.getRecipientNumber());
                     announcement.setUpdatedAt(Instant.now());
 
                     return announcementRepository.save(announcement).flatMap(savedAnnouncement -> {
@@ -252,6 +272,8 @@ public class AnnouncementService {
         address.setCountry(dto.getCountry());
         address.setDescription(dto.getDescription());
         address.setType(dto.getType());
+        address.setLatitude(dto.getLatitude());
+        address.setLongitude(dto.getLongitude());
     }
 
     @Transactional("connectionFactoryTransactionManager")

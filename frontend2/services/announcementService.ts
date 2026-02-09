@@ -14,7 +14,8 @@ export interface AnnouncementResponseDTO {
     recipientNumber: string;
     recipientEmail: string;
     recipientPhone: string;
-    shipperName: string;
+    shipperFirstName: string;
+    shipperLastName: string;
     shipperEmail: string;
     shipperPhone: string;
     amount: number;

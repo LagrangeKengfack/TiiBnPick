@@ -29,7 +29,8 @@ import { useNotification } from '@/context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
 
 interface FinalData {
-  senderName: string;
+  senderFirstName: string;
+  senderLastName: string;
   senderPhone: string;
   senderEmail: string;
   senderCountry: string;
@@ -39,7 +40,8 @@ interface FinalData {
   latitude?: number;
   longitude?: number;
 
-  recipientName: string;
+  recipientFirstName: string;
+  recipientLastName: string;
   recipientPhone: string;
   recipientEmail: string;
   recipientCountry: string;
@@ -57,10 +59,8 @@ interface FinalData {
 
   isFragile: boolean;
   isPerishable: boolean;
-  isInsured: boolean;
-  declaredValue: string;
 
-  logistics: 'standard' | 'express_24h' | 'express_48h';
+  transportMethod: string;
 
   departurePointId: number | null;
   arrivalPointId: number | null;
@@ -140,7 +140,8 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
   const handleCreateAccount = () => {
     const prefillData = {
-      name: allData.senderName,
+      firstName: allData.senderFirstName,
+      lastName: allData.senderLastName,
       email: allData.senderEmail,
       phone: allData.senderPhone,
     };
@@ -208,13 +209,13 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
       // 2. EXPÉDITEUR & DESTINATAIRE
       addSectionTitle('Intervenants');
       const startYCols = y;
-      addField('Expéditeur:', allData.senderName);
+      addField('Expéditeur:', `${allData.senderFirstName} ${allData.senderLastName}`);
       addField('Téléphone:', allData.senderPhone);
       addField('Point de Dépôt:', allData.departurePointName);
 
       y = startYCols; // Reset y pour la deuxième colonne
       pdf.text('', pageWidth / 2, y); // Placeholder pour aligner
-      addField('Destinataire:', allData.recipientName);
+      addField('Destinataire:', `${allData.recipientFirstName} ${allData.recipientLastName}`);
       addField('Téléphone:', allData.recipientPhone);
       addField('Point de Retrait:', allData.arrivalPointName);
       y = Math.max(y, startYCols + (3 * 6)); // S'assurer que 'y' est à la fin de la colonne la plus longue
@@ -232,7 +233,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
       let caracteristiques = [];
       if (allData.isFragile) caracteristiques.push("Fragile");
       if (allData.isPerishable) caracteristiques.push("Périssable");
-      if (allData.isInsured) caracteristiques.push(`Assuré (Valeur: ${Number(allData.declaredValue).toLocaleString('fr-FR')} FCFA)`);
+      if (allData.transportMethod) caracteristiques.push(`Transport: ${allData.transportMethod}`);
       if (caracteristiques.length > 0) addField('Spécificités:', caracteristiques.join(', '));
       y += 5;
 
@@ -313,21 +314,27 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
       // 4. CONSTRUCTION DU PAYLOAD COMPLET
       const payload: PackageCreationPayload = {
-        clientId: (currentUser?.id || authUser?.id || "anonymous"),
+        clientId: (currentUser?.id || authUser?.id || "00000000-0000-0000-0000-000000000000"),
         title: `Envoi de ${allData.designation}`,
         description: allData.description,
 
-        recipientName: allData.recipientName,
+        recipientFirstName: allData.recipientFirstName,
+        recipientLastName: allData.recipientLastName,
         recipientPhone: cleanRecipientPhone,
         recipientEmail: allData.recipientEmail,
 
-        shipperName: allData.senderName,
+        shipperFirstName: allData.senderFirstName,
+        shipperLastName: allData.senderLastName,
         shipperPhone: cleanSenderPhone,
         shipperEmail: allData.senderEmail,
 
         amount: totalPrice,
         signatureUrl: allData.signatureUrl,
         paymentMethod: selectedMethod,
+        transportMethod: allData.transportMethod,
+        distance: allData.distanceKm,
+        duration: allData.durationMinutes,
+        recipientNumber: cleanRecipientPhone,
 
         pickupAddress: {
           street: allData.senderAddress || "Adresse non précisée",
@@ -603,7 +610,9 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Expéditeur</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{allData.senderName}</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {allData.senderFirstName} {allData.senderLastName}
+                    </p>
                     <p className="text-gray-600 dark:text-gray-300">{allData.senderPhone}</p>
                   </div>
 
@@ -616,7 +625,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Destinataire</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{allData.recipientName}</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{allData.recipientFirstName} {allData.recipientLastName}</p>
                     <p className="text-gray-600 dark:text-gray-300">{allData.recipientPhone}</p>
                   </div>
 
@@ -641,12 +650,14 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
                       <span className="text-sm font-medium text-red-700 dark:text-red-400">Fragile</span>
                     </div>
                   )}
-                  {allData.isInsured && (
-                    <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/30 px-3 py-2 rounded-xl">
-                      <ShieldCheckIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <span className="text-sm font-medium text-green-700 dark:text-green-400">Assuré</span>
+                  {allData.isPerishable && (
+                    <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-xl">
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Périssable</span>
                     </div>
                   )}
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-xl">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{allData.distanceKm} km parcourus</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -685,11 +696,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
                   {allData.durationMinutes && allData.durationMinutes > 0 ? (
                     `Temps de trajet estimé : ${allData.durationMinutes} min`
                   ) : (
-                    <>
-                      {allData.logistics === 'express_24h' && 'Livraison en 24h'}
-                      {allData.logistics === 'express_48h' && 'Livraison en 48h'}
-                      {allData.logistics === 'standard' && 'Livraison standard (3-5 jours)'}
-                    </>
+                    'Livraison standard'
                   )}
                 </p>
               </div>

@@ -391,7 +391,9 @@ export function ClientLanding() {
                           <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
                           <div>
                             <p className="text-xs text-gray-500 uppercase font-bold">Point de Retrait (Expéditeur)</p>
-                            <p className="font-semibold">{selectedAnnouncement?.shipperName || 'N/A'}</p>
+                            <p className="font-semibold">
+                              {selectedAnnouncement?.shipperFirstName} {selectedAnnouncement?.shipperLastName}
+                            </p>
                             <p className="text-sm text-gray-600">{selectedAnnouncement?.shipperPhone || 'N/A'}</p>
                             <p className="text-sm text-gray-500">
                               {selectedAnnouncement?.pickupAddress?.street}, {selectedAnnouncement?.pickupAddress?.district}, {selectedAnnouncement?.pickupAddress?.city}

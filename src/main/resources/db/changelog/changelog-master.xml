@@ -159,4 +159,20 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260208_fix_packets_and_announcements_schema.sql" relativeToChangelogFile="false"/>
     </changeSet>
+    <changeSet id="026-add-distance-to-announcements" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260209_add_distance_to_announcements.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="027-separate-shipper-names" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260209_separate_shipper_names.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+    <changeSet id="028-separate-recipient-names-and-mandatory-emails" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260209_separate_recipient_names_and_mandatory_emails.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+    <changeSet id="029-add-missing-announcement-columns" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260209_add_missing_announcement_columns.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
 </databaseChangeLog>
