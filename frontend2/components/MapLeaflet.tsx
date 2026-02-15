@@ -4,7 +4,6 @@ import React from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import type { LatLngExpression } from 'leaflet'
 import type { GeoJSON } from 'geojson'
-import 'leaflet/dist/leaflet.css';
 
 type Props = {
   center?: LatLngExpression
