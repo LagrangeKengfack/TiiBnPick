@@ -24,6 +24,7 @@ public class AnnouncementRequestDTO {
     private String transportMethod;
     private Double distance;
     private Integer duration;
+    private Boolean autoPublish;
 
     private AddressDTO pickupAddress;
     private AddressDTO deliveryAddress;

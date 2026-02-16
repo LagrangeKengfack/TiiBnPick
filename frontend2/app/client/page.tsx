@@ -257,10 +257,10 @@ export function ClientLanding() {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-gray-900">Mes Annonces</h2>
                     <Button
-                      className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold"
-                      onClick={() => router.push('/expedition')}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      onClick={() => router.push('/expedition?mode=publish')}
                     >
-                      <Plus className="w-5 h-5 mr-2" />
+                      <PlusIcon className="w-4 h-4 mr-2" />
                       Ajouter une annonce
                     </Button>
                   </div>
@@ -554,37 +554,10 @@ export function ClientLanding() {
                         size="lg"
                         className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-8 shadow-xl shadow-orange-500/20 text-base h-12"
                         onClick={() => {
-                          // Pré-remplir le formulaire d'expédition avec quelques infos client basiques
-                          try {
-                            const expeditionPrefill = {
-                              currentStep: 1,
-                              senderData: {
-                                senderName: `${clientInfo.lastName} ${clientInfo.firstName}`,
-                                senderPhone: '',
-                                senderEmail: '',
-                                senderCountry: 'cameroun',
-                                senderRegion: 'centre',
-                                senderCity: 'Yaoundé',
-                                senderAddress: '',
-                                senderLieuDit: ''
-                              },
-                              recipientData: {
-                                recipientName: '', recipientPhone: '', recipientEmail: '', recipientCountry: 'cameroun', recipientRegion: 'centre', recipientCity: 'Yaoundé', recipientAddress: '', recipientLieuDit: ''
-                              },
-                              packageData: {
-                                photo: null, designation: '', description: '', weight: '', length: '', width: '', height: '',
-                                isFragile: false, isPerishable: false, isLiquid: false, isInsured: false, declaredValue: '',
-                                transportMethod: '', logistics: 'standard', pickup: false, delivery: false
-                              },
-                              routeData: { departurePointId: null, arrivalPointId: null, departurePointName: '', arrivalPointName: '', distanceKm: 0 },
-                              signatureData: { signatureUrl: null },
-                              pricing: { basePrice: 0, travelPrice: 0, operatorFee: 0, totalPrice: 0 }
-                            };
-
-                            localStorage.setItem('expedition_form_in_progress', JSON.stringify(expeditionPrefill));
-                          } catch (e) { console.error('Erreur préfill expedition', e); }
-
-                          router.push('/expedition');
+                          if (clientInfo) {
+                            localStorage.removeItem('expedition_form_in_progress');
+                          }
+                          router.push('/expedition?mode=publish');
                         }}
                       >
                         <Megaphone className="w-5 h-5 mr-2" />
@@ -768,7 +741,7 @@ export function ClientLanding() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div >
   )
 }
 

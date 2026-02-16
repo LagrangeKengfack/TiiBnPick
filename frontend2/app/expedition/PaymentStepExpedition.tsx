@@ -91,7 +91,9 @@ interface PaymentStepProps {
   allData: FinalData;
   onBack: () => void;
   onPaymentFinalized: (pricing: { basePrice: number, travelPrice: number, operatorFee: number, totalPrice: number, trackingNumber?: string }) => void;
+  onPaymentFinalized: (pricing: { basePrice: number, travelPrice: number, operatorFee: number, totalPrice: number, trackingNumber?: string }) => void;
   currentUser: LoggedInUser | null;
+  mode?: string;
 }
 
 
@@ -110,7 +112,7 @@ interface PaymentOptionProps {
 const PAYMENT_OPERATOR_FEE = 100;
 const APP_NAME = "PicknDrop Link";
 
-export default function PaymentStep({ allData, onBack, onPaymentFinalized, currentUser }: PaymentStepProps) {
+export default function PaymentStep({ allData, onBack, onPaymentFinalized, currentUser, mode }: PaymentStepProps) {
   const [selectedMethod, setSelectedMethod] = useState<'cash' | 'mobile' | 'recipient'>('cash');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
@@ -372,7 +374,8 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
           isPerishable: allData.isPerishable,
           description: allData.description,
           photoPacket: allData.photo || undefined
-        }
+        },
+        autoPublish: mode === 'publish'
       };
 
       console.log("📦 PAYLOAD ENVOYÉ AU BACKEND :", JSON.stringify(payload, null, 2));
@@ -388,7 +391,14 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
       setTrackingNumber(newTracking);
       setPaymentSuccess(true);
-      showNotification({ message: `Annonce créée ! Réf : ${newTracking.substring(0, 8)}...`, type: 'success' });
+      setTrackingNumber(newTracking);
+      setPaymentSuccess(true);
+
+      if (mode === 'publish') {
+        showNotification({ message: `Annonce publiée avec succès !`, type: 'success' });
+      } else {
+        showNotification({ message: `Annonce créée ! Réf : ${newTracking.substring(0, 8)}...`, type: 'success' });
+      }
 
     } catch (err: any) {
       console.error("❌ ERREUR D'ENVOI :", err);
@@ -741,7 +751,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
                   disabled={isProcessing || !canConfirmPayment()}
                   className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 disabled:bg-orange-400 dark:disabled:bg-orange-800 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transition-all transform hover:scale-105 disabled:scale-100 order-1 sm:order-2"
                 >
-                  {isProcessing ? 'Traitement...' : 'Confirmer l\'expédition'}
+                  {isProcessing ? 'Traitement...' : (mode === 'publish' ? 'Publier l\'annonce' : 'Confirmer l\'expédition')}
                 </button>
               </motion.div>
             </div>

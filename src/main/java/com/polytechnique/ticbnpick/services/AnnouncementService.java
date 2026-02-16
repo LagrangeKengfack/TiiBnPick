@@ -52,7 +52,10 @@ public class AnnouncementService {
                 announcement.setDeliveryAddressId(savedDelivery.getId());
                 announcement.setTitle(request.getTitle());
                 announcement.setDescription(request.getDescription());
-                announcement.setStatus(AnnouncementStatus.DRAFT);
+
+                boolean shouldAutoPublish = Boolean.TRUE.equals(request.getAutoPublish());
+                announcement.setStatus(shouldAutoPublish ? AnnouncementStatus.PUBLISHED : AnnouncementStatus.DRAFT);
+
                 announcement.setCreatedAt(Instant.now());
                 announcement.setRecipientFirstName(request.getRecipientFirstName());
                 announcement.setRecipientLastName(request.getRecipientLastName());
@@ -95,6 +98,22 @@ public class AnnouncementService {
                                 return entityTemplate.insert(packet).map(
                                         savedPacket -> {
                                             savedAnnouncement.setId(announcement.getId()); // Ensure ID is set
+
+                                            // Handle Auto-Publish Event
+                                            if (shouldAutoPublish) {
+                                                mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
+                                                        savedPacket); // populate DTO first if needed but mapToResponse
+                                                                      // returns new obj
+                                                AnnouncementResponseDTO responseDTO = mapToResponse(savedAnnouncement,
+                                                        savedPickup, savedDelivery, savedPacket);
+
+                                                AnnouncementPublishedEvent event = new AnnouncementPublishedEvent();
+                                                event.setAnnouncement(responseDTO);
+                                                kafkaEventPublisher.publishAnnouncementPublished(event);
+
+                                                return responseDTO;
+                                            }
+
                                             return mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
                                                     savedPacket);
                                         });

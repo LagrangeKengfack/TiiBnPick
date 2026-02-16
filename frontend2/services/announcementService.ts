@@ -102,6 +102,7 @@ export interface AnnouncementCreationPayload {
     transportMethod: string;
     distance?: number;
     duration?: number;
+    autoPublish?: boolean;
 
     pickupAddress: {
         street: string;

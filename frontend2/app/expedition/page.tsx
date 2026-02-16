@@ -174,8 +174,12 @@ const ShippingSteps = ({ currentStep = 1 }: { currentStep?: number }) => {
   );
 };
 
+import { useSearchParams } from 'next/navigation';
+
 export default function ShippingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
   const [user, setUser] = useState<LoggedInUser | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -480,7 +484,9 @@ export default function ShippingPage() {
             localStorage.removeItem(EXPEDITION_FORM_STORAGE_KEY);
           }}
           onBack={() => setFormData(prev => ({ ...prev, currentStep: 5 }))}
+          onBack={() => setFormData(prev => ({ ...prev, currentStep: 5 }))}
           currentUser={user}
+          mode={mode || undefined}
         />;
       case 7:
         return (

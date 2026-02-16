@@ -47,12 +47,13 @@ import { User, UserCircle, Phone, Mail, Lock, MapPin, Upload, Camera, ChevronDow
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { checkEmail, createClient, checkNationalId } from '../../services/clientService'
+import { useAuth } from '@/context/AuthContext'
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6
 type Role = 'client' | 'livreur' | null
 
 export default function RegisterPage() {
-
+  const { user } = useAuth()
   const router = useRouter()
   const [step, setStep] = useState<Step>(1)
   const [role, setRole] = useState<Role>(null)
@@ -100,6 +101,20 @@ export default function RegisterPage() {
     hauteurMalle: '',
     uniteMalle: 'cm'
   })
+
+  // Pre-fill form data if user is authenticated and role is 'livreur'
+  useEffect(() => {
+    if (user && role === 'livreur') {
+      setFormData(prev => ({
+        ...prev,
+        nom: user.lastName || '',
+        prenom: user.firstName || '',
+        telephone: user.phone || '',
+        numeroCNI: user.nationalId || prev.numeroCNI,
+        // Do not pre-fill email as requested, and password obviously
+      }))
+    }
+  }, [user, role])
 
   const searchParams = useSearchParams()
 
@@ -597,7 +612,8 @@ export default function RegisterPage() {
                       placeholder="Votre nom"
                       value={formData.nom}
                       onChange={(e) => updateField('nom', e.target.value)}
-                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.nom ? 'border-red-500' : ''}`}
+                      readOnly={!!(user && role === 'livreur')}
+                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.nom ? 'border-red-500' : ''} ${user && role === 'livreur' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                     />
                   </div>
                   {fieldErrors.nom && <p className="text-red-500 text-xs mt-1">{fieldErrors.nom}</p>}
@@ -612,7 +628,8 @@ export default function RegisterPage() {
                       placeholder="Votre prénom"
                       value={formData.prenom}
                       onChange={(e) => updateField('prenom', e.target.value)}
-                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.prenom ? 'border-red-500' : ''}`}
+                      readOnly={!!(user && role === 'livreur')}
+                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.prenom ? 'border-red-500' : ''} ${user && role === 'livreur' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                     />
                   </div>
                   {fieldErrors.prenom && <p className="text-red-500 text-xs mt-1">{fieldErrors.prenom}</p>}
@@ -628,7 +645,8 @@ export default function RegisterPage() {
                       value={formData.telephone}
                       onChange={(e) => updateField('telephone', e.target.value)}
                       maxLength={9}
-                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.telephone ? 'border-red-500' : ''}`}
+                      readOnly={!!(user && role === 'livreur')}
+                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.telephone ? 'border-red-500' : ''} ${user && role === 'livreur' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                     />
                   </div>
                   {fieldErrors.telephone && <p className="text-red-500 text-xs mt-1">{fieldErrors.telephone}</p>}
@@ -660,7 +678,8 @@ export default function RegisterPage() {
                       placeholder="1234567890..."
                       value={formData.numeroCNI}
                       onChange={(e) => updateField('numeroCNI', e.target.value)}
-                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.numeroCNI || cniError ? 'border-red-500' : ''}`}
+                      readOnly={!!(user && role === 'livreur')}
+                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.numeroCNI || cniError ? 'border-red-500' : ''} ${user && role === 'livreur' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                     />
                   </div>
                   {fieldErrors.numeroCNI && <p className="text-red-500 text-xs mt-1">{fieldErrors.numeroCNI}</p>}
