@@ -183,4 +183,15 @@ public class GlobalExceptionHandler {
 
                 return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error));
         }
+
+        @lombok.Data
+        @lombok.AllArgsConstructor
+        @lombok.NoArgsConstructor
+        public static class ErrorResponse {
+                private LocalDateTime timestamp;
+                private int status;
+                private String error;
+                private String message;
+                private String path;
+        }
 }

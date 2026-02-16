@@ -1,7 +1,10 @@
 package com.polytechnique.ticbnpick.controllers;
 
 import com.polytechnique.ticbnpick.dtos.auth.AuthResponseDTO;
+import com.polytechnique.ticbnpick.dtos.admin.DashboardStatsDTO;
+import com.polytechnique.ticbnpick.models.enums.deliveryPerson.DeliveryPersonStatus;
 import com.polytechnique.ticbnpick.models.enums.PersonRole;
+import com.polytechnique.ticbnpick.repositories.DeliveryPersonRepository;
 import com.polytechnique.ticbnpick.repositories.PersonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +27,7 @@ import reactor.core.publisher.Mono;
 public class AdminController {
 
     private final PersonRepository personRepository;
+    private final DeliveryPersonRepository deliveryPersonRepository;
 
     /**
      * Returns the current admin's information.
@@ -34,7 +38,7 @@ public class AdminController {
     @GetMapping("/me")
     public Mono<AuthResponseDTO> getCurrentAdmin(Authentication authentication) {
         String email = authentication.getName();
-        
+
         return personRepository.findByEmail(email)
                 .filter(person -> PersonRole.ADMIN.name().equals(person.getRole()))
                 .map(person -> {
@@ -48,5 +52,20 @@ public class AdminController {
                     return response;
                 })
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin")));
+    }
+
+    @GetMapping("/dashboard-stats")
+    public Mono<DashboardStatsDTO> getDashboardStats() {
+        return Mono.zip(
+                deliveryPersonRepository.countByStatus(DeliveryPersonStatus.PENDING),
+                deliveryPersonRepository.countByStatusAndIsActive(DeliveryPersonStatus.APPROVED, true),
+                deliveryPersonRepository.countByStatus(DeliveryPersonStatus.SUSPENDED),
+                deliveryPersonRepository.countByStatus(DeliveryPersonStatus.REJECTED))
+                .map(tuple -> DashboardStatsDTO.builder()
+                        .pendingCount(tuple.getT1())
+                        .activeCount(tuple.getT2())
+                        .suspendedCount(tuple.getT3())
+                        .rejectedCount(tuple.getT4())
+                        .build());
     }
 }

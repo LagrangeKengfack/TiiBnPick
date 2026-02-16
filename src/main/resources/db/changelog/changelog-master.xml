@@ -206,4 +206,9 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/updatePerson.sql" relativeToChangelogFile="false"/>
     </changeSet>
+
+    <changeSet id="037-insert-admin-user" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260216_insert_admin_user.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

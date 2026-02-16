@@ -87,6 +87,13 @@ interface Account {
   subscriptionEndDate?: string | null
 }
 
+interface DashboardStats {
+  pendingCount: number
+  activeCount: number
+  suspendedCount: number
+  rejectedCount: number
+}
+
 type ActiveView = 'dashboard' | 'registrations' | 'accounts' | 'subscriptions'
 
 export default function SuperAdminDashboard() {
@@ -109,7 +116,8 @@ export default function SuperAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // Super admin info
-  const superAdminName = 'Charles Henry'
+  const [adminName, setAdminName] = useState('Chargement...')
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
 
   const handleLogout = () => {
     router.push('/')
@@ -183,7 +191,33 @@ export default function SuperAdminDashboard() {
     setRegistrationRequests(testData)
     setLoading(false)
     fetchAccounts()
+    fetchAdminInfo()
+    fetchDashboardStats()
   }, [])
+
+  const fetchAdminInfo = async () => {
+    try {
+      const response = await fetch('/api/admin/me')
+      if (response.ok) {
+        const data = await response.json()
+        setAdminName(`${data.firstName} ${data.lastName}`)
+      }
+    } catch (error) {
+      console.error('Error fetching admin info:', error)
+    }
+  }
+
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await fetch('/api/admin/dashboard-stats')
+      if (response.ok) {
+        const data = await response.json()
+        setDashboardStats(data)
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error)
+    }
+  }
 
   // Fetch registration requests
   const fetchRegistrations = async () => {
@@ -305,7 +339,12 @@ export default function SuperAdminDashboard() {
   }
 
   // Stats calculations
-  const stats = {
+  const stats = dashboardStats ? {
+    pendingRegistrations: dashboardStats.pendingCount,
+    activeDeliveryPersons: dashboardStats.activeCount,
+    suspendedAccounts: dashboardStats.suspendedCount,
+    revokedAccounts: dashboardStats.rejectedCount
+  } : {
     pendingRegistrations: registrationRequests.filter(r => r.status === 'PENDING').length,
     activeDeliveryPersons: accounts.filter(a => a.role === 'DELIVERY' && a.status === 'ACTIVE').length,
     suspendedAccounts: accounts.filter(a => a.status === 'SUSPENDED').length,
@@ -591,10 +630,10 @@ export default function SuperAdminDashboard() {
         <div className="p-4 border-t border-orange-700">
           <div className="flex items-center gap-3 text-white">
             <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-semibold flex-shrink-0">
-              {superAdminName.split(' ').map(n => n[0]).join('')}
+              {adminName.split(' ').map(n => n[0]).join('')}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate text-sm">{superAdminName}</p>
+              <p className="font-medium truncate text-sm">{adminName}</p>
               <p className="text-xs text-orange-100 truncate">admin@tiibnpick.com</p>
             </div>
             <Button
@@ -640,7 +679,7 @@ export default function SuperAdminDashboard() {
               {/* Welcome Section */}
               <div className="mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold">
-                  Bienvenue, <span className="text-orange-600">{superAdminName}</span>
+                  Bienvenue, <span className="text-orange-600">{adminName}</span>
                 </h2>
               </div>
 

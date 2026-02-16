@@ -25,6 +25,7 @@ public class AuthResponseDTO {
 
     // Role based fields
     private String userType; // ADMIN, CLIENT, LIVREUR
+    private String role;
     private Boolean isActive;
 
     // Client specific fields

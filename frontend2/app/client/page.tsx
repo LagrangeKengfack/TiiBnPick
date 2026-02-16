@@ -44,7 +44,7 @@ import {
   LogOut,
   DollarSign,
   MapIcon,
-  Plus
+  Plus as PlusIcon
 } from 'lucide-react'
 import { withAuth } from '@/components/hoc/withAuth'
 import { useAuth } from '@/context/AuthContext'
@@ -356,7 +356,7 @@ export function ClientLanding() {
                     className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-12 px-8 shadow-lg shadow-orange-500/20"
                     onClick={() => router.push('/expedition')}
                   >
-                    <Plus className="w-5 h-5 mr-2" />
+                    <PlusIcon className="w-5 h-5 mr-2" />
                     Créer ma première annonce
                   </Button>
                 </div>

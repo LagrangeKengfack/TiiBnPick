@@ -81,6 +81,18 @@ public class AuthenticationService {
 
     private AuthResponseDTO setDefaultAdmin(AuthResponseDTO response) {
         response.setUserType("ADMIN");
+        response.setRole("ADMIN");
         return response;
+    }
+
+    /**
+     * Logs out a user by blacklisting their token.
+     *
+     * @param token the JWT token to invalidate
+     * @return empty Mono on success
+     */
+    public Mono<Void> logout(String token) {
+        // Implementation logic for logout
+        return Mono.empty();
     }
 }

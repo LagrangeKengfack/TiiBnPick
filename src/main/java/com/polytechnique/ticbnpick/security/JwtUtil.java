@@ -46,6 +46,11 @@ public class JwtUtil {
         return extractAllClaims(token).getSubject();
     }
 
+    public String extractRole(String token) {
+        final Claims claims = extractAllClaims(token);
+        return claims.get("userType", String.class);
+    }
+
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
     }
