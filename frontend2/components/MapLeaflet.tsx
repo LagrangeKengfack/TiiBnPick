@@ -34,18 +34,28 @@ function ChangeView({ center, markers = [], route = null }: { center: LatLngExpr
   const map = useMap();
 
   useEffect(() => {
-    if (markers.length >= 2) {
-      // Create bounds from all markers
-      const L = require('leaflet');
-      const bounds = L.latLngBounds(markers.map(m => m.position));
+    const L = require('leaflet');
+    const bounds = L.latLngBounds([]);
+    let hasBounds = false;
 
-      // Also include route coordinates if available
-      if (route && route.geometry && route.geometry.coordinates) {
-        route.geometry.coordinates.forEach((c: any) => {
-          bounds.extend([c[1], c[0]]);
-        });
-      }
+    // Add markers to bounds
+    if (markers.length > 0) {
+      markers.forEach(m => bounds.extend(m.position));
+      hasBounds = true;
+    }
 
+    // Add route coordinates to bounds
+    // @ts-ignore
+    if (route?.type === 'Feature' && route?.geometry?.coordinates) {
+      // @ts-ignore
+      route.geometry.coordinates.forEach((c: any) => {
+        bounds.extend([c[1], c[0]]);
+      });
+      hasBounds = true;
+    }
+
+    if (hasBounds) {
+      // Pad the bounds slightly so markers aren't on the edge
       map.fitBounds(bounds, { padding: [50, 50], animate: true });
     } else {
       map.setView(center, map.getZoom(), { animate: true });
@@ -64,6 +74,14 @@ export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers 
 
   if (!isMounted) return <div className="w-full h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />;
 
+  // Safely extract coordinates for the route if it exists and is a Feature
+  // @ts-ignore
+  const routeCoordinates = (route?.type === 'Feature' && route?.geometry?.coordinates)
+    ? (route.geometry as any).coordinates
+    : null;
+
+  const routeLatLngs = routeCoordinates?.map((c: any) => [c[1], c[0]]) || [];
+
   return (
     <div className="w-full h-96 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
       <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
@@ -81,16 +99,9 @@ export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers 
             <Popup>{m.label || 'Point'}</Popup>
           </Marker>
         ))}
-        {route && (() => {
-          try {
-            // @ts-ignore
-            const coords = route.type === 'Feature' && route.geometry && (route.geometry as any).coordinates
-            const latlngs = coords?.map((c: any) => [c[1], c[0]]) || []
-            return <Polyline positions={latlngs} pathOptions={{ color: '#f97316', weight: 5, opacity: 0.8 }} />
-          } catch (e) {
-            return null
-          }
-        })()}
+        {routeLatLngs.length > 0 && (
+          <Polyline positions={routeLatLngs} pathOptions={{ color: '#f97316', weight: 5, opacity: 0.8 }} />
+        )}
       </MapContainer>
     </div>
   )

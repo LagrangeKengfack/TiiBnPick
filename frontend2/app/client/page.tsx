@@ -117,7 +117,16 @@ export function ClientLanding() {
     setIsEditing(false);
   };
 
-
+  // Fonction pour publier une annonce
+  const handlePublishAnnouncement = async (id: string) => {
+    try {
+      await publishAnnouncement(id)
+      toast.success('Annonce publiée avec succès')
+      fetchAnnouncements() // Rafraîchir la liste
+    } catch (error) {
+      toast.error('Erreur lors de la publication de l\'annonce')
+    }
+  }
 
   // Client info from context
   const clientInfo = {
