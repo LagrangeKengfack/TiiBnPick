@@ -12,7 +12,6 @@ public class AnnouncementRequestDTO {
     private String description;
     private String recipientFirstName;
     private String recipientLastName;
-    private String recipientNumber;
     private String recipientEmail;
     private String recipientPhone;
     private String shipperFirstName;

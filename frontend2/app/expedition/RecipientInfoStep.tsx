@@ -13,6 +13,8 @@ interface RecipientData {
   recipientRegion: string;
   recipientCity: string;
   recipientAddress: string;
+  recipientLatitude?: number;
+  recipientLongitude?: number;
 }
 
 interface RecipientInfoStepProps {
@@ -208,26 +210,14 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- CORRECTION START ---
-  // Effet pour réinitialiser la région et la ville si le pays change et que la région n'est plus valide.
-  useEffect(() => {
-    if (formData.recipientCountry) {
-      const countryData = countries[formData.recipientCountry as keyof typeof countries];
-      if (countryData && !countryData.regions.hasOwnProperty(formData.recipientRegion)) {
-        setFormData(prev => ({ ...prev, recipientRegion: '', recipientCity: '' }));
-      }
-    }
-  }, [formData.recipientCountry, formData.recipientRegion]);
-
-  // Effet pour réinitialiser la ville si la région change et que la ville n'est plus valide.
-  useEffect(() => {
-    if (formData.recipientCountry && formData.recipientRegion) {
-      const countryData = countries[formData.recipientCountry as keyof typeof countries];
-      const regionData = (countryData.regions as any)[formData.recipientRegion];
-      if (regionData && !regionData.cities.includes(formData.recipientCity)) {
-        setFormData(prev => ({ ...prev, recipientCity: '' }));
-      }
-    }
-  }, [formData.recipientCountry, formData.recipientRegion, formData.recipientCity]);
+  // Mapping pour convertir les noms de pays en clés internes
+  const mapCountryToKey = (countryName: string): string => {
+    const name = countryName.toLowerCase();
+    if (name.includes('cameroun') || name.includes('cameroon')) return 'cameroun';
+    if (name.includes('nigeria')) return 'nigeria';
+    return '';
+  };
+  // LES EFFETS DE RÉINITIALISATION ONT ÉTÉ SUPPRIMÉS POUR ÉVITER LES SUPPRESSIONS INTEMPESTIVES
   // --- CORRECTION END ---
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -424,8 +414,7 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
                       setFormData(prev => ({
                         ...prev,
                         recipientRegion: region,
-                        recipientCity: city,
-                        recipientAddress: ''
+                        recipientCity: city
                       }));
                     }}
                     label="Région de destination"
@@ -444,9 +433,15 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
                     value={formData.recipientCity}
                     label="Ville de destination"
                     error={errors.recipientCity}
-                    disabled
+                    onChange={handleChange}
                   >
-                    <option value={formData.recipientCity}>{formData.recipientCity || "Sélectionner une ville"}</option>
+                    <option value="">Sélectionner une ville</option>
+                    {availableCities.map((city: string) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                    {formData.recipientCity && !availableCities.includes(formData.recipientCity) && (
+                      <option value={formData.recipientCity}>{formData.recipientCity}</option>
+                    )}
                   </SelectField>
                 </div>
               </div>
@@ -457,11 +452,24 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
               </label>
               <AddressAutocomplete
                 onSelect={(address) => {
+                  const countryKey = mapCountryToKey(address.country);
                   setFormData(prev => ({
                     ...prev,
-                    recipientAddress: address.street
+                    recipientAddress: address.street,
+                    recipientCity: address.city || prev.recipientCity,
+                    recipientRegion: address.district || prev.recipientRegion,
+                    recipientCountry: countryKey || prev.recipientCountry,
+                    recipientLatitude: address.latitude,
+                    recipientLongitude: address.longitude
                   }));
-                  if (errors.recipientAddress) setErrors(prev => ({ ...prev, recipientAddress: '' }));
+                  // Clear errors for fields that were just auto-filled
+                  setErrors(prev => ({
+                    ...prev,
+                    recipientAddress: '',
+                    recipientCity: '',
+                    recipientRegion: '',
+                    recipientCountry: ''
+                  }));
                 }}
                 defaultValue={formData.recipientAddress}
                 city={formData.recipientCity}

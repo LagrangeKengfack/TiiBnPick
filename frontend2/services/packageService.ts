@@ -37,7 +37,7 @@ export type PackageCreationPayload = {
   description?: string;
   recipientFirstName: string;
   recipientLastName: string;
-  recipientNumber?: string;
+
   recipientEmail: string;
   recipientPhone: string;
   shipperFirstName: string;

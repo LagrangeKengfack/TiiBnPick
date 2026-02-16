@@ -111,6 +111,8 @@ export function ClientLanding() {
     setIsEditing(false);
   };
 
+
+
   // Client info from context
   const clientInfo = {
     firstName: user?.firstName || 'Client',
@@ -267,13 +269,13 @@ export function ClientLanding() {
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-green-500 rounded-full" />
                                 <p className="text-sm text-gray-700">
-                                  <span className="font-medium">Retrait:</span> {announcement.pickupAddress?.district}, {announcement.pickupAddress?.city}
+                                  <span className="font-medium">Retrait:</span> {announcement.pickupAddress?.street || announcement.pickupAddress?.description || announcement.pickupAddress?.district}, {announcement.pickupAddress?.city}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-red-500 rounded-full" />
                                 <p className="text-sm text-gray-700">
-                                  <span className="font-medium">Livraison:</span> {announcement.deliveryAddress?.district}, {announcement.deliveryAddress?.city}
+                                  <span className="font-medium">Livraison:</span> {announcement.deliveryAddress?.street || announcement.deliveryAddress?.description || announcement.deliveryAddress?.district}, {announcement.deliveryAddress?.city}
                                 </p>
                               </div>
                             </div>

@@ -26,9 +26,6 @@ public class Packet {
     @Column("id")
     private UUID id;
 
-    @Column("announcement_id")
-    private UUID announcementId;
-
     @Column("weight")
     private Double weight;
 

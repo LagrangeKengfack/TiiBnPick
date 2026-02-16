@@ -74,6 +74,8 @@ interface RecipientData {
   recipientRegion: string;
   recipientCity: string;
   recipientAddress: string;
+  recipientLatitude?: number;
+  recipientLongitude?: number;
 }
 // << CORRIGÉ: Mise à jour de l'interface PackageData >>
 interface PackageData {
@@ -176,6 +178,7 @@ export default function ShippingPage() {
   const router = useRouter();
   const [user, setUser] = useState<LoggedInUser | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
   const [formData, setFormData] = useState<ExpeditionFormData>({
     currentStep: 1,
     senderData: {
@@ -197,8 +200,19 @@ export default function ShippingPage() {
   });
 
   // États pour l'écran de succès
-  const [trackingNumber] = useState(`PDL${Date.now().toString().slice(-7)}`);
+  const [trackingNumber, setTrackingNumber] = useState('PDL0000000');
 
+  // Generate tracking number only on client side to avoid hydration mismatch
+  useEffect(() => {
+    if (formData.currentStep === 7 && trackingNumber === 'PDL0000000') {
+      setTrackingNumber(`PDL${Date.now().toString().slice(-7)}`);
+    }
+  }, [formData.currentStep, trackingNumber]);
+
+  // Set mounted flag to prevent hydration issues
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (formData.currentStep > 0 && formData.currentStep < 7) {
@@ -545,7 +559,7 @@ export default function ShippingPage() {
     }
   };
 
-  if (isLoadingUser) {
+  if (!isMounted || isLoadingUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-900">
         <motion.div

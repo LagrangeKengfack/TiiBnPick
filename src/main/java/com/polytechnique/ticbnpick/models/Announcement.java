@@ -63,9 +63,6 @@ public class Announcement {
     @Column("recipient_lastname")
     private String recipientLastName;
 
-    @Column("recipient_number")
-    private String recipientNumber;
-
     @NotNull
     @Column("recipient_email")
     private String recipientEmail;

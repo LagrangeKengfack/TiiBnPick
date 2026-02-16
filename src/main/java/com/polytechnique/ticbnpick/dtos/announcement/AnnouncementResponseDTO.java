@@ -28,7 +28,6 @@ public class AnnouncementResponseDTO {
     private Instant updatedAt;
     private String recipientFirstName;
     private String recipientLastName;
-    private String recipientNumber;
     private String recipientEmail;
     private String recipientPhone;
     private String shipperFirstName;

@@ -222,26 +222,16 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
   const isUserLoggedIn = !!(currentUser || authUser);
 
   // --- CORRECTION START ---
-  // Effet pour réinitialiser la région et la ville si le pays change et que la région n'est plus valide.
-  useEffect(() => {
-    if (formData.senderCountry) {
-      const countryData = countries[formData.senderCountry as keyof typeof countries];
-      if (countryData && !countryData.regions.hasOwnProperty(formData.senderRegion)) {
-        setFormData(prev => ({ ...prev, senderRegion: '', senderCity: '' }));
-      }
-    }
-  }, [formData.senderCountry, formData.senderRegion]);
+  // Mapping pour convertir les noms de pays en clés internes
+  const mapCountryToKey = (countryName: string): string => {
+    const name = countryName.toLowerCase();
+    if (name.includes('cameroun') || name.includes('cameroon')) return 'cameroun';
+    if (name.includes('nigeria')) return 'nigeria';
+    return '';
+  };
 
-  // Effet pour réinitialiser la ville si la région change et que la ville n'est plus valide.
-  useEffect(() => {
-    if (formData.senderCountry && formData.senderRegion) {
-      const countryData = countries[formData.senderCountry as keyof typeof countries];
-      const regionData = (countryData.regions as any)[formData.senderRegion];
-      if (regionData && !regionData.cities.includes(formData.senderCity)) {
-        setFormData(prev => ({ ...prev, senderCity: '' }));
-      }
-    }
-  }, [formData.senderCountry, formData.senderRegion, formData.senderCity]);
+  // LES EFFETS DE RÉINITIALISATION ONT ÉTÉ SUPPRIMÉS POUR ÉVITER LES SUPPRESSIONS INTEMPESTIVES
+  // --- CORRECTION END ---
 
   // Effet pour gérer la disparition automatique de la notification et continuer automatiquement
   useEffect(() => {
@@ -465,16 +455,29 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
                           setFormData(prev => ({
                             ...prev,
                             senderRegion: region,
-                            senderCity: city,
-                            senderAddress: ''
+                            senderCity: city
                           }));
                         }} label="Région" error={errors.senderRegion} disabled={!formData.senderCountry}>
                           <option value="">Sélectionner une région</option>
                           <option value="centre">Centre</option>
                           <option value="littoral">Littoral</option>
                         </SelectField>
-                        <SelectField icon={Navigation} id="senderCity" name="senderCity" value={formData.senderCity} label="Ville" error={errors.senderCity} disabled>
-                          <option value={formData.senderCity}>{formData.senderCity || "Sélectionner une ville"}</option>
+                        <SelectField
+                          icon={Navigation}
+                          id="senderCity"
+                          name="senderCity"
+                          value={formData.senderCity}
+                          label="Ville"
+                          error={errors.senderCity}
+                          onChange={handleChange}
+                        >
+                          <option value="">Sélectionner une ville</option>
+                          {availableCities.map((city: string) => (
+                            <option key={city} value={city}>{city}</option>
+                          ))}
+                          {formData.senderCity && !availableCities.includes(formData.senderCity) && (
+                            <option value={formData.senderCity}>{formData.senderCity}</option>
+                          )}
                         </SelectField>
                       </div>
                     </div>
@@ -485,13 +488,23 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
                     </label>
                     <AddressAutocomplete
                       onSelect={(address) => {
+                        const countryKey = mapCountryToKey(address.country);
                         setFormData(prev => ({
                           ...prev,
                           senderAddress: address.street,
+                          senderCity: address.city || prev.senderCity,
+                          senderRegion: address.district || prev.senderRegion,
+                          senderCountry: countryKey || prev.senderCountry,
                           latitude: address.latitude,
                           longitude: address.longitude
                         }));
-                        if (errors.senderAddress) setErrors(prev => ({ ...prev, senderAddress: '' }));
+                        setErrors(prev => ({
+                          ...prev,
+                          senderAddress: '',
+                          senderCity: '',
+                          senderRegion: '',
+                          senderCountry: ''
+                        }));
                       }}
                       defaultValue={formData.senderAddress}
                       city={formData.senderCity}

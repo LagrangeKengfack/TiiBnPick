@@ -175,4 +175,25 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260209_add_missing_announcement_columns.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
+    <changeSet id="030-add-weight-to-packets" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260210_add_weight_to_packets.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="031-ensure-all-announcement-columns" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260210_ensure_all_announcement_columns.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+
+    <changeSet id="032-drop-recipient-number" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260216_drop_recipient_number.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="033-insert-guest-client" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260216_insert_guest_client.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="034-fix-packet-circular-dependency" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260216_fix_packet_circular_dependency.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

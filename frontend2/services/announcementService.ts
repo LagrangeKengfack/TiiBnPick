@@ -11,7 +11,7 @@ export interface AnnouncementResponseDTO {
     createdAt: string;
     updatedAt: string;
     recipientName: string;
-    recipientNumber: string;
+
     recipientEmail: string;
     recipientPhone: string;
     shipperFirstName: string;
@@ -76,6 +76,71 @@ export const deleteAnnouncement = async (id: string): Promise<void> => {
         await apiClient.delete(`${API_URL}/${id}`);
     } catch (error: any) {
         console.error('Error deleting announcement:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+
+export interface AnnouncementCreationPayload {
+    clientId: string;
+    title: string;
+    description?: string;
+    recipientFirstName: string;
+    recipientLastName: string;
+
+    recipientEmail: string;
+    recipientPhone: string;
+    shipperFirstName: string;
+    shipperLastName: string;
+    shipperEmail: string;
+    shipperPhone: string;
+    amount: number;
+    signatureUrl?: string | null;
+    paymentMethod: string;
+    transportMethod: string;
+    distance?: number;
+    duration?: number;
+
+    pickupAddress: {
+        street: string;
+        city: string;
+        district: string;
+        country: string;
+        description?: string;
+        type: string;
+        latitude?: number;
+        longitude?: number;
+    };
+    deliveryAddress: {
+        street: string;
+        city: string;
+        district: string;
+        country: string;
+        description?: string;
+        type: string;
+        latitude?: number;
+        longitude?: number;
+    };
+    packet: {
+        weight?: number;
+        width?: number;
+        height?: number;
+        length?: number;
+        fragile: boolean;
+        description?: string;
+        photoPacket?: string;
+        isPerishable: boolean;
+        thickness?: number;
+        designation: string;
+    };
+}
+
+export const createAnnouncement = async (payload: AnnouncementCreationPayload): Promise<AnnouncementResponseDTO> => {
+    try {
+        const response = await apiClient.post(API_URL, payload);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error creating announcement:', error.response?.data?.message || error.response?.data || error.message);
         throw error;
     }
 };

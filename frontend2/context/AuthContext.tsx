@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     setLoading(false);
+    refreshUser();
   }, []);
 
   const login = (userData: User) => {
