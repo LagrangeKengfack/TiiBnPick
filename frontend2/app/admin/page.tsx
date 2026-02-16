@@ -223,103 +223,27 @@ export default function SuperAdminDashboard() {
   // Fetch registration requests
   const fetchRegistrations = async () => {
     try {
-      // Données de test pour les tests
-      const testData: DeliveryPersonRequest[] = [
-        {
-          id: '1',
-          name: 'Jean Dupont',
-          email: 'jean.dupont@example.com',
-          phone: '+33612345678',
-          location: 'Paris, 75001',
-          vehicleType: 'Moto',
-          vehicleBrand: 'Honda',
-          vehicleModel: 'CB500',
-          vehicleRegNumber: 'AB-123-CD',
-          status: 'PENDING',
-          idCardVerified: true,
-          vehicleRegVerified: false,
-          insuranceVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-          idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardNumber: 'AB123456789',
-          nineNumber: 'NINE12345678',
-          niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
-          vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleColor: 'Noir',
-        },
-        {
-          id: '2',
-          name: 'Marie Martin',
-          email: 'marie.martin@example.com',
-          phone: '+33698765432',
-          location: 'Lyon, 69000',
-          vehicleType: 'Voiture',
-          vehicleBrand: 'Peugeot',
-          vehicleModel: '308',
-          vehicleRegNumber: 'XY-456-AB',
-          status: 'PENDING',
-          idCardVerified: true,
-          vehicleRegVerified: true,
-          insuranceVerified: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profilePhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-          idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardNumber: 'CD987654321',
-          nineNumber: 'NINE87654321',
-          niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
-          vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleColor: 'Blanc',
-        },
-      ]
+      setLoading(true)
+      const response = await apiClient.get<DeliveryPersonRequest[]>('/api/admin/delivery-persons', {
+        params: { status: 'PENDING' }
+      })
 
-      // Essayer de récupérer les données de l'API
-      try {
-        const response = await apiClient.get('/api/registrations')
-        const data = response.data
-        // Si l'API retourne des données, les utiliser
-        setRegistrationRequests(data.length > 0 ? data : testData)
-      } catch (e) {
-        setRegistrationRequests(testData)
-      }
+      // Map API response to our interface if needed, or use directly if matches
+      // The API returns DeliveryPersonDetailsResponse which matches our interface mostly
+      const data = response.data.map(item => ({
+        ...item,
+        // Ensure status is correctly typed
+        status: item.status as 'PENDING' | 'APPROVED' | 'REJECTED'
+      }))
+
+      setRegistrationRequests(data)
     } catch (error) {
       console.error('Error fetching registrations:', error)
-      // Fallback avec données de test en cas d'erreur
-      const testData: DeliveryPersonRequest[] = [
-        {
-          id: '1',
-          name: 'Jean Dupont',
-          email: 'jean.dupont@example.com',
-          phone: '+33612345678',
-          location: 'Paris, 75001',
-          vehicleType: 'Moto',
-          vehicleBrand: 'Honda',
-          vehicleModel: 'CB500',
-          vehicleRegNumber: 'AB-123-CD',
-          status: 'PENDING',
-          idCardVerified: true,
-          vehicleRegVerified: false,
-          insuranceVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-          idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardNumber: 'AB123456789',
-          nineNumber: 'NINE12345678',
-          niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
-          vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleColor: 'Gris',
-        },
-      ]
-      setRegistrationRequests(testData)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les demandes d\'inscription.',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
