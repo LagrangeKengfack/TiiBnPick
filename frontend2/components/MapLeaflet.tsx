@@ -30,11 +30,28 @@ const createCustomIcon = (color: string) => {
 };
 
 // Component to handle map centering when center changes
-function ChangeView({ center }: { center: LatLngExpression }) {
+function ChangeView({ center, markers = [], route = null }: { center: LatLngExpression, markers?: any[], route?: any }) {
   const map = useMap();
+
   useEffect(() => {
-    map.setView(center);
-  }, [center, map]);
+    if (markers.length >= 2) {
+      // Create bounds from all markers
+      const L = require('leaflet');
+      const bounds = L.latLngBounds(markers.map(m => m.position));
+
+      // Also include route coordinates if available
+      if (route && route.geometry && route.geometry.coordinates) {
+        route.geometry.coordinates.forEach((c: any) => {
+          bounds.extend([c[1], c[0]]);
+        });
+      }
+
+      map.fitBounds(bounds, { padding: [50, 50], animate: true });
+    } else {
+      map.setView(center, map.getZoom(), { animate: true });
+    }
+  }, [center, markers, route, map]);
+
   return null;
 }
 
@@ -50,7 +67,7 @@ export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers 
   return (
     <div className="w-full h-96 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
       <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
-        <ChangeView center={center} />
+        <ChangeView center={center} markers={markers} route={route} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

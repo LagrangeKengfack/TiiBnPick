@@ -45,6 +45,8 @@ export interface AnnouncementResponseDTO {
         thickness: number;
         designation: string;
     };
+    distance?: number;
+    duration?: number;
 }
 
 export const getAnnouncementById = async (id: string): Promise<AnnouncementResponseDTO> => {

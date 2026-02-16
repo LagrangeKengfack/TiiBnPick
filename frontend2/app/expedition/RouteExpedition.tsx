@@ -65,7 +65,6 @@ export default function RouteSelectionStep({
 
   useEffect(() => {
     const setupFromAddresses = async () => {
-      // On a besoin soit d'adresses soit de coordonnées pour continuer
       if (!initialDepartureAddress && !initialDepartureCoords) return
       if (!initialArrivalAddress && !initialArrivalCoords) return
 
@@ -73,15 +72,33 @@ export default function RouteSelectionStep({
       try {
         let depLat, depLon, arrLat, arrLon;
 
+        // Helper for geocoding with fallback
+        const geocodeWithFallback = async (address: string) => {
+          // Try precise address first
+          let results = await geocode(address);
+          if (results && results.length > 0) return results[0];
+
+          // If failed and in Cameroon (likely given project context), try city level
+          console.warn(`Precise geocoding failed for: ${address}. Retrying with broader query.`);
+          const parts = address.split(',');
+          if (parts.length > 1) {
+            // Try last few parts (usually City, Region, Country)
+            const broaderQuery = parts.slice(-2).join(', ');
+            results = await geocode(broaderQuery);
+            if (results && results.length > 0) return results[0];
+          }
+          return null;
+        };
+
         // Gérer le point de départ
         if (initialDepartureCoords) {
           depLat = initialDepartureCoords.lat;
           depLon = initialDepartureCoords.lon;
         } else if (initialDepartureAddress) {
-          const dep = await geocode(initialDepartureAddress)
-          if (dep && dep.length > 0) {
-            depLat = parseFloat(dep[0].lat)
-            depLon = parseFloat(dep[0].lon)
+          const depResult = await geocodeWithFallback(initialDepartureAddress);
+          if (depResult) {
+            depLat = parseFloat(depResult.lat);
+            depLon = parseFloat(depResult.lon);
           }
         }
 
@@ -90,50 +107,60 @@ export default function RouteSelectionStep({
           arrLat = initialArrivalCoords.lat;
           arrLon = initialArrivalCoords.lon;
         } else if (initialArrivalAddress) {
-          const arr = await geocode(initialArrivalAddress)
-          if (arr && arr.length > 0) {
-            arrLat = parseFloat(arr[0].lat)
-            arrLon = parseFloat(arr[0].lon)
+          const arrResult = await geocodeWithFallback(initialArrivalAddress);
+          if (arrResult) {
+            arrLat = parseFloat(arrResult.lat);
+            arrLon = parseFloat(arrResult.lon);
           }
         }
 
         if (depLat !== undefined && depLon !== undefined && arrLat !== undefined && arrLon !== undefined) {
+          // UPDATE MAP IMMEDIATELY
           setMarkers([
             { position: [depLat, depLon], label: 'Retrait', color: '#f97316' },
             { position: [arrLat, arrLon], label: 'Livraison', color: '#10b981' },
-          ])
-          // Calcul du point milieu pour centrer la carte
-          setMapCenter([(depLat + arrLat) / 2, (depLon + arrLon) / 2])
+          ]);
+          setMapCenter([(depLat + arrLat) / 2, (depLon + arrLon) / 2]);
 
-          const data = await getRoute(depLat, depLon, arrLat, arrLon, transportMethod)
-          if (data && data.routes && data.routes.length > 0) {
-            const route = data.routes[0]
-            const distanceKm = Math.round((route.distance / 1000) * 100) / 100
-            const durationMinutes = Math.round(route.duration / 60)
+          // NOW CALCULATE ROUTE
+          try {
+            const data = await getRoute(depLat, depLon, arrLat, arrLon, transportMethod);
+            if (data && data.routes && data.routes.length > 0) {
+              const route = data.routes[0];
+              const distanceKm = Math.round((route.distance / 1000) * 100) / 100;
+              const durationMinutes = Math.round(route.duration / 60);
 
-            setRouteData(prev => ({
-              ...prev,
-              distanceKm,
-              durationMinutes,
-              departurePointName: initialDepartureAddress || 'Ma position actuelle',
-              arrivalPointName: initialArrivalAddress || 'Destination'
-            }))
-            setTravelPrice(calculateTravelPrice(distanceKm))
-            setRouteGeoJSON({ type: 'Feature', geometry: route.geometry as any, properties: {} })
-            setRouteData(prev => ({ ...prev, departurePointId: 'from-address', arrivalPointId: 'to-address' }))
-          } else {
-            alert('Aucun itinéraire trouvé entre ces adresses.')
+              setRouteData(prev => ({
+                ...prev,
+                distanceKm,
+                durationMinutes,
+                departurePointName: initialDepartureAddress || 'Ma position actuelle',
+                arrivalPointName: initialArrivalAddress || 'Destination',
+                departurePointId: 'from-address',
+                arrivalPointId: 'to-address'
+              }));
+              setTravelPrice(calculateTravelPrice(distanceKm));
+              setRouteGeoJSON({ type: 'Feature', geometry: route.geometry as any, properties: {} });
+            } else {
+              console.error('No route data from service');
+              alert('Impossible de calculer un itinéraire entre ces deux points par la route.');
+            }
+          } catch (routeError: any) {
+            console.error('Routing service failed:', routeError);
+            // Fallback: simple straight line distance if OSRM is down? 
+            // No, OSRM is critical for "route". Just report error.
+            alert(`Erreur service de calcul: ${routeError.message}`);
           }
         } else {
-          alert('Impossible de géocoder une ou plusieurs adresses fournies.')
+          alert('Impossible de positionner les points sur la carte. Vérifiez vos adresses.');
         }
-      } catch (e) {
-        console.error('Erreur geocode/route:', e)
-        alert('Erreur lors du traitement des adresses.')
+      } catch (e: any) {
+        console.error('Global setup error:', e);
+        alert(e.message || 'Erreur lors de la préparation de l\'itinéraire.');
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
     setupFromAddresses()
   }, [initialDepartureAddress, initialArrivalAddress, initialDepartureCoords, initialArrivalCoords, transportMethod])
@@ -149,10 +176,10 @@ export default function RouteSelectionStep({
   const handleSubmit = () => {
     if (routeData.distanceKm > 0) {
       onContinue(routeData, travelPrice)
-    } else {
-      alert('Aucun itinéraire calculé.')
     }
   }
+
+  const isButtonDisabled = isLoading || routeData.distanceKm <= 0;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-screen flex flex-col bg-gray-50 dark:bg-transparent">
@@ -174,7 +201,10 @@ export default function RouteSelectionStep({
 
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/10">
-              <Loader2 className="animate-spin text-orange-500" />
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg flex items-center gap-3">
+                <Loader2 className="animate-spin text-orange-500" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Calcul en cours...</span>
+              </div>
             </div>
           )}
         </div>
@@ -186,6 +216,7 @@ export default function RouteSelectionStep({
               <button
                 onClick={handleReset}
                 className="text-sm font-medium text-orange-600 hover:text-orange-700 dark:text-orange-400 p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
+                disabled={isLoading}
               >
                 Réinitialiser
               </button>
@@ -235,9 +266,16 @@ export default function RouteSelectionStep({
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center italic">
-                    Configurez vos adresses pour calculer l'itinéraire
-                  </p>
+                  {isLoading ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="animate-spin text-orange-500" size={24} />
+                      <p className="text-sm text-gray-500 italic">Calcul en cours...</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center italic">
+                      Configurez vos adresses pour calculer l'itinéraire
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -249,11 +287,17 @@ export default function RouteSelectionStep({
         <div className="flex justify-end max-w-2xl mx-auto">
           <motion.button
             onClick={handleSubmit}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full md:w-auto inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold py-4 px-10 rounded-2xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+            disabled={isButtonDisabled}
+            whileHover={!isButtonDisabled ? { scale: 1.02 } : {}}
+            whileTap={!isButtonDisabled ? { scale: 0.98 } : {}}
+            className="w-full md:w-auto inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold py-4 px-10 rounded-2xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed text-lg"
           >
-            Continuer vers la signature
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin mr-2" size={20} />
+                Calcul...
+              </>
+            ) : "Continuer vers la signature"}
           </motion.button>
         </div>
       </div>

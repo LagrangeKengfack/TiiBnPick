@@ -51,7 +51,7 @@ import { checkEmail, createClient, checkNationalId } from '../../services/client
 type Step = 1 | 2 | 3 | 4 | 5 | 6
 type Role = 'client' | 'livreur' | null
 
-export default function LoginPage() {
+export default function RegisterPage() {
 
   const router = useRouter()
   const [step, setStep] = useState<Step>(1)

@@ -5,6 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
@@ -59,6 +69,7 @@ export function ClientLanding() {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [myAnnouncements, setMyAnnouncements] = useState<AnnouncementResponseDTO[]>([])
+  const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null)
 
   const fetchAnnouncements = useCallback(async () => {
     if (!user?.clientId) return
@@ -78,27 +89,22 @@ export function ClientLanding() {
       fetchAnnouncements()
     }
   }, [activeTab, fetchAnnouncements])
-
-  // Fonction pour publier une annonce
-  const handlePublishAnnouncement = async (id: string) => {
-    try {
-      await publishAnnouncement(id)
-      toast.success('Annonce publiée avec succès')
-      fetchAnnouncements()
-    } catch (error) {
-      toast.error('Erreur lors de la publication')
-    }
+  // Fonction pour demander la suppression (ouvre la modale)
+  const handleDeleteAnnouncement = (id: string) => {
+    setDeleteConfirmationId(id)
   }
 
-  // Fonction pour supprimer une annonce
-  const handleDeleteAnnouncement = async (id: string) => {
-    if (!confirm('Voulez-vous vraiment supprimer cette annonce ?')) return
+  // Fonction pour confirmer et exécuter la suppression
+  const confirmDelete = async () => {
+    if (!deleteConfirmationId) return
     try {
-      await deleteAnnouncement(id)
-      toast.success('Annonce supprimée')
-      setMyAnnouncements((prev) => prev.filter((ann) => ann.id !== id))
+      await deleteAnnouncement(deleteConfirmationId)
+      toast.success('Annonce supprimée avec succès')
+      setMyAnnouncements((prev) => prev.filter((ann) => ann.id !== deleteConfirmationId))
     } catch (error) {
       toast.error('Erreur lors de la suppression')
+    } finally {
+      setDeleteConfirmationId(null)
     }
   }
 
@@ -284,11 +290,11 @@ export function ClientLanding() {
                           <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
                             <div className="flex items-center gap-2">
                               <MapIcon className="w-4 h-4" />
-                              <span>25.5 km</span>
+                              <span>{announcement.distance?.toFixed(1) || '25.5'} km</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4" />
-                              <span>45 min</span>
+                              <span>{announcement.duration || '45'} min</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4 text-green-600" />
@@ -439,11 +445,11 @@ export function ClientLanding() {
                       <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
                         <div className="flex items-center gap-2">
                           <MapIcon className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold">25.5 km</span>
+                          <span className="font-bold">{selectedAnnouncement?.distance?.toFixed(1) || '25.5'} km</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold">45 min</span>
+                          <span className="font-bold">{selectedAnnouncement?.duration || '45'} min</span>
                         </div>
                         <div className="text-lg font-black text-orange-600">
                           {selectedAnnouncement?.amount?.toLocaleString() || 0} FCFA
@@ -730,6 +736,29 @@ export function ClientLanding() {
           </div>
         </div>
       </nav>
+
+      <AlertDialog open={!!deleteConfirmationId} onOpenChange={(open) => !open && setDeleteConfirmationId(null)}>
+        <AlertDialogContent className="bg-white border-orange-100 rounded-xl shadow-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-gray-900">Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 text-base">
+              Êtes-vous sûr de vouloir supprimer cette annonce ? <br />
+              <span className="text-red-500 font-medium text-sm mt-2 block">Cette action est irréversible et supprimera le colis associé.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="rounded-lg border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium">
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md border-0 font-medium"
+              onClick={confirmDelete}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

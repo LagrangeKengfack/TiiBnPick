@@ -29,7 +29,7 @@ api.interceptors.response.use(
             // Handle unauthorized error (e.g., redirect to login or clear session)
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            if (typeof window !== 'undefined') {
+            if (typeof window !== 'undefined' && window.location.pathname !== '/') {
                 window.location.href = '/';
             }
         }

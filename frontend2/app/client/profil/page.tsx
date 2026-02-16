@@ -219,16 +219,8 @@ export function ClientProfile() {
         description: 'Votre compte a été définitivement supprimé. Au plaisir de vous revoir !',
       })
 
-      // Lock the UI and start the redirect
-      setIsRedirecting(true)
-
-      // Manual cleanup and hard redirect is safer for mobile app transition
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-
-      setTimeout(() => {
-        window.location.replace('/')
-      }, 500)
+      // Use the official logout from context which handles redirection and state cleanup
+      logout()
     } catch (error: any) {
       console.error('Deletion failed:', error)
       const errorMsg = error.response?.data?.message || error.message || 'Une erreur est survenue lors de la suppression.'

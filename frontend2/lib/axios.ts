@@ -27,8 +27,11 @@ axiosInstance.interceptors.response.use(
             console.warn('Unauthorized access detected. Clearing session and redirecting...');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            // Force a reload to clear all state and trigger withAuth redirect
-            window.location.href = '/';
+
+            // Only redirect if not already on the login page to avoid loops
+            if (window.location.pathname !== '/') {
+                window.location.href = '/';
+            }
         }
         return Promise.reject(error);
     }

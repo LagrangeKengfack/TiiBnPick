@@ -13,6 +13,7 @@ import com.polytechnique.ticbnpick.repositories.AnnouncementRepository;
 import com.polytechnique.ticbnpick.events.AnnouncementPublishedEvent;
 import com.polytechnique.ticbnpick.repositories.PacketRepository;
 import com.polytechnique.ticbnpick.services.support.KafkaEventPublisher;
+import com.polytechnique.ticbnpick.services.support.FileStorageService;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class AnnouncementService {
     private final AddressRepository addressRepository;
     private final PacketRepository packetRepository;
     private final KafkaEventPublisher kafkaEventPublisher;
+    private final FileStorageService fileStorageService;
     private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional("connectionFactoryTransactionManager")
@@ -79,16 +81,23 @@ public class AnnouncementService {
                     packet.setLength(request.getPacket().getLength());
                     packet.setFragile(request.getPacket().getFragile());
                     packet.setDescription(request.getPacket().getDescription());
-                    packet.setPhotoPacket(request.getPacket().getPhotoPacket());
                     packet.setIsPerishable(request.getPacket().getIsPerishable());
                     packet.setThickness(request.getPacket().getThickness());
                     packet.setDesignation(request.getPacket().getDesignation());
 
-                    // Use template.insert() to FORCE INSERT with the manual ID
-                    return entityTemplate.insert(packet).map(
-                            savedPacket -> {
-                                savedAnnouncement.setId(announcement.getId()); // Ensure ID is set
-                                return mapToResponse(savedAnnouncement, savedPickup, savedDelivery, savedPacket);
+                    String inputPhoto = request.getPacket().getPhotoPacket();
+                    return fileStorageService.saveBase64Image(inputPhoto, "packet")
+                            .defaultIfEmpty(inputPhoto != null ? inputPhoto : "")
+                            .flatMap(path -> {
+                                packet.setPhotoPacket(path);
+
+                                // Use template.insert() to FORCE INSERT with the manual ID
+                                return entityTemplate.insert(packet).map(
+                                        savedPacket -> {
+                                            savedAnnouncement.setId(announcement.getId()); // Ensure ID is set
+                                            return mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
+                                                    savedPacket);
+                                        });
                             });
                 });
             });
@@ -118,8 +127,16 @@ public class AnnouncementService {
         return announcementRepository.findById(id).flatMap(this::populateDetails);
     }
 
+    @Transactional("connectionFactoryTransactionManager")
     public Mono<Void> deleteAnnouncement(UUID id) {
-        return announcementRepository.deleteById(id);
+        return announcementRepository.findById(id)
+                .flatMap(announcement -> {
+                    Mono<Void> deletePacket = announcement.getPacketId() != null
+                            ? packetRepository.deleteById(announcement.getPacketId())
+                            : Mono.empty();
+
+                    return deletePacket.then(announcementRepository.delete(announcement));
+                });
     }
 
     private Mono<AnnouncementResponseDTO> populateDetails(Announcement announcement) {
@@ -246,11 +263,17 @@ public class AnnouncementService {
                                             packet.setLength(request.getPacket().getLength());
                                             packet.setFragile(request.getPacket().getFragile());
                                             packet.setDescription(request.getPacket().getDescription());
-                                            packet.setPhotoPacket(request.getPacket().getPhotoPacket());
                                             packet.setIsPerishable(request.getPacket().getIsPerishable());
                                             packet.setThickness(request.getPacket().getThickness());
                                             packet.setDesignation(request.getPacket().getDesignation());
-                                            return packetRepository.save(packet);
+
+                                            String inputPhoto = request.getPacket().getPhotoPacket();
+                                            return fileStorageService.saveBase64Image(inputPhoto, "packet")
+                                                    .defaultIfEmpty(inputPhoto != null ? inputPhoto : "")
+                                                    .flatMap(path -> {
+                                                        packet.setPhotoPacket(path);
+                                                        return packetRepository.save(packet);
+                                                    });
                                         }
                                         return Mono.just(packet);
                                     });

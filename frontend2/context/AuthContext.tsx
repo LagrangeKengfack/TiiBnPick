@@ -65,7 +65,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    router.push('/');
+    // Use window.location.href to force a full page reload and clear all memory state
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    } else {
+      router.push('/');
+    }
   };
 
   const refreshUser = async () => {
