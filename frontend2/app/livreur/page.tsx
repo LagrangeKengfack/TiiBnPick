@@ -44,6 +44,15 @@ import { DeliveriesChart } from '@/components/charts/deliveries-chart'
 import { ComparisonChart } from '@/components/charts/comparison-chart'
 import { useRouter } from 'next/navigation'
 import { acceptDelivery as acceptDeliveryService } from '@/services/deliveryService'
+import dynamic from 'next/dynamic'
+import { getRoute } from '@/services/routing'
+import { useEffect } from 'react'
+
+const MapLeaflet = dynamic(() => import('@/components/MapLeaflet'), {
+  ssr: false,
+  loading: () => <div className="w-full h-64 bg-gray-100 animate-pulse rounded-xl" />
+});
+
 import {
   Dialog,
   DialogContent,
@@ -53,6 +62,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
+import { ThumbsUp, MessageCircle, Mail, ImageIcon } from 'lucide-react'
 
 export default function LivreurDashboard() {
   const router = useRouter()
@@ -113,58 +123,97 @@ export default function LivreurDashboard() {
     {
       id: 'TBP-2024-003',
       customerName: 'Kouassi Paul',
+      customerFullName: 'Kouassi Paul-Marie',
+      customerEmail: 'paul.kouassi@email.com',
+      customerPhone: '+225 01 02 03 04 05',
       pickupAddress: 'Abobo, Baoulé',
       deliveryAddress: 'Treichville, Boulevard Mitterrand',
+      senderCoords: { lat: 5.4166, lon: -4.0166 },
+      recipientCoords: { lat: 5.3094, lon: -4.0126 },
       distance: 12.3,
       estimatedTime: '35 min',
       price: 2500,
       packageType: 'Courses urgentes',
-      designation: 'Vetements',
-      weight: 67,
+      designation: 'Vêtements',
+      description: 'Un sac contenant des vêtements variés pour livraison express.',
+      weight: 5,
       volume: 3.5,
-      options: ['Fragile', 'Livraison'],
+      options: ['Fragile'],
+      isFragile: true,
       deliveryType: 'Express 48h',
       urgency: 'high',
-      customerRating: 4.5
+      customerRating: 4.5,
+      packagePhoto: '/package_sample.png',
+      vehicleType: 'moteur',
+      feedback: {
+        likes: 12,
+        comments: [
+          { driverName: 'Moussa D.', content: 'Client très ponctuel et sympathique.' },
+          { driverName: 'Sery G.', content: 'Rien à signaler, parfait.' }
+        ]
+      }
     },
     {
       id: 'TBP-2024-004',
       customerName: 'Yao Esther',
+      customerFullName: 'Yao Esther Grâce',
+      customerEmail: 'e.yao@hotline.ci',
+      customerPhone: '+225 05 06 07 08 09',
       pickupAddress: 'Plateau, Stade Général De Gaulle',
       deliveryAddress: 'Cocody, Angre',
+      senderCoords: { lat: 5.3245, lon: -4.0123 },
+      recipientCoords: { lat: 5.3789, lon: -3.9876 },
       distance: 6.8,
       estimatedTime: '20 min',
       price: 1800,
       packageType: 'Pharmacie & Santé',
-      designation: 'Documents',
-      weight: 2,
-      volume: 0.01,
+      designation: 'Médicaments',
+      description: 'Boîtes de médicaments à livrer d\'urgence.',
+      weight: 1,
+      volume: 0.1,
       options: ['Assurance'],
+      isFragile: false,
       deliveryType: 'Standard 72h',
       urgency: 'urgent',
-      customerRating: 4.9
-    },
-    {
-      id: 'TBP-2024-TEST-001',
-      customerName: 'Test Client',
-      pickupAddress: 'Yopougon, Marché Central',
-      deliveryAddress: 'Attécoubé, Route de Bassam',
-      distance: 9.5,
-      estimatedTime: '30 min',
-      price: 3000,
-      packageType: 'Colis général',
-      designation: 'Test Annonce',
-      weight: 5,
-      volume: 0.5,
-      options: ['Livraison'],
-      deliveryType: 'Express 48h',
-      urgency: 'normal',
-      customerRating: 4.7
+      customerRating: 4.9,
+      packagePhoto: '/package_sample.png',
+      vehicleType: 'velo',
+      feedback: {
+        likes: 45,
+        comments: [
+          { driverName: 'Koffi J.', content: 'Habituée, toujours au top.' },
+          { driverName: 'Amani B.', content: 'Donne souvent des pourboires.' }
+        ]
+      }
     }
   ])
 
   const [selectedDelivery, setSelectedDelivery] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [activeRoute, setActiveRoute] = useState<any>(null)
+
+  useEffect(() => {
+    if (selectedDelivery && selectedDelivery.senderCoords && selectedDelivery.recipientCoords) {
+      const fetchRoute = async () => {
+        try {
+          const route = await getRoute(
+            selectedDelivery.senderCoords.lat,
+            selectedDelivery.senderCoords.lon,
+            selectedDelivery.recipientCoords.lat,
+            selectedDelivery.recipientCoords.lon,
+            selectedDelivery.vehicleType === 'velo' ? 'bike' : 'driving'
+          );
+          setActiveRoute(route);
+        } catch (e) {
+          console.error("Failed to fetch route", e);
+          setActiveRoute(null);
+        }
+      };
+      fetchRoute();
+    } else {
+      setActiveRoute(null);
+    }
+  }, [selectedDelivery]);
 
   // Données premium
   const isPremium = true
@@ -355,7 +404,7 @@ export default function LivreurDashboard() {
           {mobileMenuOpen && (
             <nav className="md:hidden border-t bg-white py-4 space-y-2">
               <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors"
-                   onClick={() => router.push('/livreur/profil')}>
+                onClick={() => router.push('/livreur/profil')}>
                 <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
@@ -402,7 +451,7 @@ export default function LivreurDashboard() {
                       <Truck className="w-10 h-10" />
                     </div>
                   </div>
-                    <div className="mt-4 flex gap-3" />
+                  <div className="mt-4 flex gap-3" />
                 </CardContent>
               </Card>
 
@@ -648,60 +697,60 @@ export default function LivreurDashboard() {
               ) : (
                 /* Dashboard Standard for Medium accounts */
                 <>
-              {/* Stats Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-[10px] md:text-xs">Aujourd'hui</CardDescription>
-                    <CardTitle className="text-xl md:text-2xl text-orange-600">{todayStats.deliveries}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Package className="w-3 h-3 mr-1" />
-                      Livraisons
-                    </div>
-                  </CardContent>
-                </Card>
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 px-4 py-3">
+                        <CardDescription className="text-[10px] md:text-xs">Aujourd'hui</CardDescription>
+                        <CardTitle className="text-xl md:text-2xl text-orange-600">{todayStats.deliveries}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4">
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Package className="w-3 h-3 mr-1" />
+                          Livraisons
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-[10px] md:text-xs">Revenus</CardDescription>
-                    <CardTitle className="text-xl md:text-2xl text-green-600">{todayStats.earnings.toLocaleString()} FCFA</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <DollarSign className="w-3 h-3 mr-1" />
-                      Gains
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 px-4 py-3">
+                        <CardDescription className="text-[10px] md:text-xs">Revenus</CardDescription>
+                        <CardTitle className="text-xl md:text-2xl text-green-600">{todayStats.earnings.toLocaleString()} FCFA</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4">
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <DollarSign className="w-3 h-3 mr-1" />
+                          Gains
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-[10px] md:text-xs">Distance</CardDescription>
-                    <CardTitle className="text-xl md:text-2xl text-blue-600">{todayStats.distance} km</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <MapIcon className="w-3 h-3 mr-1" />
-                      Parcourue
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 px-4 py-3">
+                        <CardDescription className="text-[10px] md:text-xs">Distance</CardDescription>
+                        <CardTitle className="text-xl md:text-2xl text-blue-600">{todayStats.distance} km</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4">
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <MapIcon className="w-3 h-3 mr-1" />
+                          Parcourue
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-[10px] md:text-xs">Pourboires</CardDescription>
-                    <CardTitle className="text-xl md:text-2xl text-purple-600">{todayStats.tips.toLocaleString()} FCFA</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <TrendingUp className="w-3 h-3 mr-1" />
-                      Reçus
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3 px-4 py-3">
+                        <CardDescription className="text-[10px] md:text-xs">Pourboires</CardDescription>
+                        <CardTitle className="text-xl md:text-2xl text-purple-600">{todayStats.tips.toLocaleString()} FCFA</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4">
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <TrendingUp className="w-3 h-3 mr-1" />
+                          Reçus
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
                   {/* Total Stats Card */}
                   <Card className="bg-gradient-to-r from-gray-900 to-gray-800 text-white">
@@ -800,95 +849,207 @@ export default function LivreurDashboard() {
                         >
                           Voir Détails
                         </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-                          onClick={() => handleAcceptDelivery(delivery.id)}
-                        >
-                          Souscrire à l'annonce
-                        </Button>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-              {/* Details Dialog */}
-              <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) setSelectedDelivery(null) }}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
+
+              <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) { setSelectedDelivery(null); } }}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="border-b pb-4">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-50 rounded-md flex items-center justify-center">
-                          <Package className="w-5 h-5 text-orange-600" />
+                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+                          <Package className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
-                          <DialogTitle>Résumé du colis</DialogTitle>
-                          <DialogDescription className="text-sm text-gray-500">{selectedDelivery?.id}</DialogDescription>
+                          <DialogTitle className="text-xl">Détails de l'expédition</DialogTitle>
+                          <DialogDescription className="font-mono text-orange-600">{selectedDelivery?.id}</DialogDescription>
                         </div>
                       </div>
-                    </DialogHeader>
+                    </div>
+                  </DialogHeader>
 
-                    <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
-                      <div className="sm:col-span-1">
-                        <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                          {/* Placeholder image */}
-                          <img alt="miniature" src="/placeholder-package.png" className="object-cover w-full h-full" onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.ico' }} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
+                    {/* Colonne Gauche : Infos Trajet & Carte */}
+                    <div className="space-y-6">
+                      <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl space-y-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-bold">Lieu de Retrait</p>
+                            <p className="text-sm text-gray-700">{selectedDelivery?.pickupAddress}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-bold">Lieu de Livraison</p>
+                            <p className="text-sm text-gray-700">{selectedDelivery?.deliveryAddress}</p>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="sm:col-span-2">
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Désignation:</p>
-                            <p className="font-semibold text-gray-900">{selectedDelivery?.designation}</p>
-                          </div>
+                      {/* Carte logic integration */}
+                      <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm h-64 relative z-0">
+                        {selectedDelivery && selectedDelivery.senderCoords && (
+                          <MapLeaflet
+                            center={[
+                              (selectedDelivery.senderCoords.lat + selectedDelivery.recipientCoords.lat) / 2,
+                              (selectedDelivery.senderCoords.lon + selectedDelivery.recipientCoords.lon) / 2
+                            ]}
+                            zoom={12}
+                            markers={[
+                              { position: [selectedDelivery.senderCoords.lat, selectedDelivery.senderCoords.lon], label: "Retrait", color: "#f97316" },
+                              { position: [selectedDelivery.recipientCoords.lat, selectedDelivery.recipientCoords.lon], label: "Livraison", color: "#10b981" }
+                            ]}
+                            route={activeRoute}
+                          />
+                        )}
+                      </div>
 
-                          <div className="flex gap-6">
-                            <div>
-                              <p className="text-sm text-gray-600">Poids:</p>
-                              <p className="font-semibold text-gray-900">{selectedDelivery?.weight} kg</p>
+                      <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+                        <div className="flex items-center gap-2">
+                          <MapIcon className="w-5 h-5 text-orange-600" />
+                          <span className="font-bold">{selectedDelivery?.distance} km</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-orange-600" />
+                          <span className="font-bold">{selectedDelivery?.estimatedTime}</span>
+                        </div>
+                        <div className="text-lg font-black text-orange-600">
+                          {selectedDelivery?.price?.toLocaleString()} FCFA
+                        </div>
+                      </div>
+
+                      {/* Section Client Profil & Avis */}
+                      <div className="border-t pt-6">
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-4">Profil du Client</h4>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                              {selectedDelivery?.customerFullName?.charAt(0)}
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">Volume:</p>
-                              <p className="font-semibold text-gray-900">{selectedDelivery?.volume} m³</p>
+                              <p className="font-bold text-gray-900">{selectedDelivery?.customerFullName}</p>
+                              <div className="flex items-center gap-1">
+                                <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                                <span className="text-xs font-semibold">{selectedDelivery?.customerRating}</span>
+                              </div>
                             </div>
                           </div>
-
-                          <div>
-                            <p className="text-sm text-gray-600">Options:</p>
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                              {selectedDelivery?.options?.map((opt: string) => (
-                                <span key={opt} className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 text-xs">{opt}</span>
-                              ))}
+                          <div className="grid grid-cols-1 gap-2 text-sm">
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <Mail className="w-4 h-4" />
+                              <span>{selectedDelivery?.customerEmail}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <Phone className="w-4 h-4" />
+                              <span>{selectedDelivery?.customerPhone}</span>
                             </div>
                           </div>
+                        </div>
 
-                          <div>
-                            <p className="text-sm text-gray-600">Livraison:</p>
-                            <p className="font-semibold text-gray-900">{selectedDelivery?.deliveryType}</p>
+                        {/* Avis des autres livreurs */}
+                        <div className="mt-6">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-bold text-gray-900">Avis des Livreurs</h4>
+                            <Badge variant="outline" className="flex items-center gap-1 border-orange-200 text-orange-700 bg-orange-50">
+                              <ThumbsUp className="w-3 h-3" />
+                              {selectedDelivery?.feedback?.likes} j'aime
+                            </Badge>
+                          </div>
+                          <div className="space-y-3">
+                            {selectedDelivery?.feedback?.comments.map((c: any, idx: number) => (
+                              <div key={idx} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-100">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold">
+                                    {c.driverName.charAt(0)}
+                                  </div>
+                                  <span className="text-xs font-bold text-gray-700">{c.driverName}</span>
+                                </div>
+                                <p className="text-xs text-gray-600 italic">"{c.content}"</p>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="my-6 border-t border-dashed border-gray-200 pt-4" />
+                    {/* Colonne Droite : Infos Colis & Logistique */}
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Détails du Colis</h4>
 
-                    <DialogFooter>
-                      <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full gap-4">
-                        <div>
-                          <p className="text-sm text-orange-600">Prix de manutention</p>
-                          <p className="text-3xl font-bold text-orange-600">{(selectedDelivery?.price || 0).toLocaleString()} FCFA</p>
-                          <p className="text-xs text-gray-400">Manutention uniquement</p>
+                        {/* Photo du Colis */}
+                        <div className="mb-4">
+                          <div className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center relative group">
+                            {selectedDelivery?.packagePhoto ? (
+                              <img
+                                src={selectedDelivery.packagePhoto}
+                                alt="Colis"
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center gap-2 text-gray-400">
+                                <Package className="w-8 h-8 opacity-20" />
+                                <p className="text-xs">Aucune photo disponible</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="flex gap-2 w-full sm:w-auto">
-                          <DialogClose>
-                            <Button variant="outline" className="flex-1 sm:flex-none">← Retour</Button>
-                          </DialogClose>
-                          <Button onClick={() => { if (selectedDelivery) handleAcceptDelivery(selectedDelivery.id); setDetailsOpen(false) }} className="flex-1 sm:flex-none bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">Continuer vers les adresses →</Button>
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                          <div>
+                            <p className="text-xs text-gray-500">Désignation</p>
+                            <p className="font-medium">{selectedDelivery?.designation}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Type de colis</p>
+                            <p className="font-medium">{selectedDelivery?.packageType}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <p className="text-xs text-gray-500">Description</p>
+                            <p className="text-sm italic text-gray-600">{selectedDelivery?.description || 'Aucune description fournie'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Poids</p>
+                            <p className="font-medium">{selectedDelivery?.weight} kg</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Logistique</p>
+                            <p className="font-medium capitalize">{selectedDelivery?.deliveryType}</p>
+                          </div>
                         </div>
                       </div>
-                    </DialogFooter>
-                  </DialogContent>
+
+                      <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl space-y-4">
+                        <p className="text-sm font-bold text-orange-800 dark:text-orange-300 flex items-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          Options & Sécurité
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline" className={selectedDelivery?.isFragile ? "border-red-500 text-red-600 bg-red-50" : "opacity-30"}>Fragile</Badge>
+                          <Badge variant="outline" className={selectedDelivery?.options?.includes('Périssable') ? "border-orange-500 text-orange-600 bg-orange-50" : "opacity-30"}>Périssable</Badge>
+                          <Badge variant="outline" className={selectedDelivery?.options?.includes('Assurance') ? "border-green-500 text-green-600 bg-green-50" : "opacity-30"}>Assuré</Badge>
+                        </div>
+                      </div>
+
+                      <div className="pt-4">
+                        <Button
+                          className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-12 shadow-lg shadow-orange-500/20"
+                          onClick={() => {
+                            if (selectedDelivery) handleAcceptDelivery(selectedDelivery.id);
+                            setDetailsOpen(false);
+                          }}
+                        >
+                          Accepter cette livraison
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
               </Dialog>
             </>
           )}
@@ -897,7 +1058,7 @@ export default function LivreurDashboard() {
             <>
               <div className="grid lg:grid-cols-2 gap-4 mb-6">
                 {activeDeliveries.map((delivery) => (
-                  <Card key={delivery.id} className="border-2 border-orange-500 bg-orange-50">
+                  <Card key={delivery.id} className="border-2 border-orange-500 bg-orange-50 transition-shadow hover:shadow-md">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -971,66 +1132,58 @@ export default function LivreurDashboard() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg md:hidden z-50">
-        <div className="flex justify-around">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-50">
+        <div className="flex items-center justify-around py-2">
           <button
             onClick={() => setActiveTab('accueil')}
             className={cn(
-              'flex flex-col items-center justify-center py-3 px-4 flex-1 transition-colors',
-              activeTab === 'accueil' ? 'text-orange-600' : 'text-gray-500'
+              'flex flex-col items-center gap-1 px-4 py-1 rounded-lg transition-all',
+              activeTab === 'accueil' ? 'text-orange-600 font-bold' : 'text-gray-500'
             )}
           >
-            <Home className={cn('w-6 h-6', activeTab === 'accueil' ? 'fill-current' : '')} />
-            <span className="text-xs mt-1 font-medium">Accueil</span>
+            <Home className="w-6 h-6" />
+            <span className="text-[10px]">Accueil</span>
           </button>
-          {(isPremium || isMedium) ? (
+
+          {(isPremium || isMedium) && (
             <button
               onClick={() => setActiveTab('dashboard')}
               className={cn(
-                'flex flex-col items-center justify-center py-3 px-4 flex-1 transition-colors',
-                activeTab === 'dashboard' ? 'text-orange-600' : 'text-gray-500'
-              )}
-            >
-              <LayoutDashboard className={cn('w-6 h-6', activeTab === 'dashboard' ? 'fill-current' : '')} />
-              <span className="text-xs mt-1 font-medium">Dashboard</span>
-            </button>
-          ) : (
-            <button
-              disabled
-              className={cn(
-                'flex flex-col items-center justify-center py-3 px-4 flex-1 transition-colors opacity-50 cursor-not-allowed',
-                activeTab === 'dashboard' ? 'text-orange-600' : 'text-gray-500'
+                'flex flex-col items-center gap-1 px-4 py-1 rounded-lg transition-all',
+                activeTab === 'dashboard' ? 'text-orange-600 font-bold' : 'text-gray-500'
               )}
             >
               <LayoutDashboard className="w-6 h-6" />
-              <span className="text-xs mt-1 font-medium">Dashboard</span>
+              <span className="text-[10px]">Stats</span>
             </button>
           )}
+
           <button
             onClick={() => setActiveTab('annonces')}
             className={cn(
-              'flex flex-col items-center justify-center py-3 px-4 flex-1 transition-colors',
-              activeTab === 'annonces' ? 'text-orange-600' : 'text-gray-500'
+              'flex flex-col items-center gap-1 px-4 py-1 rounded-lg transition-all',
+              activeTab === 'annonces' ? 'text-orange-600 font-bold' : 'text-gray-500'
             )}
           >
-            <Megaphone className={cn('w-6 h-6', activeTab === 'annonces' ? 'fill-current' : '')} />
-            <span className="text-xs mt-1 font-medium">Annonces</span>
+            <Megaphone className="w-6 h-6" />
+            <span className="text-[10px]">Annonces</span>
           </button>
+
           <button
             onClick={() => setActiveTab('livraisons')}
             className={cn(
-              'flex flex-col items-center justify-center py-3 px-4 flex-1 transition-colors',
-              activeTab === 'livraisons' ? 'text-orange-600' : 'text-gray-500'
+              'flex flex-col items-center gap-1 px-4 py-1 rounded-lg transition-all',
+              activeTab === 'livraisons' ? 'text-orange-600 font-bold' : 'text-gray-500'
             )}
           >
-            <Truck className={cn('w-6 h-6', activeTab === 'livraisons' ? 'fill-current' : '')} />
-            <span className="text-xs mt-1 font-medium">Livraisons</span>
+            <Truck className="w-6 h-6" />
+            <span className="text-[10px]">Livraisons</span>
           </button>
         </div>
       </nav>
 
-      {/* Footer - Desktop Only */}
-      <footer className="hidden md:block w-full bg-white border-t py-4 mt-auto">
+      {/* Desktop Footer */}
+      <footer className="hidden md:block py-6 bg-white border-t border-gray-100 mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
           <p>© 2025 TiiBnPick - Espace Livreur • Disponible 24h/24</p>
         </div>
