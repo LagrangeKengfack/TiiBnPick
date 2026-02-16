@@ -10,6 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
+import apiClient from '@/lib/axios'
 import {
   Package,
   Users,
@@ -99,6 +101,7 @@ type ActiveView = 'dashboard' | 'registrations' | 'accounts' | 'subscriptions'
 export default function SuperAdminDashboard() {
   const { toast } = useToast()
   const router = useRouter()
+  const { user, logout, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState<DeliveryPersonRequest | null>(null)
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
@@ -116,11 +119,25 @@ export default function SuperAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // Super admin info
-  const [adminName, setAdminName] = useState('Chargement...')
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
 
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/')
+      } else if (user.userType !== 'ADMIN') {
+        router.push('/') // Or access denied page
+        toast({
+          title: 'Accès refusé',
+          description: "Vous n'avez pas les droits d'administrateur.",
+          variant: 'destructive',
+        })
+      }
+    }
+  }, [user, authLoading, router, toast])
+
   const handleLogout = () => {
-    router.push('/')
+    logout()
   }
 
   const sidebarItems = [
@@ -191,29 +208,13 @@ export default function SuperAdminDashboard() {
     setRegistrationRequests(testData)
     setLoading(false)
     fetchAccounts()
-    fetchAdminInfo()
     fetchDashboardStats()
   }, [])
 
-  const fetchAdminInfo = async () => {
-    try {
-      const response = await fetch('/api/admin/me')
-      if (response.ok) {
-        const data = await response.json()
-        setAdminName(`${data.firstName} ${data.lastName}`)
-      }
-    } catch (error) {
-      console.error('Error fetching admin info:', error)
-    }
-  }
-
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch('/api/admin/dashboard-stats')
-      if (response.ok) {
-        const data = await response.json()
-        setDashboardStats(data)
-      }
+      const response = await apiClient.get('/api/admin/dashboard-stats')
+      setDashboardStats(response.data)
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
     }
@@ -279,13 +280,12 @@ export default function SuperAdminDashboard() {
       ]
 
       // Essayer de récupérer les données de l'API
-      const response = await fetch('/api/registrations')
-      if (response.ok) {
-        const data = await response.json()
+      try {
+        const response = await apiClient.get('/api/registrations')
+        const data = response.data
         // Si l'API retourne des données, les utiliser
         setRegistrationRequests(data.length > 0 ? data : testData)
-      } else {
-        // Sinon utiliser les données de test
+      } catch (e) {
         setRegistrationRequests(testData)
       }
     } catch (error) {
@@ -328,11 +328,8 @@ export default function SuperAdminDashboard() {
   // Fetch accounts
   const fetchAccounts = async () => {
     try {
-      const response = await fetch('/api/accounts')
-      if (response.ok) {
-        const data = await response.json()
-        setAccounts(data)
-      }
+      const response = await apiClient.get('/api/accounts')
+      setAccounts(response.data)
     } catch (error) {
       console.error('Error fetching accounts:', error)
     }
@@ -398,85 +395,43 @@ export default function SuperAdminDashboard() {
   const confirmAction = async () => {
     try {
       if (actionDialog === 'approve' && selectedRequest) {
-        const response = await fetch(`/api/registrations/${selectedRequest.id}/approve`, {
-          method: 'POST'
+        await apiClient.post(`/api/registrations/${selectedRequest.id}/approve`)
+        toast({
+          title: 'Inscription approuvée',
+          description: `Le livreur ${selectedRequest.name} a été approuvé avec succès.`
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Inscription approuvée',
-            description: `Le livreur ${selectedRequest.name} a été approuvé avec succès.`
-          })
-          await fetchRegistrations()
-          await fetchAccounts()
-        } else {
-          throw new Error('Failed to approve')
-        }
+        await fetchRegistrations()
+        await fetchAccounts()
       } else if (actionDialog === 'reject' && selectedRequest) {
-        const response = await fetch(`/api/registrations/${selectedRequest.id}/reject`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: 'Rejeté par l\'administrateur' })
+        await apiClient.post(`/api/registrations/${selectedRequest.id}/reject`, { reason: 'Rejeté par l\'administrateur' })
+        toast({
+          title: 'Inscription rejetée',
+          description: `La demande de ${selectedRequest.name} a été rejetée.`,
+          variant: 'destructive'
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Inscription rejetée',
-            description: `La demande de ${selectedRequest.name} a été rejetée.`,
-            variant: 'destructive'
-          })
-          await fetchRegistrations()
-        } else {
-          throw new Error('Failed to reject')
-        }
+        await fetchRegistrations()
       } else if (actionDialog === 'suspend' && selectedAccount) {
-        const response = await fetch(`/api/accounts/${selectedAccount.id}/suspend`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endDate: suspensionEndDate ? suspensionEndDate.toISOString() : null })
+        await apiClient.post(`/api/accounts/${selectedAccount.id}/suspend`, { endDate: suspensionEndDate ? suspensionEndDate.toISOString() : null })
+        toast({
+          title: 'Compte suspendu',
+          description: `Le compte de ${selectedAccount.name} a été suspendu.`
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Compte suspendu',
-            description: `Le compte de ${selectedAccount.name} a été suspendu.`
-          })
-          setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'SUSPENDED' } : a))
-          // await fetchAccounts()
-        } else {
-          throw new Error('Failed to suspend')
-        }
+        setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'SUSPENDED' } : a))
       } else if (actionDialog === 'revoke' && selectedAccount) {
-        const response = await fetch(`/api/accounts/${selectedAccount.id}/revoke`, {
-          method: 'POST'
+        await apiClient.post(`/api/accounts/${selectedAccount.id}/revoke`)
+        toast({
+          title: 'Compte révoqué',
+          description: `Le compte de ${selectedAccount.name} a été révoqué définitivement.`,
+          variant: 'destructive'
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Compte révoqué',
-            description: `Le compte de ${selectedAccount.name} a été révoqué définitivement.`,
-            variant: 'destructive'
-          })
-          setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'REVOKED' } : a))
-          // await fetchAccounts()
-        } else {
-          throw new Error('Failed to revoke')
-        }
+        setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'REVOKED' } : a))
       } else if (actionDialog === 'restore' && selectedAccount) {
-        const response = await fetch(`/api/accounts/${selectedAccount.id}/restore`, {
-          method: 'POST'
+        await apiClient.post(`/api/accounts/${selectedAccount.id}/restore`)
+        toast({
+          title: 'Compte restauré',
+          description: `Le compte de ${selectedAccount.name} a été restauré avec succès.`
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Compte restauré',
-            description: `Le compte de ${selectedAccount.name} a été restauré avec succès.`
-          })
-          setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'ACTIVE' } : a))
-          // await fetchAccounts()
-        } else {
-          throw new Error('Failed to restore')
-        }
+        setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'ACTIVE' } : a))
       }
     } catch (error) {
       console.error('Error performing action:', error)
@@ -630,11 +585,11 @@ export default function SuperAdminDashboard() {
         <div className="p-4 border-t border-orange-700">
           <div className="flex items-center gap-3 text-white">
             <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-semibold flex-shrink-0">
-              {adminName.split(' ').map(n => n[0]).join('')}
+              {user ? `${user.firstName[0]}${user.lastName[0]}` : 'A'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate text-sm">{adminName}</p>
-              <p className="text-xs text-orange-100 truncate">admin@tiibnpick.com</p>
+              <p className="font-medium truncate text-sm">{user ? `${user.firstName} ${user.lastName}` : 'Chargement...'}</p>
+              <p className="text-xs text-orange-100 truncate">{user?.email || 'admin@tiibnpick.com'}</p>
             </div>
             <Button
               variant="ghost"
@@ -679,7 +634,7 @@ export default function SuperAdminDashboard() {
               {/* Welcome Section */}
               <div className="mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold">
-                  Bienvenue, <span className="text-orange-600">{adminName}</span>
+                  Bienvenue, <span className="text-orange-600">{user ? `${user.firstName} ${user.lastName}` : 'Chargement...'}</span>
                 </h2>
               </div>
 
