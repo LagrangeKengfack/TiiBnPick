@@ -62,7 +62,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
-import { ThumbsUp, MessageCircle, Mail, ImageIcon } from 'lucide-react'
+import { ThumbsUp, MessageCircle, Mail, ImageIcon, Heart } from 'lucide-react'
 
 export default function LivreurDashboard() {
   const router = useRouter()
@@ -844,10 +844,17 @@ export default function LivreurDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1"
+                          className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
                           onClick={() => { setSelectedDelivery(delivery); setDetailsOpen(true) }}
                         >
                           Voir Détails
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                          onClick={() => handleAcceptDelivery(delivery.id)}
+                        >
+                          Souscrire à l'annonce
                         </Button>
                       </div>
                     </CardContent>
@@ -956,8 +963,8 @@ export default function LivreurDashboard() {
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-bold text-gray-900">Avis des Livreurs</h4>
                             <Badge variant="outline" className="flex items-center gap-1 border-orange-200 text-orange-700 bg-orange-50">
-                              <ThumbsUp className="w-3 h-3" />
-                              {selectedDelivery?.feedback?.likes} j'aime
+                              <Heart className="w-3 h-3 fill-current" />
+                              {selectedDelivery?.feedback?.likes} likes
                             </Badge>
                           </div>
                           <div className="space-y-3">
@@ -1036,17 +1043,7 @@ export default function LivreurDashboard() {
                         </div>
                       </div>
 
-                      <div className="pt-4">
-                        <Button
-                          className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-12 shadow-lg shadow-orange-500/20"
-                          onClick={() => {
-                            if (selectedDelivery) handleAcceptDelivery(selectedDelivery.id);
-                            setDetailsOpen(false);
-                          }}
-                        >
-                          Accepter cette livraison
-                        </Button>
-                      </div>
+
                     </div>
                   </div>
                 </DialogContent>
