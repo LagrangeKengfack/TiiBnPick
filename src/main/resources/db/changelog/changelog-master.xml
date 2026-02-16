@@ -196,4 +196,14 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260216_fix_packet_circular_dependency.sql" relativeToChangelogFile="false"/>
     </changeSet>
+
+    <changeSet id="035-add-role-to-person" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/add-role-to-person.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="036-updatePerson" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/updatePerson.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

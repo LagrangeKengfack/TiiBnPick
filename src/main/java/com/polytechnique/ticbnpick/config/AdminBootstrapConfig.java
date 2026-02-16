@@ -1,44 +1,104 @@
 package com.polytechnique.ticbnpick.config;
 
+import com.polytechnique.ticbnpick.models.Person;
+import com.polytechnique.ticbnpick.models.enums.PersonRole;
+import com.polytechnique.ticbnpick.repositories.PersonRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import java.util.UUID;
 
 /**
- * Bootstrap configuration to create default admin.
+ * Bootstrap configuration to create default admin on application startup.
+ * 
+ * This component implements ApplicationRunner which is executed after the
+ * Spring context is fully initialized. It checks if an admin user already
+ * exists and creates one if not, ensuring idempotent behavior across restarts.
+ * 
+ * Principle:
+ * - ApplicationRunner executes once at startup after all beans are initialized
+ * - existsByEmail() check ensures the admin is only created if it doesn't exist
+ * - This is idempotent: no matter how many times the app restarts, only one admin exists
  *
- * @author Kengfack Lagrange
- * @date 19/12/2025
+ * @author TicBnPick Team
  */
 @Slf4j
-@Configuration
-public class AdminBootstrapConfig {
+@Component
+@RequiredArgsConstructor
+public class AdminBootstrapConfig implements ApplicationRunner {
 
-    @Value("${admin.email:admin@ticbnpick.com}")
-    private String adminEmail;
+    private final PersonRepository personRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Value("${admin.password:admin123}")
-    private String adminPassword;
+    // Admin credentials
+    private static final String ADMIN_EMAIL = "bernicetsafack@gmail.com";
+    private static final String ADMIN_PASSWORD = "123456789";
+    private static final String ADMIN_LAST_NAME = "Kengfack";
+    private static final String ADMIN_FIRST_NAME = "Bernice";
+    private static final String ADMIN_PHONE = "673962337";
+
+    @Override
+    public void run(ApplicationArguments args) {
+        log.info("=".repeat(60));
+        log.info("Checking for admin user...");
+        
+        personRepository.existsByEmail(ADMIN_EMAIL)
+            .flatMap(exists -> {
+                if (exists) {
+                    log.info("Admin user already exists: {}", ADMIN_EMAIL);
+                    // Simply return the existing admin for logging, don't save it
+                    return personRepository.findByEmail(ADMIN_EMAIL)
+                            .doOnNext(person -> person.setNewEntity(false));
+                } else {
+                    log.info("Creating admin user...");
+                    Person admin = createAdminPerson();
+                    return personRepository.save(admin);
+                }
+            })
+            .doOnSuccess(person -> {
+                if (person != null) {
+                    log.info("Admin user ready:");
+                    log.info("  Email: {}", person.getEmail());
+                    log.info("  Name: {} {}", person.getFirstName(), person.getLastName());
+                    log.info("  Role: {}", person.getRole());
+                    log.info("=".repeat(60));
+                }
+            })
+            .doOnError(error -> {
+                log.error("Failed to initialize admin user: {}", error.getMessage());
+            })
+            .subscribe();
+    }
 
     /**
-     * Creates the admin user on application startup.
+     * Creates the admin Person entity with predefined values.
      *
-     * Admin user is created via in-memory UserDetailsService in SecurityConfig.
-     * This method logs the admin credentials for development purposes.
-     *
-     * @return CommandLineRunner that logs admin info
+     * @return the admin Person ready to be saved
      */
-    @Bean
-    public CommandLineRunner createAdminUser() {
-        return args -> {
-            log.info("=".repeat(60));
-            log.info("Admin user configured:");
-            log.info("  Email: {}", adminEmail);
-            log.info("  Password: [configured via environment variable]");
-            log.info("  Use HTTP Basic Auth to access /api/admin/** endpoints");
-            log.info("=".repeat(60));
-        };
+    private Person createAdminPerson() {
+        Person admin = new Person();
+        admin.setId(UUID.randomUUID());
+        admin.setEmail(ADMIN_EMAIL);
+        admin.setPassword(passwordEncoder.encode(ADMIN_PASSWORD));
+        admin.setLastName(ADMIN_LAST_NAME);
+        admin.setFirstName(ADMIN_FIRST_NAME);
+        admin.setPhone(ADMIN_PHONE);
+        admin.setRole(PersonRole.ADMIN.name());
+        admin.setIsActive(true);
+        
+        // Generate random values for required fields
+        admin.setNationalId("ADMIN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        admin.setPhotoCard("admin-photo-" + UUID.randomUUID().toString().substring(0, 8));
+        admin.setNui("NUI-ADMIN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        
+        // Optional fields
+        admin.setRating(5.0);
+        admin.setTotalDeliveries(0);
+        
+        return admin;
     }
 }
