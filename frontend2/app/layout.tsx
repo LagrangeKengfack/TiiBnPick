@@ -56,7 +56,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className={themeCookie === 'dark' ? 'dark' : 'light'} style={{ colorScheme: themeCookie }}>
+    <html lang="en" suppressHydrationWarning className={themeCookie === 'dark' ? 'dark' : 'light'} style={{ colorScheme: themeCookie as any }}>
       <body className={`font-sans antialiased`}>
         <ThemeProvider attribute="class">
           <AuthProvider>

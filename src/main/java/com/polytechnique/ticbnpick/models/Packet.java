@@ -26,6 +26,12 @@ public class Packet {
     @Column("id")
     private UUID id;
 
+    @Column("weight")
+    private Double weight;
+
+    @Column("height")
+    private Double height;
+
     @NotNull
     @Column("width")
     private Double width;
@@ -48,4 +54,10 @@ public class Packet {
     @NotNull
     @Column("is_perishable")
     private Boolean isPerishable;
+
+    @Column("thickness")
+    private Double thickness;
+
+    @Column("designation")
+    private String designation;
 }

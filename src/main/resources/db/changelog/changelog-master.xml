@@ -41,17 +41,17 @@
                 relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="006-create-announcement" author="TiiBnPickTeam">
-        <validCheckSum>ANY</validCheckSum>
-        <sqlFile
-                path="db/changelog/create-announcement.sql"
-                relativeToChangelogFile="false"/>
-    </changeSet>
-
     <changeSet id="007-create-packet" author="TiiBnPickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile
                 path="db/changelog/create-packet.sql"
+                relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="006-create-announcement" author="TiiBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile
+                path="db/changelog/create-announcement.sql"
                 relativeToChangelogFile="false"/>
     </changeSet>
 
@@ -99,6 +99,7 @@
                 relativeToChangelogFile="false"/>
     </changeSet>
 
+
     <changeSet id="014-create-comment" author="TiiBnPickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile
@@ -113,4 +114,86 @@
                 relativeToChangelogFile="false"/>
     </changeSet>
 
+    <changeSet id="016-update-packet-announcement" author="TiiBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile
+                path="db/changelog/update-packet-announcement.sql"
+                relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="017-add-duration" author="Tchoungs">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/update-schema-duration.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="018-add-address-coordinates" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/update-address-coordinates.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="019-create-announcement-subscription" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/create-announcement-subscription.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="020-update-logistic-packet-announcement" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/update-schema-logistic-packet-announcement.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="021-add-cni-photos-to-person" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260207_add_cni_photos_to_person.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="022-update-logistics-dimensions" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260207_update_logistics_dimensions.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet id="023-add-nui-is-active-to-person" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260208_add_nui_is_active_to_person.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="024-fix-delivery-person-and-logistics-schema" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260208_fix_delivery_person_and_logistics_schema.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="025-fix-packets-and-announcements-schema" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260208_fix_packets_and_announcements_schema.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="026-add-distance-to-announcements" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260209_add_distance_to_announcements.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="027-separate-shipper-names" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260209_separate_shipper_names.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+    <changeSet id="028-separate-recipient-names-and-mandatory-emails" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260209_separate_recipient_names_and_mandatory_emails.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+    <changeSet id="029-add-missing-announcement-columns" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260209_add_missing_announcement_columns.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+    <changeSet id="030-add-weight-to-packets" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260210_add_weight_to_packets.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="031-ensure-all-announcement-columns" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260210_ensure_all_announcement_columns.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+
+    <changeSet id="032-drop-recipient-number" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260216_drop_recipient_number.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="033-insert-guest-client" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260216_insert_guest_client.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+    <changeSet id="034-fix-packet-circular-dependency" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260216_fix_packet_circular_dependency.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

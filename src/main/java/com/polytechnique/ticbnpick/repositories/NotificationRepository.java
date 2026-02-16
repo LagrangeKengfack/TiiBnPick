@@ -2,7 +2,7 @@ package com.polytechnique.ticbnpick.repositories;
 
 import com.polytechnique.ticbnpick.models.Notification;
 import java.util.UUID;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -12,5 +12,5 @@ import org.springframework.stereotype.Repository;
  * @date 21/01/2026
  */
 @Repository
-public interface NotificationRepository extends CrudRepository<Notification, UUID> {
+public interface NotificationRepository extends ReactiveCrudRepository<Notification, UUID> {
 }

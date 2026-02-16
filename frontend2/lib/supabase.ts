@@ -1,15 +1,21 @@
 // Minimal supabase stub to satisfy imports in dev environment
-export const supabase = {
-  from: (tableName: string) => ({
-    select: async (..._args: any[]) => ({ data: [], error: null }),
+const createChain = () => {
+  const chain = {
+    select: (_args?: any) => chain,
+    eq: (_col?: string, _val?: any) => chain,
+    single: async () => ({ data: {} as any, error: null as any }),
+    order: (_col?: string, _opts?: any) => chain,
     insert: async (_data: any) => ({ data: [], error: null }),
     update: async (_data: any) => ({ data: [], error: null }),
-  }),
+  };
+  return chain;
+};
+
+export const supabase = {
+  from: (_tableName: string) => createChain(),
   auth: {
-    getUser: async () => ({ data: null, error: null }),
-    // getSession should return an object with a `data` property containing `session`
-    getSession: async () => ({ data: { session: null }, error: null }),
-    // keep compatibility with other auth helpers if needed
+    getUser: async () => ({ data: { user: { id: 'dummy' } }, error: null }),
+    getSession: async () => ({ data: { session: { user: { id: 'dummy' } } }, error: null }),
     signIn: async () => ({ data: null, error: null }),
     signOut: async () => ({ data: null, error: null })
   }

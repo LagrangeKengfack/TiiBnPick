@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Loader2, Clock } from 'lucide-react'
-import MapLeaflet from '@/components/MapLeaflet'
+import dynamic from 'next/dynamic'
 import { geocode } from '@/services/geocoding'
 import { getRoute } from '@/services/routing'
 import type { GeoJSON } from 'geojson'
@@ -26,6 +26,11 @@ interface RouteSelectionStepProps {
   initialArrivalCoords?: { lat: number; lon: number }
   transportMethod?: string
 }
+
+const MapLeaflet = dynamic(() => import('@/components/MapLeaflet'), {
+  ssr: false,
+  loading: () => <div className="w-full h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
+})
 
 const calculateTravelPrice = (distance: number) => {
   if (distance <= 0) return 0

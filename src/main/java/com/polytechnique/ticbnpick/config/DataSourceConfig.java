@@ -10,7 +10,7 @@ import javax.sql.DataSource;
 @Configuration
 public class DataSourceConfig {
 
-    @Value("${DB_URL:jdbc:postgresql://localhost:5432/ticbnpick}")
+    @Value("${spring.datasource.url}")
     private String dbUrl;
 
     @Value("${DB_USERNAME}")

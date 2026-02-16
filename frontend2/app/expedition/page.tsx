@@ -27,7 +27,6 @@ import PackageInfoStep from './FormulaireColisExpedition';
 import RouteSelectionStep from './RouteExpedition';
 import SignatureStep from './SignatureStep';
 import PaymentStep from './PaymentStepExpedition';
-import NavbarHome from '@/components/NavbarHome';
 import { CheckCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { UserPlusIcon } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -56,27 +55,27 @@ interface SenderData {
   senderFirstName: string;
   senderLastName: string;
   senderPhone: string;
-  senderEmail: string;      // Ajouté
-  senderCountry: string;    // Ajouté
-  senderRegion: string;     // Ajouté
-  senderCity: string;       // Ajouté
+  senderEmail: string;
+  senderCountry: string;
+  senderRegion: string;
+  senderCity: string;
   senderAddress: string;
-  senderLieuDit: string;
   latitude?: number;
   longitude?: number;
 }
 
 // 2. Mise à jour de l'interface RecipientData
 interface RecipientData {
-  recipientName: string;
+  recipientFirstName: string;
+  recipientLastName: string;
   recipientPhone: string;
   recipientEmail: string;
-  recipientCountry: string; // Ajouté
-  recipientRegion: string;  // Ajouté
-  recipientCity: string;    // Ajouté
+  recipientCountry: string;
+  recipientRegion: string;
+  recipientCity: string;
   recipientAddress: string;
-  recipientLieuDit: string;
-  // Les champs genre et age n'existent pas dans le composant enfant, on les retire pour la cohérence
+  recipientLatitude?: number;
+  recipientLongitude?: number;
 }
 // << CORRIGÉ: Mise à jour de l'interface PackageData >>
 interface PackageData {
@@ -89,13 +88,7 @@ interface PackageData {
   height: string;
   isFragile: boolean;
   isPerishable: boolean;
-  isLiquid: boolean;
-  isInsured: boolean;
-  declaredValue: string;
-  transportMethod: 'truck' | 'tricycle' | 'moto' | 'bike' | 'car' | ''; // Renommage
-  logistics: 'standard' | 'express_48h' | 'express_24h';              // Nouveau champ
-  pickup: boolean;
-  delivery: boolean;
+  transportMethod: 'TRUCK' | 'MOTORBIKE' | 'BIKE' | 'CAR' | 'SCOOTER' | '';
 }
 interface RouteData {
   departurePointId: string | null;
@@ -185,22 +178,21 @@ export default function ShippingPage() {
   const router = useRouter();
   const [user, setUser] = useState<LoggedInUser | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
   const [formData, setFormData] = useState<ExpeditionFormData>({
     currentStep: 1,
     senderData: {
-      senderFirstName: '', senderLastName: '', senderPhone: '', senderAddress: '', senderLieuDit: '',
+      senderFirstName: '', senderLastName: '', senderPhone: '', senderAddress: '',
       senderEmail: '', senderCountry: 'cameroun', senderRegion: 'centre', senderCity: 'Yaoundé'
     },
     recipientData: {
-      recipientName: '', recipientPhone: '', recipientEmail: '', recipientAddress: '', recipientLieuDit: '',
+      recipientFirstName: '', recipientLastName: '', recipientPhone: '', recipientEmail: '', recipientAddress: '',
       recipientCountry: 'cameroun', recipientRegion: 'centre', recipientCity: 'Yaoundé'
     },
     packageData: {
       photo: null, designation: '', description: '', weight: '', length: '', width: '', height: '',
-      isFragile: false, isPerishable: false, isLiquid: false, isInsured: false, declaredValue: '',
-      transportMethod: '',
-      logistics: 'standard',
-      pickup: false, delivery: false
+      isFragile: false, isPerishable: false,
+      transportMethod: ''
     },
     routeData: { departurePointId: null, arrivalPointId: null, departurePointName: '', arrivalPointName: '', distanceKm: 0 },
     signatureData: { signatureUrl: null },
@@ -208,8 +200,19 @@ export default function ShippingPage() {
   });
 
   // États pour l'écran de succès
-  const [trackingNumber] = useState(`PDL${Date.now().toString().slice(-7)}`);
+  const [trackingNumber, setTrackingNumber] = useState('PDL0000000');
 
+  // Generate tracking number only on client side to avoid hydration mismatch
+  useEffect(() => {
+    if (formData.currentStep === 7 && trackingNumber === 'PDL0000000') {
+      setTrackingNumber(`PDL${Date.now().toString().slice(-7)}`);
+    }
+  }, [formData.currentStep, trackingNumber]);
+
+  // Set mounted flag to prevent hydration issues
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (formData.currentStep > 0 && formData.currentStep < 7) {
@@ -241,7 +244,7 @@ export default function ShippingPage() {
 
   useEffect(() => {
     const checkUserAndLoadData = async () => {
-      let restoredData = null;
+      let restoredData: Partial<ExpeditionFormData> | null = null;
       let shouldAskToRestore = false;
 
       try {
@@ -265,9 +268,9 @@ export default function ShippingPage() {
         localStorage.removeItem(EXPEDITION_FORM_STORAGE_KEY);
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      const { data: { session } } = await (supabase.auth.getSession() as any);
+      if (session?.user) {
+        const { data: profile } = await (supabase.from('profiles').select('*').eq('id', session.user.id).single() as any);
         if (profile) {
           const connectedUser: LoggedInUser = { id: profile.id, full_name: profile.full_name, phone: profile.phone, email: profile.email, address: profile.address, lieu_dit: profile.lieu_dit };
           setUser(connectedUser);
@@ -283,7 +286,6 @@ export default function ShippingPage() {
                 senderPhone: connectedUser.phone || '',
                 senderEmail: connectedUser.email || '', // Email ajouté
                 senderAddress: connectedUser.address || '',
-                senderLieuDit: connectedUser.lieu_dit || '',
               }
             }));
           }
@@ -365,7 +367,7 @@ export default function ShippingPage() {
 
       addSectionTitle('Intervenants');
       addField('Expéditeur:', `${formData.senderData.senderFirstName} ${formData.senderData.senderLastName}`);
-      addField('Destinataire:', formData.recipientData.recipientName);
+      addField('Destinataire:', `${formData.recipientData.recipientFirstName} ${formData.recipientData.recipientLastName}`);
 
       addSectionTitle('Financier');
       addField('Total:', `${formData.pricing.totalPrice} FCFA`);
@@ -447,10 +449,20 @@ export default function ShippingPage() {
       case 6:
         // Construction de l'objet final pour le composant de paiement
         // Conversion forcée et nettoyage des types
-        const fullDataForPayment = {
+        const fullDataForPayment: any = {
           ...formData.senderData,
-          ...formData.recipientData,
+          senderFirstName: formData.senderData.senderFirstName,
+          senderLastName: formData.senderData.senderLastName,
+          recipientFirstName: formData.recipientData.recipientFirstName,
+          recipientLastName: formData.recipientData.recipientLastName,
+          recipientPhone: formData.recipientData.recipientPhone,
+          recipientEmail: formData.recipientData.recipientEmail,
+          recipientCountry: formData.recipientData.recipientCountry,
+          recipientRegion: formData.recipientData.recipientRegion,
+          recipientCity: formData.recipientData.recipientCity,
+          recipientAddress: formData.recipientData.recipientAddress,
           ...formData.packageData,
+          transportMethod: formData.packageData.transportMethod,
           // Gérer explicitement le type File/String de la photo
           photo: typeof formData.packageData.photo === 'string' ? formData.packageData.photo : null,
           ...formData.routeData,
@@ -547,7 +559,7 @@ export default function ShippingPage() {
     }
   };
 
-  if (isLoadingUser) {
+  if (!isMounted || isLoadingUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-900">
         <motion.div

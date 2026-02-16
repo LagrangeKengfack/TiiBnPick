@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Phone, Mail, MapPin, Home, ArrowRight, Send, Sparkles, Circle, UserPlus, X, Globe, Building, Navigation } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -14,7 +15,6 @@ interface SenderData {
   senderRegion: string;
   senderCity: string;
   senderAddress: string;
-  senderLieuDit: string;
   latitude?: number;
   longitude?: number;
 }
@@ -222,26 +222,16 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
   const isUserLoggedIn = !!(currentUser || authUser);
 
   // --- CORRECTION START ---
-  // Effet pour réinitialiser la région et la ville si le pays change et que la région n'est plus valide.
-  useEffect(() => {
-    if (formData.senderCountry) {
-      const countryData = countries[formData.senderCountry as keyof typeof countries];
-      if (countryData && !countryData.regions.hasOwnProperty(formData.senderRegion)) {
-        setFormData(prev => ({ ...prev, senderRegion: '', senderCity: '' }));
-      }
-    }
-  }, [formData.senderCountry, formData.senderRegion]);
+  // Mapping pour convertir les noms de pays en clés internes
+  const mapCountryToKey = (countryName: string): string => {
+    const name = countryName.toLowerCase();
+    if (name.includes('cameroun') || name.includes('cameroon')) return 'cameroun';
+    if (name.includes('nigeria')) return 'nigeria';
+    return '';
+  };
 
-  // Effet pour réinitialiser la ville si la région change et que la ville n'est plus valide.
-  useEffect(() => {
-    if (formData.senderCountry && formData.senderRegion) {
-      const countryData = countries[formData.senderCountry as keyof typeof countries];
-      const regionData = (countryData.regions as any)[formData.senderRegion];
-      if (regionData && !regionData.cities.includes(formData.senderCity)) {
-        setFormData(prev => ({ ...prev, senderCity: '' }));
-      }
-    }
-  }, [formData.senderCountry, formData.senderRegion, formData.senderCity]);
+  // LES EFFETS DE RÉINITIALISATION ONT ÉTÉ SUPPRIMÉS POUR ÉVITER LES SUPPRESSIONS INTEMPESTIVES
+  // --- CORRECTION END ---
 
   // Effet pour gérer la disparition automatique de la notification et continuer automatiquement
   useEffect(() => {
@@ -285,13 +275,13 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
     if (formData.senderFirstName.trim().length < 2) newErrors.senderFirstName = "Prénom requis";
     if (formData.senderLastName.trim().length < 2) newErrors.senderLastName = "Nom requis";
     if (!/^(6|2)(?:[235-9]\d{7})$/.test(formData.senderPhone.replace(/\s/g, ''))) newErrors.senderPhone = "Format invalide";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.senderEmail)) newErrors.senderEmail = "Email invalide";
 
     if (!isSender) {
       if (!formData.senderCountry) newErrors.senderCountry = "Pays requis";
       if (!formData.senderRegion) newErrors.senderRegion = "Région requise";
       if (!formData.senderCity) newErrors.senderCity = "Ville requise";
       if (!formData.senderAddress.trim()) newErrors.senderAddress = "Adresse requise";
-      if (!formData.senderLieuDit.trim()) newErrors.senderLieuDit = "Lieu-dit requis";
     }
     return newErrors;
   };
@@ -448,7 +438,7 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField icon={Phone} id="senderPhone" name="senderPhone" value={formData.senderPhone} onChange={handleChange} label="Téléphone" placeholder="699123456" error={errors.senderPhone} />
-                  <InputField icon={Mail} type="email" id="senderEmail" name="senderEmail" value={formData.senderEmail} onChange={handleChange} label="Email (optionnel)" placeholder="nom@exemple.com" />
+                  <InputField icon={Mail} type="email" id="senderEmail" name="senderEmail" value={formData.senderEmail} onChange={handleChange} label="Email" placeholder="nom@exemple.com" error={errors.senderEmail} />
                 </div>
 
                 {!isSender && (
@@ -458,18 +448,70 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
                         <option value="">Sélectionner un pays</option>
                         {Object.entries(countries).map(([key, country]) => (<option key={key} value={key}>{country.name}</option>))}
                       </SelectField>
-                      <SelectField icon={Building} id="senderRegion" name="senderRegion" value={formData.senderRegion} onChange={handleChange} label="Région" error={errors.senderRegion} disabled={!formData.senderCountry}>
-                        <option value="">Sélectionner une région</option>
-                        {Object.entries(availableRegions).map(([key, region]) => (<option key={key} value={key}>{(region as { name: string }).name}</option>))}
-                      </SelectField>
-                      <SelectField icon={Navigation} id="senderCity" name="senderCity" value={formData.senderCity} onChange={handleChange} label="Ville" error={errors.senderCity} disabled={!formData.senderRegion}>
-                        <option value="">Sélectionner une ville</option>
-                        {availableCities.map((city: string) => (<option key={city} value={city}>{city}</option>))}
-                      </SelectField>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <SelectField icon={Building} id="senderRegion" name="senderRegion" value={formData.senderRegion} onChange={(e: any) => {
+                          const region = e.target.value;
+                          const city = region === 'centre' ? 'Yaoundé' : 'Douala';
+                          setFormData(prev => ({
+                            ...prev,
+                            senderRegion: region,
+                            senderCity: city
+                          }));
+                        }} label="Région" error={errors.senderRegion} disabled={!formData.senderCountry}>
+                          <option value="">Sélectionner une région</option>
+                          <option value="centre">Centre</option>
+                          <option value="littoral">Littoral</option>
+                        </SelectField>
+                        <SelectField
+                          icon={Navigation}
+                          id="senderCity"
+                          name="senderCity"
+                          value={formData.senderCity}
+                          label="Ville"
+                          error={errors.senderCity}
+                          onChange={handleChange}
+                        >
+                          <option value="">Sélectionner une ville</option>
+                          {availableCities.map((city: string) => (
+                            <option key={city} value={city}>{city}</option>
+                          ))}
+                          {formData.senderCity && !availableCities.includes(formData.senderCity) && (
+                            <option value={formData.senderCity}>{formData.senderCity}</option>
+                          )}
+                        </SelectField>
+                      </div>
                     </div>
 
-                    <InputField icon={MapPin} id="senderAddress" name="senderAddress" value={formData.senderAddress} onChange={handleChange} label="Adresse Complète" placeholder="Mvan, Yaoundé" error={errors.senderAddress} />
-                    <InputField icon={Home} id="senderLieuDit" name="senderLieuDit" value={formData.senderLieuDit} onChange={handleChange} label="Lieu-dit" placeholder="Face Boulangerie Mvan, portail rouge" error={errors.senderLieuDit} />
+
+                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 tracking-wider">
+                      Adresse Complète
+                    </label>
+                    <AddressAutocomplete
+                      onSelect={(address) => {
+                        const countryKey = mapCountryToKey(address.country);
+                        setFormData(prev => ({
+                          ...prev,
+                          senderAddress: address.street,
+                          senderCity: address.city || prev.senderCity,
+                          senderRegion: address.district || prev.senderRegion,
+                          senderCountry: countryKey || prev.senderCountry,
+                          latitude: address.latitude,
+                          longitude: address.longitude
+                        }));
+                        setErrors(prev => ({
+                          ...prev,
+                          senderAddress: '',
+                          senderCity: '',
+                          senderRegion: '',
+                          senderCountry: ''
+                        }));
+                      }}
+                      defaultValue={formData.senderAddress}
+                      city={formData.senderCity}
+                      placeholder="Rue, Quartier..."
+                      className={errors.senderAddress ? 'border-red-300' : ''}
+                    />
+                    {errors.senderAddress && <p className="text-[10px] text-red-500 mt-1">{errors.senderAddress}</p>}
                   </>
                 )}
 

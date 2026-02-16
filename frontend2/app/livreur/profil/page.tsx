@@ -23,23 +23,26 @@ import {
   Settings
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { withAuth } from '@/components/hoc/withAuth'
+import { useAuth } from '@/context/AuthContext'
 
-export default function LivreurProfile() {
+export function LivreurProfile() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user, logout } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-  // Données fictives du livreur
+  // Information from context
   const [livreurData, setLivreurData] = useState({
-    firstName: 'Kouamé',
-    lastName: 'Jean',
-    email: 'kouame.jean@email.com',
-    phone: '+225 07 00 00 00 00',
-    address: 'Cocody, Rue des Jardins',
+    firstName: user?.firstName || 'Livreur',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: 'Cocody, Rue des Jardins', // This might need to come from a real address service later
     city: 'Abidjan',
-    rating: 4.8,
-    totalDeliveries: 156,
+    rating: user?.rating || 4.8,
+    totalDeliveries: user?.totalDeliveries || 156,
     memberSince: '2023-03-20'
   })
 
@@ -65,11 +68,7 @@ export default function LivreurProfile() {
   }
 
   const handleLogout = () => {
-    toast({
-      title: 'Déconnexion',
-      description: 'Vous avez été déconnecté avec succès',
-    })
-    router.push('/livreur')
+    logout()
   }
 
   const handleDeleteAccount = () => {
@@ -345,3 +344,5 @@ export default function LivreurProfile() {
     </div>
   )
 }
+
+export default withAuth(LivreurProfile, ['LIVREUR'])
