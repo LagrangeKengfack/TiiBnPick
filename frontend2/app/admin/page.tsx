@@ -1196,8 +1196,13 @@ export default function SuperAdminDashboard() {
                         <p className="font-medium">{selectedRequest.vehicleType}</p>
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500">Nom du véhicule</label>
-                        <p className="font-medium">{selectedRequest.vehicleBrand} {selectedRequest.vehicleModel}</p>
+                        <label className="text-xs text-gray-500">Marque et Modèle</label>
+                        <p className="font-medium">
+                          {[selectedRequest.vehicleBrand, selectedRequest.vehicleModel]
+                            .filter(Boolean)
+                            .filter(s => s !== 'Non spécifié')
+                            .join(' ') || 'Non spécifié'}
+                        </p>
                       </div>
                       <div>
                         <label className="text-xs text-gray-500">Plaque d'Immatriculation</label>

@@ -220,8 +220,10 @@ public class AdminDeliveryPersonService {
         response.setStatus(dp.getStatus().name());
         response.setCommercialName(dp.getCommercialName());
         response.setNuiNumber(dp.getTaxpayerNumber());
-        response.setNuiPhoto(person.getNui());
-        log.info("Mapping person NUI: {}", person.getNui());
+        // Use the new nuiPhoto field from Person entity, falling back to null if not
+        // set
+        response.setNuiPhoto(person.getNuiPhoto());
+        log.info("Mapping person NUI Photo: {}", person.getNuiPhoto());
 
         // Personal Info
         response.setNationalId(person.getNationalId());
@@ -233,8 +235,8 @@ public class AdminDeliveryPersonService {
         // Vehicle Info from Logistics
         if (logistics != null) {
             response.setVehicleType(logistics.getLogisticsType().name());
-            response.setVehicleBrand("Unknown"); // Placeholder
-            response.setVehicleModel("Unknown"); // Placeholder
+            response.setVehicleBrand(logistics.getBrand());
+            response.setVehicleModel(logistics.getModel());
             response.setVehicleRegNumber(logistics.getPlateNumber());
             response.setVehicleColor(logistics.getColor());
             response.setVehicleFrontPhoto(logistics.getFrontPhoto());

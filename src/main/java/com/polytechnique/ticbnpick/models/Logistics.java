@@ -44,6 +44,12 @@ public class Logistics {
     @Column("logistics_class")
     private LogisticsClass logisticsClass;
 
+    @Column("brand")
+    private String brand;
+
+    @Column("model")
+    private String model;
+
     @Column("rating")
     private Double rating;
 

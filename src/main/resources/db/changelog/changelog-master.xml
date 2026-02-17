@@ -211,4 +211,6 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260216_insert_admin_user.sql" relativeToChangelogFile="false"/>
     </changeSet>
+    <include file="db/changelog/changes/002-add-brand-model-to-logistics.xml"/>
+    <include file="db/changelog/changes/003-add-nui-photo-to-persons.xml"/>
 </databaseChangeLog>
