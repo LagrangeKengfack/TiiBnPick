@@ -13,12 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import java.util.UUID;
-import com.polytechnique.ticbnpick.services.AdminDeliveryPersonService;
 import reactor.core.publisher.Mono;
 
 /**
@@ -32,7 +26,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AdminController {
 
-    private final AdminDeliveryPersonService adminDeliveryPersonService;
     private final PersonRepository personRepository;
     private final DeliveryPersonRepository deliveryPersonRepository;
 
@@ -74,31 +67,6 @@ public class AdminController {
                         .suspendedCount(tuple.getT3())
                         .rejectedCount(tuple.getT4())
                         .build());
-    }
-
-    @GetMapping("/delivery-persons")
-    public reactor.core.publisher.Flux<com.polytechnique.ticbnpick.models.DeliveryPerson> getDeliveryPersons(
-            @RequestParam(required = false) DeliveryPersonStatus status) {
-        if (status != null) {
-            return deliveryPersonRepository.findAllByStatus(status);
-        }
-        return deliveryPersonRepository.findAll();
-    }
-
-    @PutMapping("/delivery-persons/validate")
-    public Mono<Void> validateDeliveryPerson(
-            @RequestBody com.polytechnique.ticbnpick.dtos.requests.AdminDeliveryPersonValidationRequest request) {
-        return adminDeliveryPersonService.validateRegistration(request);
-    }
-
-    @PutMapping("/delivery-persons/{id}/suspend")
-    public Mono<Void> suspendDeliveryPerson(@PathVariable UUID id) {
-        return adminDeliveryPersonService.suspendDeliveryPerson(id);
-    }
-
-    @PutMapping("/delivery-persons/{id}/revoke")
-    public Mono<Void> revokeDeliveryPerson(@PathVariable UUID id) {
-        return adminDeliveryPersonService.revokeDeliveryPerson(id);
     }
 
 }
