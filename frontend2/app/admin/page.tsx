@@ -80,7 +80,7 @@ interface Account {
   email: string
   phone: string
   role: 'DELIVERY' | 'AGENCY' | 'POINT' | 'CLIENT'
-  status: 'ACTIVE' | 'SUSPENDED' | 'REVOKED'
+  status: 'ACTIVE' | 'SUSPENDED' | 'REVOKED' | 'PENDING'
   deliveriesCount: number
   lastActivityAt: string | null
   createdAt: string
@@ -125,7 +125,17 @@ interface BackendDeliveryPersonDTO {
   updatedAt?: string
 
   nuiNumber?: string
+
   nuiPhoto?: string
+}
+
+interface ClientDTO {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  // Add other fields if necessary
 }
 
 // Mapper function: Backend DTO -> Frontend Interface
@@ -264,14 +274,19 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  // Fetch accounts (delivery persons)
+  // Fetch accounts (delivery persons AND clients)
   const fetchAccounts = async () => {
     try {
-      // Fetch all delivery persons from backend
-      const response = await apiClient.get<BackendDeliveryPersonDTO[]>('/api/admin/delivery-persons')
+      setLoading(true) // Set loading state while fetching
 
-      // Map to Account interface for the accounts view
-      const deliveryPersonAccounts: Account[] = response.data.map(dto => ({
+      // Fetch delivery persons and clients in parallel
+      const [deliveryPersonsResponse, clientsResponse] = await Promise.all([
+        apiClient.get<BackendDeliveryPersonDTO[]>('/api/admin/delivery-persons'),
+        apiClient.get<ClientDTO[]>('/api/clients')
+      ])
+
+      // Map delivery persons to Account interface
+      const deliveryPersonAccounts: Account[] = deliveryPersonsResponse.data.map(dto => ({
         id: dto.id,
         name: `${dto.firstName} ${dto.lastName}`,
         email: dto.email,
@@ -279,16 +294,39 @@ export default function SuperAdminDashboard() {
         role: 'DELIVERY' as const,
         status: dto.status === 'APPROVED' ? 'ACTIVE' :
           dto.status === 'SUSPENDED' ? 'SUSPENDED' :
-            dto.status === 'REJECTED' ? 'REVOKED' : 'ACTIVE',
+            dto.status === 'REJECTED' ? 'REVOKED' :
+              dto.status === 'PENDING' ? 'PENDING' : 'ACTIVE',
         deliveriesCount: 0, // Not provided by backend
         lastActivityAt: null,
         createdAt: dto.createdAt || new Date().toISOString(),
         updatedAt: dto.updatedAt || new Date().toISOString(),
       }))
 
-      setAccounts(deliveryPersonAccounts)
+      // Map clients to Account interface
+      const clientAccounts: Account[] = clientsResponse.data.map(client => ({
+        id: client.id,
+        name: `${client.firstName} ${client.lastName}`,
+        email: client.email,
+        phone: client.phone,
+        role: 'CLIENT' as const,
+        status: 'ACTIVE', // Default status for clients as API assumes active if returned
+        deliveriesCount: 0,
+        lastActivityAt: null,
+        createdAt: new Date().toISOString(), // Timestamp not in ClientDTO yet
+        updatedAt: new Date().toISOString(),
+      }))
+
+      // Merge and set accounts
+      setAccounts([...deliveryPersonAccounts, ...clientAccounts])
     } catch (error) {
       console.error('Error fetching accounts:', error)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger la liste des comptes.',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
     }
   }
 

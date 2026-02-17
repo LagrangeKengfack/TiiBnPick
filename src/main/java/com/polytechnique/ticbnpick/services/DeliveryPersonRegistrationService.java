@@ -105,7 +105,13 @@ public class DeliveryPersonRegistrationService {
                                                                 validRequest.setPhotoCard(imagePaths.getT1());
                                                                 validRequest.setCniRecto(imagePaths.getT2());
                                                                 validRequest.setCniVerso(imagePaths.getT3());
-                                                                validRequest.setNuiPhoto(imagePaths.getT4());
+
+                                                                String niuPath = imagePaths.getT4();
+                                                                log.info("NIU Photo processing: received request has photo? {}, saved path: {}",
+                                                                                validRequest.getNuiPhoto() != null,
+                                                                                niuPath);
+                                                                validRequest.setNuiPhoto(niuPath);
+
                                                                 validRequest.setFrontPhoto(imagePaths.getT5());
                                                                 validRequest.setBackPhoto(imagePaths.getT6());
                                                                 return validRequest;
