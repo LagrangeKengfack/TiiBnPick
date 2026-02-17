@@ -37,59 +37,53 @@ public class AnnouncementService {
         return findOrCreateAddress(request.getPickupAddress()).flatMap(savedPickup -> {
 
             return findOrCreateAddress(request.getDeliveryAddress()).flatMap(savedDelivery -> {
+                // 3. Prepare Packet
+                Packet packet = new Packet();
+                packet.setId(UUID.randomUUID());
+                packet.setWeight(request.getPacket().getWeight());
+                packet.setWidth(request.getPacket().getWidth());
+                packet.setHeight(request.getPacket().getHeight());
+                packet.setLength(request.getPacket().getLength());
+                packet.setFragile(request.getPacket().getFragile());
+                packet.setDescription(request.getPacket().getDescription());
+                // photoPacket is NOT NULL in DB, provide a placeholder if missing
+                packet.setPhotoPacket(request.getPacket().getPhotoPacket() != null ? request.getPacket().getPhotoPacket() : "NO_PHOTO");
+                packet.setIsPerishable(request.getPacket().getIsPerishable());
+                packet.setThickness(request.getPacket().getThickness());
+                packet.setDesignation(request.getPacket().getDesignation());
 
-                // 3. Prepare Announcement with ID
-                Announcement announcement = new Announcement();
-                announcement.setId(UUID.randomUUID()); // Generate UUID manually
-                announcement.setClientId(request.getClientId());
-                // packetId will be set after packet is saved
-                UUID packetId = UUID.randomUUID();
-
-                announcement.setPacketId(packetId);
-                announcement.setPickupAddressId(savedPickup.getId());
-                announcement.setDeliveryAddressId(savedDelivery.getId());
-                announcement.setTitle(request.getTitle());
-                announcement.setDescription(request.getDescription());
-                announcement.setStatus(AnnouncementStatus.DRAFT);
-                announcement.setCreatedAt(Instant.now());
-                announcement.setRecipientFirstName(request.getRecipientFirstName());
-                announcement.setRecipientLastName(request.getRecipientLastName());
-                announcement.setRecipientEmail(request.getRecipientEmail());
-                announcement.setRecipientPhone(request.getRecipientPhone());
-                announcement.setShipperFirstName(request.getShipperFirstName());
-                announcement.setShipperLastName(request.getShipperLastName());
-                announcement.setShipperEmail(request.getShipperEmail());
-                announcement.setShipperPhone(request.getShipperPhone());
-                announcement.setAmount(request.getAmount());
-                announcement.setSignatureUrl(request.getSignatureUrl());
-                announcement.setPaymentMethod(request.getPaymentMethod());
-                announcement.setTransportMethod(request.getTransportMethod());
-                announcement.setDistance(request.getDistance());
-                announcement.setDuration(request.getDuration());
-
-                // Use template.insert() to FORCE INSERT with the manual ID
-                return entityTemplate.insert(announcement).flatMap(savedAnnouncement -> {
-                    // 4. Save Packet with known IDs
-                    Packet packet = new Packet();
-                    packet.setId(packetId); // Use the pre-generated ID
-
-                    packet.setWeight(request.getPacket().getWeight());
-                    packet.setWidth(request.getPacket().getWidth());
-                    packet.setHeight(request.getPacket().getHeight());
-                    packet.setLength(request.getPacket().getLength());
-                    packet.setFragile(request.getPacket().getFragile());
-                    packet.setDescription(request.getPacket().getDescription());
-                    packet.setPhotoPacket(request.getPacket().getPhotoPacket());
-                    packet.setIsPerishable(request.getPacket().getIsPerishable());
-                    packet.setThickness(request.getPacket().getThickness());
-                    packet.setDesignation(request.getPacket().getDesignation());
+                // 4. Save Packet first to satisfy foreign key constraint in announcements
+                return entityTemplate.insert(packet).flatMap(savedPacket -> {
+                    // 5. Prepare Announcement with ID
+                    Announcement announcement = new Announcement();
+                    announcement.setId(UUID.randomUUID());
+                    announcement.setClientId(request.getClientId());
+                    announcement.setPacketId(savedPacket.getId());
+                    announcement.setPickupAddressId(savedPickup.getId());
+                    announcement.setDeliveryAddressId(savedDelivery.getId());
+                    announcement.setTitle(request.getTitle());
+                    announcement.setDescription(request.getDescription());
+                    announcement.setStatus(AnnouncementStatus.DRAFT);
+                    announcement.setCreatedAt(Instant.now());
+                    announcement.setRecipientFirstName(request.getRecipientFirstName());
+                    announcement.setRecipientLastName(request.getRecipientLastName());
+                    announcement.setRecipientEmail(request.getRecipientEmail());
+                    announcement.setRecipientPhone(request.getRecipientPhone());
+                    announcement.setShipperFirstName(request.getShipperFirstName());
+                    announcement.setShipperLastName(request.getShipperLastName());
+                    announcement.setShipperEmail(request.getShipperEmail());
+                    announcement.setShipperPhone(request.getShipperPhone());
+                    announcement.setAmount(request.getAmount());
+                    announcement.setSignatureUrl(request.getSignatureUrl());
+                    announcement.setPaymentMethod(request.getPaymentMethod());
+                    announcement.setTransportMethod(request.getTransportMethod());
+                    announcement.setDistance(request.getDistance());
+                    announcement.setDuration(request.getDuration());
 
                     // Use template.insert() to FORCE INSERT with the manual ID
-                    return entityTemplate.insert(packet).map(
-                            savedPacket -> {
-                                savedAnnouncement.setId(announcement.getId()); // Ensure ID is set
-                                return mapToResponse(savedAnnouncement, savedPickup, savedDelivery, savedPacket);
-                            });
+                    return entityTemplate.insert(announcement).map(savedAnnouncement -> {
+                        return mapToResponse(savedAnnouncement, savedPickup, savedDelivery, savedPacket);
+                    });
                 });
             });
         });

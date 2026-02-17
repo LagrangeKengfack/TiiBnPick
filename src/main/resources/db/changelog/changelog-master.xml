@@ -196,4 +196,8 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260216_fix_packet_circular_dependency.sql" relativeToChangelogFile="false"/>
     </changeSet>
+    <changeSet id="035-update-schema-packet-announcement" author="antigravity">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/update-schema-packet-announcement.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

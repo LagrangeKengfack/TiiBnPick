@@ -300,7 +300,7 @@ export function ClientLanding() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex-1"
+                              className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
                               onClick={() => { setSelectedAnnouncement(announcement); setDetailsOpen(true) }}
                             >
                               Voir Détails
@@ -308,7 +308,7 @@ export function ClientLanding() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex-1 border-red-500 text-red-600 hover:bg-red-100"
+                              className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
                               onClick={() => handleDeleteAnnouncement(announcement.id)}
                             >
                               Supprimer
@@ -370,14 +370,17 @@ export function ClientLanding() {
                               const description = (document.getElementById('edit-description') as HTMLTextAreaElement)?.value;
                               handleUpdateAnnouncement({
                                 ...selectedAnnouncement,
-                                designation: designation || selectedAnnouncement.designation,
-                                description: description || selectedAnnouncement.description
+                                packet: {
+                                  ...selectedAnnouncement.packet,
+                                  designation: designation || selectedAnnouncement.packet.designation,
+                                  description: description || selectedAnnouncement.packet.description
+                                }
                               });
                             } else {
                               setIsEditing(true);
                             }
                           }}
-                          className={isEditing ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                          className={isEditing ? "bg-green-600 hover:bg-green-700 text-white" : "border-orange-500 text-orange-600 hover:bg-orange-50"}
                         >
                           {isEditing ? "Enregistrer" : "Modifier"}
                         </Button>
@@ -392,31 +395,31 @@ export function ClientLanding() {
                         <div className="flex items-start gap-3">
                           <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
                           <div>
-                            <p className="text-xs text-gray-500 uppercase font-bold">Point de Retrait (Expéditeur)</p>
-                            <p className="font-semibold">
+                            <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Point de Retrait (Expéditeur)</p>
+                            <p className="font-semibold text-gray-900">
                               {selectedAnnouncement?.shipperFirstName} {selectedAnnouncement?.shipperLastName}
                             </p>
-                            <p className="text-sm text-gray-600">{selectedAnnouncement?.shipperPhone || 'N/A'}</p>
+                            <p className="text-sm text-gray-600 font-medium">{selectedAnnouncement?.shipperPhone || 'N/A'}</p>
                             <p className="text-sm text-gray-500">
-                              {selectedAnnouncement?.pickupAddress?.street}, {selectedAnnouncement?.pickupAddress?.district}, {selectedAnnouncement?.pickupAddress?.city}
+                              {selectedAnnouncement?.pickupAddress?.street || selectedAnnouncement?.pickupAddress?.description || selectedAnnouncement?.pickupAddress?.district}, {selectedAnnouncement?.pickupAddress?.city}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
                           <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
                           <div>
-                            <p className="text-xs text-gray-500 uppercase font-bold">Point de Livraison (Destinataire)</p>
-                            <p className="font-semibold">{selectedAnnouncement?.recipientName || 'N/A'}</p>
-                            <p className="text-sm text-gray-600">{selectedAnnouncement?.recipientPhone || 'N/A'}</p>
+                            <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Point de Livraison (Destinataire)</p>
+                            <p className="font-semibold text-gray-900">{selectedAnnouncement?.recipientName || 'N/A'}</p>
+                            <p className="text-sm text-gray-600 font-medium">{selectedAnnouncement?.recipientPhone || 'N/A'}</p>
                             <p className="text-sm text-gray-500">
-                              {selectedAnnouncement?.deliveryAddress?.street}, {selectedAnnouncement?.deliveryAddress?.district}, {selectedAnnouncement?.deliveryAddress?.city}
+                              {selectedAnnouncement?.deliveryAddress?.street || selectedAnnouncement?.deliveryAddress?.description || selectedAnnouncement?.deliveryAddress?.district}, {selectedAnnouncement?.deliveryAddress?.city}
                             </p>
                           </div>
                         </div>
                       </div>
 
                       {/* Carte */}
-                      <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm h-64 relative z-0">
+                      <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm h-64 relative z-0">
                         {selectedAnnouncement && selectedAnnouncement.pickupCoords && selectedAnnouncement.deliveryCoords ? (
                           <MapLeaflet
                             center={[
@@ -430,20 +433,21 @@ export function ClientLanding() {
                             ]}
                           />
                         ) : (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                            Carte non disponible
+                          <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 gap-2">
+                            <MapIcon className="w-8 h-8 opacity-20" />
+                            <p className="text-xs">Carte non disponible</p>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+                      <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100">
                         <div className="flex items-center gap-2">
                           <MapIcon className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold">25.5 km</span>
+                          <span className="font-bold text-gray-900">25.5 km</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold">45 min</span>
+                          <span className="font-bold text-gray-900">45 min</span>
                         </div>
                         <div className="text-lg font-black text-orange-600">
                           {selectedAnnouncement?.amount?.toLocaleString() || 0} FCFA
@@ -455,53 +459,80 @@ export function ClientLanding() {
                     <div className="space-y-6">
                       <div>
                         <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Détails du Colis</h4>
-                        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                          <div>
-                            <p className="text-xs text-gray-500">Désignation</p>
-                            {isEditing ? (
-                              <Input id="edit-designation" defaultValue={selectedAnnouncement?.packet?.designation} className="h-8 text-sm" />
+
+                        {/* Photo du Colis */}
+                        <div className="mb-6">
+                          <div className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center relative group">
+                            {selectedAnnouncement?.packet?.photoPacket ? (
+                              <img
+                                src={selectedAnnouncement.packet.photoPacket}
+                                alt="Colis"
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
                             ) : (
-                              <p className="font-medium">{selectedAnnouncement?.packet?.designation}</p>
+                              <div className="flex flex-col items-center gap-2 text-gray-400">
+                                <Package className="w-10 h-10 opacity-20" />
+                                <p className="text-xs">Aucune photo disponible</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-4">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Désignation</p>
+                            {isEditing ? (
+                              <Input id="edit-designation" defaultValue={selectedAnnouncement?.packet?.designation} className="h-9 text-sm border-orange-200 focus:border-orange-500" />
+                            ) : (
+                              <p className="font-semibold text-gray-900">{selectedAnnouncement?.packet?.designation}</p>
                             )}
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">Type de colis</p>
-                            <p className="font-medium">{selectedAnnouncement?.packet?.description?.substring(0, 20)}...</p>
+                            <p className="text-xs text-gray-500 mb-1">Type de colis</p>
+                            <p className="font-semibold text-gray-900">{selectedAnnouncement?.packet?.description?.substring(0, 20)}...</p>
                           </div>
                           <div className="col-span-2">
-                            <p className="text-xs text-gray-500">Description</p>
+                            <p className="text-xs text-gray-500 mb-1">Description</p>
                             {isEditing ? (
-                              <textarea id="edit-description" className="w-full text-sm border rounded-md p-2 h-20 bg-transparent" defaultValue={selectedAnnouncement?.packet?.description} />
+                              <textarea id="edit-description" className="w-full text-sm border border-orange-200 rounded-md p-2 h-24 bg-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all outline-none" defaultValue={selectedAnnouncement?.packet?.description} />
                             ) : (
-                              <p className="text-sm italic text-gray-600">{selectedAnnouncement?.packet?.description}</p>
+                              <p className="text-sm text-gray-600 leading-relaxed">{selectedAnnouncement?.packet?.description || 'Aucune description fournie'}</p>
                             )}
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">Poids</p>
-                            <p className="font-medium">3 kg</p> {/* Weight not in DTO currently */}
+                            <p className="text-xs text-gray-500 mb-1">Poids approx.</p>
+                            <p className="font-semibold text-gray-900">3.5 kg</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">Dimensions (Lxlxh)</p>
-                            <p className="font-medium">
+                            <p className="text-xs text-gray-500 mb-1">Dimensions (Lxlxh)</p>
+                            <p className="font-semibold text-gray-900">
                               {selectedAnnouncement?.packet?.length}x{selectedAnnouncement?.packet?.width}x{selectedAnnouncement?.packet?.thickness} cm
                             </p>
                           </div>
                         </div>
                       </div>
 
-                      <div>
-                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Options & Logistique</h4>
+                      <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl space-y-4 border border-orange-100">
+                        <p className="text-sm font-bold text-orange-800 dark:text-orange-300 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Options & Sécurité
+                        </p>
                         <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline" className={selectedAnnouncement?.packet?.fragile ? "border-red-500 text-red-600 bg-red-50" : "opacity-30"}>Fragile</Badge>
-                          <Badge variant="outline" className={selectedAnnouncement?.packet?.isPerishable ? "border-orange-500 text-orange-600 bg-orange-50" : "opacity-30"}>Périssable</Badge>
-                          <Badge variant="outline" className={selectedAnnouncement?.isInsured ? "border-green-500 text-green-600 bg-green-50" : "opacity-30"}>
+                          <Badge variant="outline" className={selectedAnnouncement?.packet?.fragile ? "border-red-500 text-red-600 bg-red-50 font-semibold" : "opacity-30 border-gray-200 text-gray-400"}>Fragile</Badge>
+                          <Badge variant="outline" className={selectedAnnouncement?.packet?.isPerishable ? "border-orange-500 text-orange-600 bg-orange-50 font-semibold" : "opacity-30 border-gray-200 text-gray-400"}>Périssable</Badge>
+                          <Badge variant="outline" className={selectedAnnouncement?.isInsured ? "border-green-500 text-green-600 bg-green-50 font-semibold" : "opacity-30 border-gray-200 text-gray-400"}>
                             Assuré ({selectedAnnouncement?.declaredValue || 0} FCFA)
                           </Badge>
                         </div>
-                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                          <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">Logistique</p>
-                          <p className="text-sm font-medium">{selectedAnnouncement?.deliveryType}</p>
-                          <p className="text-xs text-blue-500 mt-1">Urgence : {selectedAnnouncement?.urgency === 'high' ? 'Haute' : 'Normale'}</p>
+                        <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-orange-100 shadow-sm">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-1">Mode de Transport & Logistique</p>
+                          <p className="text-sm font-bold text-gray-900">{selectedAnnouncement?.deliveryType}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs text-gray-500">Urgence :</span>
+                            <Badge variant="secondary" className={selectedAnnouncement?.urgency === 'high' ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}>
+                              {selectedAnnouncement?.urgency === 'high' ? 'Haute' : 'Normale'}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
