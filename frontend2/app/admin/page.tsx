@@ -119,29 +119,6 @@ export default function SuperAdminDashboard() {
     verifyAuth()
   }, [authLoading, checkAuth, router])
 
-  // Show loading screen until auth is verified - prevents dashboard flash
-  if (authLoading || !authVerified) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-10 h-10 animate-spin text-orange-600 mx-auto" />
-          <p className="text-muted-foreground">Vérification de l'authentification...</p>
-        </div>
-      </div>
-    )
-  }
-
-  const handleLogout = async () => {
-    await logout()
-    router.push('/')
-  }
-
-  const sidebarItems = [
-    { id: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'registrations' as const, icon: UserCheck, label: 'Inscriptions' },
-    { id: 'accounts' as const, icon: ShieldCheck, label: 'Comptes' },
-  ]
-
   // Fetch data on component mount
   useEffect(() => {
     // Charger les données de test immédiatement
@@ -196,6 +173,30 @@ export default function SuperAdminDashboard() {
     setLoading(false)
     fetchAccounts()
   }, [])
+
+  // Show loading screen until auth is verified - prevents dashboard flash
+  // IMPORTANT: This guard must be AFTER all hooks to comply with Rules of Hooks
+  if (authLoading || !authVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-10 h-10 animate-spin text-orange-600 mx-auto" />
+          <p className="text-muted-foreground">Vérification de l'authentification...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    router.push('/')
+  }
+
+  const sidebarItems = [
+    { id: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'registrations' as const, icon: UserCheck, label: 'Inscriptions' },
+    { id: 'accounts' as const, icon: ShieldCheck, label: 'Comptes' },
+  ]
 
   // Fetch registration requests
   const fetchRegistrations = async () => {
