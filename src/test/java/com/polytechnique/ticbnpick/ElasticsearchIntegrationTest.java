@@ -29,7 +29,7 @@ public class ElasticsearchIntegrationTest {
                                 .deliveryLocation(new GeoPoint(45.7640, 4.8357)) // Lyon
                                 .packet(new PacketDTO())
                                 .createdAt(Instant.now())
-                                .amount(100.0f)
+                                .amount(100.0)
                                 .build();
 
                 Mono<AnnouncementDocument> saveAndFind = announcementSearchRepository.save(doc)

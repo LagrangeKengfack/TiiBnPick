@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
+import reactor.core.publisher.Mono;
 
 /**
  * Bootstrap configuration to create default admin on application startup.
@@ -50,9 +51,25 @@ public class AdminBootstrapConfig implements ApplicationRunner {
             .flatMap(exists -> {
                 if (exists) {
                     log.info("Admin user already exists: {}", ADMIN_EMAIL);
-                    // Simply return the existing admin for logging, don't save it
                     return personRepository.findByEmail(ADMIN_EMAIL)
-                            .doOnNext(person -> person.setNewEntity(false));
+                            .flatMap(person -> {
+                                // Ensure existing admin has the correct role
+                                boolean needsUpdate = false;
+                                if (!PersonRole.ADMIN.name().equals(person.getRole())) {
+                                    log.info("Updating admin role from '{}' to 'ADMIN'", person.getRole());
+                                    person.setRole(PersonRole.ADMIN.name());
+                                    needsUpdate = true;
+                                }
+                                if (person.getIsActive() == null || !person.getIsActive()) {
+                                    person.setIsActive(true);
+                                    needsUpdate = true;
+                                }
+                                person.setNewEntity(false);
+                                if (needsUpdate) {
+                                    return personRepository.save(person);
+                                }
+                                return Mono.just(person);
+                            });
                 } else {
                     log.info("Creating admin user...");
                     Person admin = createAdminPerson();
