@@ -1,6 +1,6 @@
 // Auth service for communicating with backend authentication endpoints
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// Uses relative URLs so Next.js rewrites (next.config.mjs) proxy to the backend.
+// This allows the frontend to be accessed from any device on the network.
 
 export interface LoginCredentials {
   email: string;
@@ -32,7 +32,7 @@ const USER_KEY = 'admin_user';
  * On success, stores the token and user info in localStorage.
  */
 export async function login(credentials: LoginCredentials): Promise<AuthUser> {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const response = await fetch(`/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -46,11 +46,11 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
   }
 
   const user: AuthUser = await response.json();
-  
+
   // Store token and user info
   localStorage.setItem(TOKEN_KEY, user.token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
-  
+
   return user;
 }
 
@@ -60,10 +60,10 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
  */
 export async function logout(): Promise<void> {
   const token = getToken();
-  
+
   if (token) {
     try {
-      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      await fetch(`/api/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -74,7 +74,7 @@ export async function logout(): Promise<void> {
       console.error('Logout error:', error);
     }
   }
-  
+
   // Clear local storage regardless of backend response
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
@@ -115,12 +115,12 @@ export function isAuthenticated(): boolean {
  */
 export async function getAdminMe(): Promise<AuthUser> {
   const token = getToken();
-  
+
   if (!token) {
     throw new Error('Not authenticated');
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/admin/me`, {
+  const response = await fetch(`/api/admin/me`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -144,20 +144,21 @@ export async function getAdminMe(): Promise<AuthUser> {
 /**
  * Makes an authenticated request to the API.
  * Automatically adds the Authorization header.
+ * URL should be a relative path starting with /api/...
  */
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
-  
+
   const headers = {
     ...options.headers,
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
   };
-  
-  const response = await fetch(`${API_BASE_URL}${url}`, {
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });
-  
+
   // Handle 401 responses globally
   if (response.status === 401) {
     localStorage.removeItem(TOKEN_KEY);
@@ -167,6 +168,7 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
       window.location.href = '/';
     }
   }
-  
+
   return response;
 }
+
