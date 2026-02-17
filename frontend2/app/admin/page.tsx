@@ -119,6 +119,19 @@ export default function SuperAdminDashboard() {
     verifyAuth()
   }, [authLoading, checkAuth, router])
 
+  // Fetch accounts
+  const fetchAccounts = async () => {
+    try {
+      const response = await fetch('/api/accounts')
+      if (response.ok) {
+        const data = await response.json()
+        setAccounts(data)
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error)
+    }
+  }
+
   // Fetch data on component mount
   useEffect(() => {
     // Charger les données de test immédiatement
@@ -292,18 +305,7 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  // Fetch accounts
-  const fetchAccounts = async () => {
-    try {
-      const response = await fetch('/api/accounts')
-      if (response.ok) {
-        const data = await response.json()
-        setAccounts(data)
-      }
-    } catch (error) {
-      console.error('Error fetching accounts:', error)
-    }
-  }
+
 
   // Stats calculations
   const stats = {
