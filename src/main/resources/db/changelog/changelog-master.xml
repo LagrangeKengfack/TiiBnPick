@@ -147,4 +147,10 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/updatePerson.sql" relativeToChangelogFile="false"/>
     </changeSet>
+
+    <changeSet id="022-fix-type-mismatches" author="TicBnPickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/fix-type-mismatches.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+
 </databaseChangeLog>

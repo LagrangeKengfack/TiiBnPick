@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { AuthUser, getUser, login as authLogin, logout as authLogout, isAuthenticated, getAdminMe } from '@/services/authService';
 
 interface AuthContextType {
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = useCallback(async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
       const authUser = await authLogin({ email, password });
@@ -50,9 +50,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const logout = async (): Promise<void> => {
+  const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     try {
       await authLogout();
@@ -60,9 +60,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const checkAuth = async (): Promise<boolean> => {
+  const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
       if (!isAuthenticated()) {
         return false;
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       return false;
     }
-  };
+  }, []);
 
   const value: AuthContextType = {
     user,

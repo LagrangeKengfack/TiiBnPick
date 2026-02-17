@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,6 +31,7 @@ import {
   MapPin,
   Bike,
   Car,
+  Loader2,
 } from 'lucide-react'
 import { TruckIcon } from '@heroicons/react/24/outline'
 import { MdDeliveryDining } from 'react-icons/md'
@@ -98,18 +99,37 @@ export default function SuperAdminDashboard() {
   const adminName = user ? `${user.firstName} ${user.lastName}` : 'Admin'
   const adminEmail = user?.email || 'admin@tiibnpick.com'
 
-  // Check authentication on mount
+  // Auth verification state - prevents rendering dashboard until auth is confirmed
+  const [authVerified, setAuthVerified] = useState(false)
+  const hasCheckedAuth = useRef(false)
+
+  // Check authentication on mount - runs only once
   useEffect(() => {
+    if (authLoading || hasCheckedAuth.current) return
+
+    hasCheckedAuth.current = true
     const verifyAuth = async () => {
-      if (!authLoading) {
-        const isValid = await checkAuth()
-        if (!isValid) {
-          router.push('/')
-        }
+      const isValid = await checkAuth()
+      if (!isValid) {
+        router.replace('/')
+      } else {
+        setAuthVerified(true)
       }
     }
     verifyAuth()
   }, [authLoading, checkAuth, router])
+
+  // Show loading screen until auth is verified - prevents dashboard flash
+  if (authLoading || !authVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-10 h-10 animate-spin text-orange-600 mx-auto" />
+          <p className="text-muted-foreground">Vérification de l'authentification...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -756,8 +776,8 @@ export default function SuperAdminDashboard() {
                       <button
                         onClick={() => setAccountTypeFilter('all')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'all'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                       >
                         Tous ({accounts.length})
@@ -765,8 +785,8 @@ export default function SuperAdminDashboard() {
                       <button
                         onClick={() => setAccountTypeFilter('DELIVERY')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'DELIVERY'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                       >
                         Livreurs ({accounts.filter(a => a.role === 'DELIVERY').length})
@@ -774,8 +794,8 @@ export default function SuperAdminDashboard() {
                       <button
                         onClick={() => setAccountTypeFilter('CLIENT')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'CLIENT'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                       >
                         Clients ({accounts.filter(a => a.role === 'CLIENT').length})
