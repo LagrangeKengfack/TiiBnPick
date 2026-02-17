@@ -7,7 +7,8 @@ import { ElementType } from 'react';
 
 // --- CORE DATA MODELS ---
 export interface SenderData {
-  senderName: string;
+  senderFirstName: string;
+  senderLastName: string;
   senderPhone: string;
   senderEmail: string;
   senderCountry: string;
@@ -15,6 +16,9 @@ export interface SenderData {
   senderCity: string;
   senderAddress: string;
   senderLieuDit: string;
+  latitude?: number;
+  longitude?: number;
+  isSender?: boolean; // <--- Add this as an optional UI helper
 }
 
 export interface RecipientData {
@@ -42,13 +46,6 @@ export interface PackageData {
   logistics: 'standard' | 'express_48h' | 'express_24h';
   pickup: boolean;
   delivery: boolean;
-  // FOR THE IMPROVEMENTS
-  hasPackageNow: boolean; // Did they click "Yes"?
-  exactPickupAddress?: string; // The "Road name/Position"
-  coordinates?: {
-    lat: number;
-    lng: number;
-  } | null;
 }
 
 
@@ -58,6 +55,7 @@ export interface RouteData {
   departurePointName: string;
   arrivalPointName: string;
   distanceKm: number;
+  durationMinutes: number;
 }
 
 export interface SignatureData {
@@ -111,7 +109,12 @@ export interface PackageRegistrationProps {
 }
 
 export interface RouteSelectionStepProps {
-  onContinue: (data: RouteData, travelPrice: number) => void;
+  onContinue: (
+    data: RouteData,
+    travelPrice: number,
+    updatedSender?: Partial<SenderData>,
+    updatedRecipient?: Partial<RecipientData>
+  ) => void;
   onBack: () => void;
   initialDepartureAddress?: string;
   initialArrivalAddress?: string;
@@ -126,7 +129,7 @@ export interface PaymentStepProps {
     travelPrice: number;
     operatorFee: number;
     totalPrice: number;
-    trackingNumber?: string;
+    trackingNumber: string;
   }) => void;
   currentUser: LoggedInUser | null; // if there is a problem, look here
 }
@@ -149,7 +152,6 @@ export interface SignatureStepProps {
 
 export interface SuccessStepProps {
   trackingNumber: string;
-  isUserLoggedIn: boolean;
   onDownloadPDF: () => void;
   onReset: () => void;
 }

@@ -138,10 +138,15 @@ export default function PackageRegistration({
     logistics: "standard",
     pickup: false,
     delivery: false,
+    hasPackageNow: false,
+    exactPickupAddress: "",
+    coordinates: null,
     ...initialData,
   });
 
-  
+  const [expressOption, setExpressOption] = useState<"none" | "24h" | "48h">(
+    "none",
+  );
   const [priceLoading, setPriceLoading] = useState(false);
   const [price, setPrice] = useState<number | null>(null);
   const [volume, setVolume] = useState(0);
@@ -222,17 +227,17 @@ export default function PackageRegistration({
     };
 
     calculatePrice();
-  }, [packageData, isFormValid]);
+  }, [packageData, expressOption, isFormValid]);
 
   const handleInputChange = (field: keyof PackageData, value: any) => {
     setPackageData((prev) => {
       const newData = { ...prev, [field]: value };
 
-      /* Pré-remplir la description avec la désignation si la description est vide
+      // Pré-remplir la description avec la désignation si la description est vide
       if (field === "designation" && value && !prev.description.trim()) {
         newData.description = value;
       }
-      */
+
       return newData;
     });
   };
@@ -296,6 +301,52 @@ export default function PackageRegistration({
     { key: "car", label: "Voiture", icon: <Car className="w-4 h-4" /> },
   ];
 
+  // --- NEW: SMART PICKUP LOGIC ---
+  const [loadingLoc, setLoadingLoc] = useState(false);
+
+  const handleSmartPickup = async () => {
+    if (!navigator.geolocation) {
+      alert("La géolocalisation n'est pas supportée par votre navigateur.");
+      return;
+    }
+
+    setLoadingLoc(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          // Reverse Geocoding using OpenStreetMap (Free)
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18`,
+            { headers: { "Accept-Language": "fr" } },
+          );
+          const data = await response.json();
+          const address = data.display_name || "Adresse détectée";
+
+          // Update state with coordinates and address
+          setPackageData((prev) => ({
+            ...prev,
+            hasPackageNow: true,
+            exactPickupAddress: address,
+            coordinates: { lat: latitude, lng: longitude },
+          }));
+        } catch (error) {
+          console.error("Geocoding error", error);
+          alert("Erreur lors de la récupération de l'adresse.");
+        } finally {
+          setLoadingLoc(false);
+        }
+      },
+      (error) => {
+        setLoadingLoc(false);
+        alert(
+          "Veuillez autoriser l'accès à la position dans votre navigateur.",
+        );
+      },
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-4 min-h-screen bg-gray-50 dark:bg-transparent transition-colors">
@@ -528,13 +579,81 @@ export default function PackageRegistration({
             </div>
           </div>
 
-          {/* Services additionnels */}
+          {/* Services additionnels & Smart Pickup */}
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
               Options de ramassage
             </h3>
 
             <div className="space-y-4">
+              {/* Smart Pickup Button */}
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <MapPinIcon className="w-5 h-5 text-orange-600" />
+                    <div>
+                      <p className="text-sm font-bold text-orange-900 dark:text-orange-100">
+                        Avez-vous le colis avec vous ?
+                      </p>
+                      <p className="text-xs text-orange-700 dark:text-orange-300">
+                        Nous pouvons vous localiser pour le coursier
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSmartPickup}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-bold text-xs transition-all ${
+                      packageData.hasPackageNow
+                        ? "bg-green-600 text-white"
+                        : "bg-orange-500 text-white hover:bg-orange-600"
+                    }`}
+                  >
+                    {loadingLoc ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <CheckCircleIcon className="w-4 h-4" />
+                    )}
+                    {packageData.hasPackageNow
+                      ? "Position Validée"
+                      : "Oui, localisez-moi"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPackageData((prev) => ({
+                        ...prev,
+                        hasPackageNow: false,
+                        exactPickupAddress: "",
+                        coordinates: null,
+                      }))
+                    }
+                    className="py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400"
+                  >
+                    Non
+                  </button>
+                </div>
+
+                {/* Automated Address Field */}
+                {packageData.exactPickupAddress && (
+                  <div className="mt-3 animate-in fade-in slide-in-from-top-1">
+                    <label className="text-[10px] font-bold text-orange-600 uppercase mb-1 block">
+                      Adresse de ramassage détectée
+                    </label>
+                    <div className="flex items-start gap-2 bg-white dark:bg-gray-700 p-2 rounded border border-orange-200 dark:border-orange-900">
+                      <MapPinIcon className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-gray-700 dark:text-gray-200 italic leading-tight">
+                        {packageData.exactPickupAddress}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Standard Home Pickup Card */}
               <OptionCard
                 title="Récupération à domicile programmée"

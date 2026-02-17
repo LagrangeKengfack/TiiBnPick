@@ -1,28 +1,28 @@
-'use client';
+"use client";
 import {
   ArrowLeftIcon,
-  ArrowPathIcon,
   CheckCircleIcon,
   ClockIcon,
   CreditCardIcon,
   DevicePhoneMobileIcon,
   DocumentTextIcon,
   GiftIcon,
-  PrinterIcon
-} from '@heroicons/react/24/outline';
-import { AnimatePresence, motion } from 'framer-motion';
-import { PhoneIcon, StarIcon, UserPlusIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { ProcessingAnimation } from '../../app/expedition/demo';
+} from "@heroicons/react/24/outline";
+import { AnimatePresence, motion } from "framer-motion";
+import { PhoneIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ProcessingAnimation } from "../../app/expedition/demo";
 // --- IMPORTATIONS CRUCIALES POUR LE BACKEND ---
-import { useAuth } from '@/context/AuthContext';
-import { useNotification } from '@/context/NotificationContext';
-import { PackageCreationPayload, packageService } from '@/services/packageService';
+import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
+import {
+  PackageCreationPayload,
+  packageService,
+} from "@/services/packageService";
 
-import { pdfService } from '@/services/pdfService';
-import { PaymentOptionProps, PaymentStepProps } from '@/types/package';
-
+import { pdfService } from "@/services/pdfService";
+import { PaymentOptionProps, PaymentStepProps } from "@/types/package";
 
 const PAYMENT_OPERATOR_FEE = 100;
 
@@ -32,7 +32,9 @@ export default function PaymentStep({
   onPaymentFinalized,
   currentUser,
 }: PaymentStepProps) {
-  const [selectedMethod, setSelectedMethod] = useState< "mobile" | "recipient">("recipient");
+  const [selectedMethod, setSelectedMethod] = useState<"mobile" | "recipient">(
+    "recipient",
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState(""); // Stockera le vrai tracking number du backend
@@ -49,9 +51,6 @@ export default function PaymentStep({
 
   const { user: authUser } = useAuth();
 
-  // Pour être sûr, on considère connecté si 'currentUser' (prop) OU 'authUser' (context) est présent.
-  const isUserLoggedIn = !!(currentUser || authUser);
-
   // Validation du numéro de téléphone mobile
   const validateMobilePhone = (phone: string) => {
     const cleaned = phone.replace(/\s+/g, "");
@@ -64,28 +63,6 @@ export default function PaymentStep({
       return validateMobilePhone(mobilePhone);
     }
     return true;
-  };
-
-  const handleCreateAccount = () => {
-    const prefillData = {
-      name: allData.senderName,
-      email: allData.senderEmail,
-      phone: allData.senderPhone,
-    };
-    localStorage.setItem("registration_prefill", JSON.stringify(prefillData));
-    router.push("/register");
-  };
-
-  // Génération du PDF du bordereau
-  const handleDownloadPDF = async () => {
-    // We call the service and pass all the local state variables it needs
-    await pdfService.generateBordereauPDF(
-      allData,
-      trackingNumber,
-      totalPrice,
-      operatorFee,
-      selectedMethod,
-    );
   };
 
   // --- SOUMISSION DES DONNÉES AU BACKEND ---
@@ -117,7 +94,8 @@ export default function PaymentStep({
 
       // 4. CONSTRUCTION DU PAYLOAD COMPLET
       const payload: PackageCreationPayload = {
-        senderName: allData.senderName,
+        senderFirstName: allData.senderFirstName,
+        senderLastName: allData.senderLastName,
         senderPhone: cleanSenderPhone,
 
         // Infos Destinataire
@@ -142,7 +120,6 @@ export default function PaymentStep({
           allData.designation +
           (allData.description ? ` - ${allData.description}` : ""),
 
-
         // Logistique
         deliveryOption: "RELAY_POINT_DELIVERY",
         specialInstructions: `Paiement: ${selectedMethod === "recipient" ? "Destinataire" : "Expéditeur"}. Logistique: ${allData.logistics}`,
@@ -159,15 +136,24 @@ export default function PaymentStep({
 
       console.log("✅ RÉPONSE BACKEND REÇUE :", response);
 
-      const newTracking =
+      const tNumber =
         response.trackingNumber || (response as any).tracking_number;
 
-      if (!newTracking)
+      if (!tNumber)
         throw new Error("Numéro de suivi manquant dans la réponse backend.");
 
-      setTrackingNumber(newTracking);
+      setTrackingNumber(tNumber);
       setPaymentSuccess(true);
-      addNotification(`Colis créé ! Suivi : ${newTracking}`, "success");
+      addNotification(`Colis créé ! Suivi : ${tNumber}`, "success");
+      // Appel du callback pour informer le parent (page.tsx)
+
+      onPaymentFinalized({
+        trackingNumber: tNumber,
+        basePrice: allData.basePrice,
+        travelPrice: allData.travelPrice,
+        operatorFee: operatorFee, // the mobile money fee
+        totalPrice: totalPrice, //the absolute final total
+      });
     } catch (err: any) {
       console.error("❌ ERREUR D'ENVOI :", err);
       // Affiche le message détaillé de l'erreur s'il existe (ex: validation backend)
@@ -198,91 +184,6 @@ export default function PaymentStep({
 
   if (isProcessing) {
     return <ProcessingAnimation />;
-  }
-
-  // --- MODIFIÉ : L'écran de succès inclut le bloc d'incitation et le bouton PDF ---
-  if (paymentSuccess) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="min-h-screen flex items-center justify-center bg-orange-50 dark:bg-gray-900 p-4"
-      >
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-orange-100 dark:border-orange-800">
-            <motion.div
-              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <CheckCircleIcon className="w-24 h-24 text-green-500 mx-auto drop-shadow-lg" />
-            </motion.div>
-
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-4 mb-2">
-              Expédition confirmée !
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Votre colis a été enregistré.
-            </p>
-
-            <div className="bg-orange-50 dark:bg-orange-900/30 rounded-2xl p-4 mb-6 border border-orange-200 dark:border-orange-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide font-semibold">
-                Numéro de suivi
-              </p>
-              <p className="text-3xl font-black text-orange-600 dark:text-orange-500 font-mono tracking-wider">
-                ${trackingNumber}
-              </p>
-            </div>
-
-            <motion.button
-              onClick={handleDownloadPDF}
-              className="w-full flex items-center justify-center bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-orange-500/25"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <PrinterIcon className="w-5 h-5 mr-2" />
-              Télécharger le Bordereau
-            </motion.button>
-          </div>
-
-          {!isUserLoggedIn && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-lg border-2 border-dashed border-blue-300 dark:border-blue-700"
-            >
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <StarIcon className="w-6 h-6 text-yellow-400" />
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                  Gagnez du temps !
-                </h3>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                Créez un compte pour sauvegarder vos adresses et suivre vos
-                colis sans saisir le numéro.
-              </p>
-              <motion.button
-                onClick={handleCreateAccount}
-                className="w-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <UserPlusIcon className="w-5 h-5 mr-2" />
-                Créer mon compte
-              </motion.button>
-            </motion.div>
-          )}
-
-          <button
-            onClick={() => (window.location.href = "/expedition")} // Recharge complet pour vider le state
-            className="text-gray-500 hover:text-orange-600 text-sm font-medium mt-4 flex items-center justify-center gap-2 mx-auto transition-colors"
-          >
-            <ArrowPathIcon className="w-4 h-4" />
-            Effectuer une autre expédition
-          </button>
-        </div>
-      </motion.div>
-    );
   }
 
   return (
@@ -436,8 +337,11 @@ export default function PaymentStep({
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Expéditeur
                     </p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {allData.senderName}
+                    <p
+                      className="text-lg font-semibold text-gray-900 truncate"
+                      title={allData.senderFirstName + " " + allData.senderLastName}
+                    >
+                      {allData.senderLastName} {allData.senderFirstName}
                     </p>
                     <p className="text-gray-600 dark:text-gray-300">
                       {allData.senderPhone}
@@ -448,7 +352,10 @@ export default function PaymentStep({
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Départ
                     </p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <p
+                      className="text-sm text-gray-600 line-clamp-2"
+                      title={allData.departurePointName}
+                    >
                       {allData.departurePointName}
                     </p>
                   </div>
@@ -459,7 +366,10 @@ export default function PaymentStep({
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Destinataire
                     </p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <p
+                      className="text-lg font-semibold text-gray-900 truncate"
+                      title={allData.recipientName}
+                    >
                       {allData.recipientName}
                     </p>
                     <p className="text-gray-600 dark:text-gray-300">
@@ -471,7 +381,10 @@ export default function PaymentStep({
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Arrivée
                     </p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <p
+                      className="text-sm text-gray-600 line-clamp-2"
+                      title={allData.arrivalPointName}
+                    >
                       {allData.arrivalPointName}
                     </p>
                   </div>
@@ -546,17 +459,18 @@ export default function PaymentStep({
               {/* Informations sur la livraison */}
               <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <ClockIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">
-                    Temps de livraison
+                  <ClockIcon className="w-5 h-5 text-orange-600" />
+                  <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                    Estimation de livraison
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {allData.logistics === "express_24h" && "Livraison en 24h"}
-                  {allData.logistics === "express_48h" && "Livraison en 48h"}
-                  {allData.logistics === "standard" &&
-                    "Livraison standard (3-5 jours)"}
-                </p>
+
+                {/* NEW: Displaying the duration from allData */}
+                {allData.durationMinutes ? (
+                  <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-2">
+                    Environ {allData.durationMinutes} minutes de trajet
+                  </p>
+                ) : null}
               </div>
             </div>
           </motion.div>
@@ -586,18 +500,26 @@ export default function PaymentStep({
       </div>
     </motion.div>
   );
-};
+}
 
-
-const PaymentOption = ({ id, label, description, icon: Icon, fee, selected, setSelected, badge }: PaymentOptionProps) => (
+const PaymentOption = ({
+  id,
+  label,
+  description,
+  icon: Icon,
+  fee,
+  selected,
+  setSelected,
+  badge,
+}: PaymentOptionProps) => (
   <motion.div
     whileHover={{ scale: 1.02 }}
     whileTap={{ scale: 0.98 }}
     onClick={() => setSelected(id)}
     className={`relative p-6 border-2 rounded-2xl cursor-pointer transition-all ${
-      selected === id 
-        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-lg' 
-        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-orange-200 dark:hover:border-orange-700 hover:shadow-md'
+      selected === id
+        ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-lg"
+        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-orange-200 dark:hover:border-orange-700 hover:shadow-md"
     }`}
   >
     {badge && selected === id && (
@@ -605,20 +527,26 @@ const PaymentOption = ({ id, label, description, icon: Icon, fee, selected, setS
         {badge}
       </span>
     )}
-    
+
     <div className="flex items-start justify-between">
       <div className="flex items-start gap-4">
-        <div className={`p-3 rounded-xl ${
-          selected === id 
-            ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400' 
-            : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
-        }`}>
+        <div
+          className={`p-3 rounded-xl ${
+            selected === id
+              ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400"
+              : "bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+          }`}
+        >
           <Icon className="w-6 h-6" />
         </div>
-        
+
         <div className="flex-1">
-          <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-1">{label}</h4>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">{description}</p>
+          <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-1">
+            {label}
+          </h4>
+          <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
+            {description}
+          </p>
           {fee > 0 && (
             <p className="text-orange-600 dark:text-orange-400 text-sm font-semibold">
               Frais: +{fee} FCFA
@@ -626,12 +554,14 @@ const PaymentOption = ({ id, label, description, icon: Icon, fee, selected, setS
           )}
         </div>
       </div>
-      
-      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-        selected === id 
-          ? 'border-orange-500 bg-orange-500' 
-          : 'border-gray-300 dark:border-gray-500'
-      }`}>
+
+      <div
+        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+          selected === id
+            ? "border-orange-500 bg-orange-500"
+            : "border-gray-300 dark:border-gray-500"
+        }`}
+      >
         {selected === id && (
           <motion.div
             initial={{ scale: 0 }}
@@ -647,9 +577,13 @@ const PaymentOption = ({ id, label, description, icon: Icon, fee, selected, setS
 );
 
 // Composant SummaryLine modernisé avec support du mode sombre
-const SummaryLine = ({ label, value } : { label: string; value: number;}) => (
+const SummaryLine = ({ label, value }: { label: string; value: number }) => (
   <div className="flex justify-between items-center py-2">
-    <span className="text-gray-600 dark:text-gray-300 font-medium">{label}</span>
-    <span className="font-bold text-gray-900 dark:text-gray-100">{value.toLocaleString()} FCFA</span>
+    <span className="text-gray-600 dark:text-gray-300 font-medium">
+      {label}
+    </span>
+    <span className="font-bold text-gray-900 dark:text-gray-100">
+      {value.toLocaleString()} FCFA
+    </span>
   </div>
 );

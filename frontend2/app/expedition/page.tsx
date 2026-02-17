@@ -1,37 +1,39 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 
 // 1. SERVICES & UTILS
-import { pdfService } from "@/services/pdfService";
-import { authService } from "@/services/authService";
 import { buildFullAddress } from "@/lib/utils";
+import { authService } from "@/services/authService";
+import { pdfService } from "@/services/pdfService";
 
 // 2. COMPONENTS
-import SuccessStep from "@/components/expedition/SuccessStep";
-import ProgressBar from "@/components/expedition/ProgressBar"; // Move the progress bar logic here
-import SenderInfoStep from "@/components/expedition/SenderInfoStep";
-import RecipientInfoStep from "@/components/expedition/RecipientInfoStep";
 import PackageInfoStep from "@/components/expedition/FormulaireColisExpedition";
-import RouteSelectionStep from "@/components/expedition/RouteExpedition";
-import SignatureStep from "@/components/expedition/SignatureStep";
 import PaymentStep from "@/components/expedition/PaymentStepExpedition";
+import ProgressBar from "@/components/expedition/ProgressBar"; // Move the progress bar logic here
+import RecipientInfoStep from "@/components/expedition/RecipientInfoStep";
+import RouteSelectionStep from "@/components/expedition/RouteExpedition";
+import SenderInfoStep from "@/components/expedition/SenderInfoStep";
+import SignatureStep from "@/components/expedition/SignatureStep";
+import SuccessStep from "@/components/expedition/SuccessStep";
 
 // 3. TYPES
 import { ExpeditionFormData, LoggedInUser } from "@/types/package";
+import { fi } from "date-fns/locale";
 
 const STORAGE_KEY = "expedition_form_progress";
 
 
 export default function ShippingPage() {
-  const router = useRouter();
+  const [trackingNum, setTrackingNum] = useState("");
   const [user, setUser] = useState<LoggedInUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState<ExpeditionFormData>({
     currentStep: 1,
     senderData: {
-      senderName: "",
+      senderFirstName: "",
+      senderLastName: "",
       senderPhone: "",
       senderAddress: "",
       senderLieuDit: "",
@@ -64,9 +66,6 @@ export default function ShippingPage() {
       logistics: "standard",
       pickup: false,
       delivery: false,
-      hasPackageNow: false,
-      exactPickupAddress: "",
-      coordinates: null,
     },
     routeData: {
       departurePointId: null,
@@ -74,6 +73,7 @@ export default function ShippingPage() {
       departurePointName: "",
       arrivalPointName: "",
       distanceKm: 0,
+      durationMinutes: 0,
     },
     signatureData: { signatureUrl: null },
     pricing: { basePrice: 0, travelPrice: 0, operatorFee: 0, totalPrice: 0 },
@@ -112,8 +112,16 @@ export default function ShippingPage() {
   }, []);
 
   useEffect(() => {
-    if (formData.currentStep < 7)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    // ONLY save to localStorage if we are in the middle of the process
+    // If we are at Step 7 (Success) or Step 1 (Empty), we don't save.
+    if (formData.currentStep > 1 && formData.currentStep < 7) {
+      localStorage.setItem(
+        "expedition_form_progress",
+        JSON.stringify(formData),
+      );
+    } else if (formData.currentStep === 7 || formData.currentStep === 1) {
+      localStorage.removeItem("expedition_form_progress"); // Clean up
+    }
   }, [formData]);
 
   // --- HANDLERS ---
@@ -123,19 +131,23 @@ export default function ShippingPage() {
       ...formData.recipientData,
       ...formData.packageData,
       ...formData.routeData,
+      ...formData.signatureData,
+      // THESE TWO LINES WERE MISSING:
+      basePrice: formData.pricing.basePrice,
+      travelPrice: formData.pricing.travelPrice,
     };
     pdfService.generateBordereauPDF(
       fullData,
-      "TRACK-ID",
+      trackingNum, // Use the state variable we saved in Case 6
       formData.pricing.totalPrice,
-      0,
-      "cash",
+      formData.pricing.operatorFee,
+      "cash", // Or get the actual method if you stored it
     );
   };
 
   const handleReset = () => {
     localStorage.removeItem(STORAGE_KEY);
-    window.location.reload();
+    window.location.href = "/expedition"; // Simple page reload to force fresh state
   };
   /*
   const resetFormAndStartOver = () => {
@@ -164,12 +176,13 @@ export default function ShippingPage() {
     switch (formData.currentStep) {
       case 1:
         return (
-        <SenderInfoStep
-          initialData={formData.senderData}
-          onContinue={(data) =>
-            setFormData({ ...formData, senderData: data, currentStep: 2 })
-          }
-        />);
+          <SenderInfoStep
+            initialData={formData.senderData}
+            onContinue={(data) =>
+              setFormData({ ...formData, senderData: data, currentStep: 2 })
+            }
+          />
+        );
       case 2:
         return (
           <RecipientInfoStep
@@ -202,37 +215,39 @@ export default function ShippingPage() {
       case 4:
         // Construct full strings for both sides
         const fullDeparture = buildFullAddress({
-          lieuDit: formData.senderData.senderLieuDit,
           address: formData.senderData.senderAddress,
+          lieuDit: formData.senderData.senderLieuDit,
           city: formData.senderData.senderCity,
           region: formData.senderData.senderRegion,
           country: formData.senderData.senderCountry,
         });
 
         const fullArrival = buildFullAddress({
-          lieuDit: formData.recipientData.recipientLieuDit,
           address: formData.recipientData.recipientAddress,
+          lieuDit: formData.recipientData.recipientLieuDit,
           city: formData.recipientData.recipientCity,
           region: formData.recipientData.recipientRegion,
           country: formData.recipientData.recipientCountry,
         });
 
-        return(
-        <RouteSelectionStep
-          initialDepartureAddress={fullDeparture}
-          initialArrivalAddress={fullArrival}
-          onContinue={(route, price) =>
-            setFormData({
-              ...formData,
-              routeData: route,
-              pricing: { ...formData.pricing, travelPrice: price },
-              currentStep: 5,
-            })
-          }
-          onBack={() => setFormData({ ...formData, currentStep: 3 })}
-        />
+        return (
+          <RouteSelectionStep
+            initialDepartureAddress={fullDeparture}
+            initialArrivalAddress={fullArrival}
+            onContinue={(route, price, newSender, newRecipient) =>
+              setFormData({
+                ...formData,
+                routeData: route,
+                pricing: { ...formData.pricing, travelPrice: price },
+                senderData: { ...formData.senderData, ...newSender },
+                recipientData: { ...formData.recipientData, ...newRecipient },
+                currentStep: 5,
+              })
+            }
+            onBack={() => setFormData({ ...formData, currentStep: 3 })}
+          />
         );
-        
+
       case 5:
         return (
           <SignatureStep
@@ -247,9 +262,14 @@ export default function ShippingPage() {
           />
         );
       case 6:
+        // 1. Separate 'isSender' from the senderData
+        // We extract 'isSender' and put everything else into 'cleanSenderData'
+        const { isSender, ...cleanSenderData } = formData.senderData;
+
         // Construction de l'objet final pour le composant de paiement
         // Conversion forcée et nettoyage des types
         const fullDataForPayment = {
+          ...cleanSenderData, // Use the cleaned sender data without 'isSender'
           ...formData.senderData,
           ...formData.recipientData,
           ...formData.packageData,
@@ -269,10 +289,18 @@ export default function ShippingPage() {
         return (
           <PaymentStep
             allData={fullDataForPayment}
-            onPaymentFinalized={(finalPricing) => {
+            onPaymentFinalized={(finalData) => {
+              const tNumber = finalData.trackingNumber || "";
+
+              setTrackingNum(tNumber);
+
               setFormData((prev) => ({
                 ...prev,
-                pricing: finalPricing,
+                pricing: {
+                  ...prev.pricing,
+                  operatorFee: finalData.operatorFee,
+                  totalPrice: finalData.totalPrice, // the actual final amount paid
+                },
                 currentStep: 7,
               }));
               localStorage.removeItem(STORAGE_KEY);
@@ -284,15 +312,18 @@ export default function ShippingPage() {
       case 7:
         return (
           <SuccessStep
-            trackingNumber=""
-            isUserLoggedIn={!!user}
+            trackingNumber={trackingNum}
             onDownloadPDF={handleDownloadPDF}
             onReset={handleReset}
           />
         );
       default:
-      console.error("Step not found for ID:", formData.currentStep);
-      return <div className="p-10 text-red-500">Erreur: Étape {formData.currentStep} introuvable.</div>;
+        console.error("Step not found for ID:", formData.currentStep);
+        return (
+          <div className="p-10 text-red-500">
+            Erreur: Étape {formData.currentStep} introuvable.
+          </div>
+        );
     }
   };
 

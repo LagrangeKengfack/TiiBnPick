@@ -1,61 +1,91 @@
-"use client"
+"use client";
+import React, { useEffect, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  useMapEvents,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-import React from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
-import type { LatLngExpression } from 'leaflet'
-import type { GeoJSON } from 'geojson'
+// --- ROBUST ICON DEFINITION ---
+// We use a CDN to ensure the images are always found
+const customIcon = new L.Icon({
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
 
-type Props = {
-  center?: LatLngExpression
-  zoom?: number
-  markers?: { position: LatLngExpression; label?: string }[]
-  route?: GeoJSON.Feature | null
+const createIcon = (color: 'orange' | 'green') => new L.Icon({
+  iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const orangeIcon = createIcon('orange');
+const greenIcon = createIcon('green');
+
+function ClickHandler({
+  onClick,
+}: {
+  onClick: (lat: number, lng: number) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      // Use a small timeout to let Leaflet finish the internal event
+      // before React triggers a re-render. This fixes the "_leaflet_events" error.
+      setTimeout(() => {
+        onClick(e.latlng.lat, e.latlng.lng);
+      }, 0);
+    },
+  });
+  return null;
 }
 
 export default function MapLeaflet({
-  center = [3.862376, 11.499885],
-  zoom = 12,
-  markers = [],
-  route = null,
-}: Props) {
+  center,
+  markers,
+  route,
+  onMapClick,
+}: any) {
   return (
-    <div className="w-full h-96">
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    <MapContainer
+      center={center}
+      zoom={13}
+      style={{ height: "100%", width: "100%" }}
+    >
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+      {onMapClick && <ClickHandler onClick={onMapClick} />}
+
+      {markers.map((m: any, idx: number) => (
+        <Marker
+          position={m.position}
+          key={`marker-${idx}`}
+          // If the label is "Départ" or contains "Retrait", use orange, else green
+    icon={m.label === 'Départ' ? orangeIcon : greenIcon}
+  >
+    <Popup>{m.label}</Popup>
+  </Marker>
+      ))}
+
+      {route?.geometry?.coordinates && (
+        <Polyline
+          positions={route.geometry.coordinates.map((c: any) => [c[1], c[0]])}
+          pathOptions={{ color: "#f97316", weight: 5, lineJoin: "round" }}
         />
-        {markers.map((m, idx) => (
-          <Marker position={m.position} key={idx}>
-            <Popup>{m.label || "Point"}</Popup>
-          </Marker>
-        ))}
-        {route &&
-          (() => {
-            try {
-              // Expect LineString coordinates in [lon, lat]
-              // Convert to [lat, lon] for Leaflet Polyline
-              // @ts-ignore
-              const coords =
-                route.type === "Feature" &&
-                route.geometry &&
-                (route.geometry as any).coordinates;
-              const latlngs = coords?.map((c: any) => [c[1], c[0]]) || [];
-              return (
-                <Polyline
-                  positions={latlngs}
-                  pathOptions={{ color: "#f97316", weight: 5 }}
-                />
-              );
-            } catch (e) {
-              return null;
-            }
-          })()}
-      </MapContainer>
-    </div>
+      )}
+    </MapContainer>
   );
 }

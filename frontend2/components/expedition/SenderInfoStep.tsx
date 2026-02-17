@@ -9,155 +9,34 @@ import {
   Home,
   ArrowRight,
   Send,
-  Sparkles,
-  Circle,
-  UserPlus,
-  X,
+  Loader2,
+  CheckCircle2,
   Globe,
   Building,
   Navigation,
+  MapPinned,
+  X,
+  Circle,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-
-import { SenderData, SenderInfoStepProps } from "@/types/package";
 import { countries } from "@/lib/utils";
-
-const FloatingIcon = ({
-  children,
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 0.2, y: 0 }}
-    transition={{
-      duration: 0.6,
-      delay,
-      repeat: Infinity,
-      repeatType: "reverse",
-      repeatDelay: 2,
-    }}
-    className="absolute text-orange-200 dark:text-orange-500/20"
-  >
-    {children}
-  </motion.div>
-);
-
-const InputField = ({ icon: Icon, id, error, ...props }: any) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3 }}
-    className="group"
-  >
-    <label
-      htmlFor={id}
-      className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 tracking-wider"
-    >
-      {props.label}
-    </label>
-    <div className="relative">
-      <motion.div
-        className="absolute left-3 top-1/2 -translate-y-1/2"
-        whileHover={{ scale: 1.1 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Icon className="w-4 h-4 text-gray-400 dark:text-gray-500 group-focus-within:text-orange-500 transition-colors" />
-      </motion.div>
-      <input
-        id={id}
-        {...props}
-        className={`w-full pl-10 pr-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 border-2 rounded-lg transition-all duration-200 
-          bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm
-          ${error ? "border-red-300 focus:border-red-500" : "border-gray-200 dark:border-gray-700 focus:border-orange-500 dark:focus:border-orange-500"}
-          focus:ring-2 focus:ring-orange-500/20 focus:bg-white dark:focus:bg-gray-900 shadow-sm hover:shadow-md`}
-      />
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-          >
-            <Circle className="w-2 h-2 fill-red-500 text-red-500" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  </motion.div>
-);
-
-const SelectField = ({ icon: Icon, id, error, children, ...props }: any) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3 }}
-    className="group"
-  >
-    <label
-      htmlFor={id}
-      className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 tracking-wider"
-    >
-      {props.label}
-    </label>
-    <div className="relative">
-      <motion.div
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-10"
-        whileHover={{ scale: 1.1 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Icon className="w-4 h-4 text-gray-400 dark:text-gray-500 group-focus-within:text-orange-500 transition-colors" />
-      </motion.div>
-      <select
-        id={id}
-        {...props}
-        className={`w-full pl-10 pr-8 py-2.5 text-sm text-gray-800 dark:text-gray-100 border-2 rounded-lg appearance-none transition-all duration-200 
-          bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm
-          ${error ? "border-red-300 focus:border-red-500" : "border-gray-200 dark:border-gray-700 focus:border-orange-500 dark:focus:border-orange-500"}
-          focus:ring-2 focus:ring-orange-500/20 focus:bg-white dark:focus:bg-gray-900 shadow-sm hover:shadow-md cursor-pointer`}
-      >
-        {children}
-      </select>
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-        <svg
-          className="w-4 h-4 text-gray-400 dark:text-gray-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </div>
-    </div>
-  </motion.div>
-);
+import { reverseGeocodeRaw, getDeviceLocation } from "@/services/geocoding";
+import { SenderData, SenderInfoStepProps } from "@/types/package";
 
 export default function SenderInfoStep({
   initialData,
   onContinue,
-  currentUser,
 }: SenderInfoStepProps) {
-  const [formData, setFormData] = useState<SenderData>(initialData);
+  // We include isSender in the state so it persists when navigating back/forth
+  const [formData, setFormData] = useState<SenderData>({
+    ...initialData,
+    isSender: initialData.isSender || false, // Ensure this is in your SenderData interface
+  });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [fullDetectedAddress, setFullDetectedAddress] = useState("");
 
-  // REMOVED: notification states and timers
-
-  const router = useRouter();
-  const { user: authUser } = useAuth();
-
-  const isUserLoggedIn = !!(currentUser || authUser);
-
-  // --- REGION/CITY LOGIC (Keep this, it's vital for UX) ---
+  // --- LEGACY COUNTRY/REGION/CITY LOGIC ---
   useEffect(() => {
     if (formData.senderCountry) {
       const countryData =
@@ -182,238 +61,321 @@ export default function SenderInfoStep({
     }
   }, [formData.senderCountry, formData.senderRegion, formData.senderCity]);
 
+  // --- HANDLERS ---
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleAutoLocate = async () => {
+    if (!navigator.geolocation) {
+      alert("La géolocalisation n'est pas supportée.");
+      return;
     }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const data = await reverseGeocodeRaw(latitude, longitude);
+          const addr = data.address;
+          setFullDetectedAddress(data.display_name);
+
+          setFormData((prev) => ({
+            ...prev,
+            isSender: true,
+            senderCountry: addr.country?.toLowerCase() || "",
+            senderRegion: addr.state || "",
+            senderCity: addr.city || addr.town || addr.village || "",
+            senderAddress: addr.road || addr.pedestrian || "",
+            senderLieuDit:
+              addr.suburb || addr.neighborhood || addr.county || "",
+            latitude,
+            longitude,
+          }));
+        } catch (error) {
+          alert("Erreur lors de la récupération de l'adresse.");
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        alert("Localisation échouée. Vérifiez vos permissions.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (formData.senderName.trim().length < 2)
-      newErrors.senderName = "Nom requis";
-    if (
-      !/^(6|2)(?:[235-9]\d{7})$/.test(formData.senderPhone.replace(/\s/g, ""))
-    )
-      newErrors.senderPhone = "Format invalide";
-    if (!formData.senderCountry) newErrors.senderCountry = "Pays requis";
-    if (!formData.senderRegion) newErrors.senderRegion = "Région requise";
-    if (!formData.senderCity) newErrors.senderCity = "Ville requise";
-    if (!formData.senderAddress.trim())
-      newErrors.senderAddress = "Adresse requise";
-    if (!formData.senderLieuDit.trim())
-      newErrors.senderLieuDit = "Lieu-dit requis";
+    if (!formData.senderFirstName.trim()) newErrors.senderFirstName = "Requis";
+    if (!formData.senderLastName.trim()) newErrors.senderLastName = "Requis";
+    if (!formData.senderPhone.trim()) newErrors.senderPhone = "Requis";
+
+    // Only validate selects/manual address if NOT in isSender mode
+    if (!formData.isSender) {
+      if (!formData.senderCountry) newErrors.senderCountry = "Requis";
+      if (!formData.senderRegion) newErrors.senderRegion = "Requis";
+      if (!formData.senderCity) newErrors.senderCity = "Requis";
+      if (!formData.senderAddress.trim()) newErrors.senderAddress = "Requis";
+      if (!formData.senderLieuDit.trim()) newErrors.senderLieuDit = "Requis";
+    }
     return newErrors;
   };
 
-  // --- REFACTORED SUBMIT (Direct and Clean) ---
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validationErrors = validateForm();
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    const valErrors = validateForm();
+    if (Object.keys(valErrors).length > 0) {
+      setErrors(valErrors);
       return;
     }
-
-    setIsSubmitting(true);
-
-    // Simulate a small network delay for better UX
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
-    // Simply continue to next step
     onContinue(formData);
-    setIsSubmitting(false);
   };
 
-  const availableRegions = formData.senderCountry
-    ? countries[formData.senderCountry as keyof typeof countries]?.regions || {}
-    : {};
-
-  const availableCities = (() => {
-    if (formData.senderCountry && formData.senderRegion) {
-      const countryData =
-        countries[formData.senderCountry as keyof typeof countries];
-      if (countryData) {
-        const regionData = (countryData.regions as any)[formData.senderRegion];
-        return regionData?.cities || [];
-      }
-    }
-    return [];
-  })();
+  const availableRegions =
+    countries[formData.senderCountry as keyof typeof countries]?.regions || {};
+  const availableCities =
+    (availableRegions as any)[formData.senderRegion]?.cities || [];
 
   return (
-    <>
-      {/* REMOVED: BreakingNewsNotification call */}
+    <div className="flex flex-col items-center py-10 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-[2rem] shadow-xl border border-gray-100 dark:border-gray-700 p-8 md:p-10"
+      >
+        {/* Header (Same as Recipient) */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-2xl mb-4">
+            <Send className="w-6 h-6 text-orange-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            Informations expéditeur
+          </h2>
+        </div>
 
-      <div className="min-h-screen bg-transparent relative overflow-hidden transition-colors duration-300">
-        <FloatingIcon delay={0}>
-          <Send className="w-16 h-16 absolute top-20 right-20" />
-        </FloatingIcon>
-        <FloatingIcon delay={0.5}>
-          <Sparkles className="w-12 h-12 absolute top-40 left-10" />
-        </FloatingIcon>
-        <FloatingIcon delay={1}>
-          <Circle className="w-8 h-8 absolute bottom-40 right-40" />
-        </FloatingIcon>
-        <FloatingIcon delay={1.5}>
-          <Sparkles className="w-10 h-10 absolute bottom-20 left-20" />
-        </FloatingIcon>
+        {/* Smart Box */}
+        <div className="mb-8 p-6 rounded-2xl bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800 flex flex-col items-center gap-4">
+          <div className="flex items-center gap-3 text-orange-900 dark:text-orange-300 font-bold text-sm">
+            <div
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${formData.isSender ? "bg-orange-500 border-orange-500" : "bg-white"}`}
+            >
+              {formData.isSender && (
+                <CheckCircle2 className="w-4 h-4 text-white" />
+              )}
+            </div>
+            <span>Je suis l'expéditeur (Utiliser ma position actuelle)</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleAutoLocate}
+              disabled={isLocating}
+              className="px-6 py-2.5 bg-orange-600 text-white rounded-full text-xs font-bold shadow-lg flex items-center gap-2"
+            >
+              {isLocating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <MapPinned className="w-4 h-4" />
+              )}
+              {formData.isSender ? "Position Validée" : "Oui, localisez-moi"}
+            </button>
+            {formData.isSender && (
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, isSender: false })}
+                className="p-2.5 bg-white border border-gray-200 rounded-full text-gray-400"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
 
-        <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-          <motion.div
-            className="w-full max-w-3xl"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          >
-            <motion.div className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 dark:border-gray-700/50 p-6 sm:p-8">
-              <div className="text-center mb-6">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-3"
-                >
-                  <Send className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-                </motion.div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">
-                  Informations expéditeur
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Renseignez vos coordonnées pour l'envoi
-                </p>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InputField
+              icon={User}
+              label="Nom"
+              name="senderLastName"
+              value={formData.senderLastName}
+              onChange={handleChange}
+              error={errors.senderLastName}
+            />
+            <InputField
+              icon={User}
+              label="Prénom"
+              name="senderFirstName"
+              value={formData.senderFirstName}
+              onChange={handleChange}
+              error={errors.senderFirstName}
+            />
+          </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputField
-                    icon={User}
-                    id="senderName"
-                    name="senderName"
-                    value={formData.senderName}
-                    onChange={handleChange}
-                    label="Nom Complet"
-                    placeholder="Joseph Mballa"
-                    error={errors.senderName}
-                  />
-                  <InputField
-                    icon={Phone}
-                    id="senderPhone"
-                    name="senderPhone"
-                    value={formData.senderPhone}
-                    onChange={handleChange}
-                    label="Téléphone"
-                    placeholder="699123456"
-                    error={errors.senderPhone}
-                  />
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InputField
+              icon={Phone}
+              label="Téléphone"
+              name="senderPhone"
+              value={formData.senderPhone}
+              onChange={handleChange}
+              error={errors.senderPhone}
+            />
+            <InputField
+              icon={Mail}
+              label="Email (Optionnel)"
+              name="senderEmail"
+              value={formData.senderEmail}
+              onChange={handleChange}
+            />
+          </div>
 
-                <InputField
-                  icon={Mail}
-                  type="email"
-                  id="senderEmail"
-                  name="senderEmail"
-                  value={formData.senderEmail}
-                  onChange={handleChange}
-                  label="Email (optionnel)"
-                  placeholder="nom@exemple.com"
+          <AnimatePresence mode="wait">
+            {formData.isSender ? (
+              <motion.div
+                key="auto"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="pt-2"
+              >
+                <label className="text-[11px] font-bold uppercase text-orange-600 mb-1 block ml-1">
+                  Adresse détectée
+                </label>
+                <textarea
+                  readOnly
+                  value={fullDetectedAddress || formData.senderAddress}
+                  className="w-full p-4 bg-orange-50/30 border border-orange-200 rounded-2xl text-xs italic text-gray-600 outline-none"
+                  rows={2}
                 />
-
+              </motion.div>
+            ) : (
+              <motion.div
+                key="manual"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-5"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <SelectField
                     icon={Globe}
-                    id="senderCountry"
+                    label="Pays"
                     name="senderCountry"
                     value={formData.senderCountry}
                     onChange={handleChange}
-                    label="Pays"
                     error={errors.senderCountry}
                   >
-                    <option value="">Sélectionner un pays</option>
-                    {Object.entries(countries).map(([key, country]) => (
-                      <option key={key} value={key}>
-                        {country.name}
+                    <option value="">Choisir...</option>
+                    {Object.entries(countries).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v.name}
                       </option>
                     ))}
                   </SelectField>
                   <SelectField
                     icon={Building}
-                    id="senderRegion"
+                    label="Région"
                     name="senderRegion"
                     value={formData.senderRegion}
                     onChange={handleChange}
-                    label="Région"
                     error={errors.senderRegion}
                     disabled={!formData.senderCountry}
                   >
-                    <option value="">Sélectionner une région</option>
-                    {Object.entries(availableRegions).map(([key, region]) => (
-                      <option key={key} value={key}>
-                        {(region as { name: string }).name}
+                    <option value="">Choisir...</option>
+                    {Object.entries(availableRegions).map(([k, v]: any) => (
+                      <option key={k} value={k}>
+                        {v.name}
                       </option>
                     ))}
                   </SelectField>
                   <SelectField
                     icon={Navigation}
-                    id="senderCity"
+                    label="Ville"
                     name="senderCity"
                     value={formData.senderCity}
                     onChange={handleChange}
-                    label="Ville"
                     error={errors.senderCity}
                     disabled={!formData.senderRegion}
                   >
-                    <option value="">Sélectionner une ville</option>
-                    {availableCities.map((city: string) => (
-                      <option key={city} value={city}>
-                        {city}
+                    <option value="">Choisir...</option>
+                    {availableCities.map((c: string) => (
+                      <option key={c} value={c}>
+                        {c}
                       </option>
                     ))}
                   </SelectField>
                 </div>
-
                 <InputField
                   icon={MapPin}
-                  id="senderAddress"
+                  label="Adresse Complète"
                   name="senderAddress"
                   value={formData.senderAddress}
                   onChange={handleChange}
-                  label="Adresse Complète"
-                  placeholder="Mvan, Yaoundé"
                   error={errors.senderAddress}
                 />
                 <InputField
                   icon={Home}
-                  id="senderLieuDit"
+                  label="Lieu-dit"
                   name="senderLieuDit"
                   value={formData.senderLieuDit}
                   onChange={handleChange}
-                  label="Lieu-dit"
-                  placeholder="Face Boulangerie Mvan, portail rouge"
                   error={errors.senderLieuDit}
                 />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                <div className="pt-4 flex justify-end">
-                  <motion.button
-                    type="submit"
-                    disabled={isSubmitting}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`inline-flex items-center justify-center px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 shadow-lg ${isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-orange-600 hover:bg-orange-700 text-white"}`}
-                  >
-                    {isSubmitting ? "Traitement..." : "Continuer"}
-                    {!isSubmitting && <ArrowRight className="w-4 h-4 ml-2" />}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        </div>
-      </div>
-    </>
+          <div className="flex justify-end pt-6">
+            <button
+              type="submit"
+              className="px-10 py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-orange-600/30 transition-all active:scale-95"
+            >
+              Continuer
+              <ArrowRight size={18} />
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
   );
 }
+
+// Reusable Legacy UI components
+const InputField = ({ icon: Icon, label, error, ...props }: any) => (
+  <div className="flex flex-col gap-1.5 flex-1">
+    <label className="text-[11px] font-bold uppercase text-gray-500 ml-1">
+      {label}
+    </label>
+    <div className="relative">
+      <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+      <input
+        {...props}
+        className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-900 border ${error ? "border-red-500" : "border-gray-200 dark:border-gray-700"} rounded-2xl outline-none focus:border-orange-500 text-sm transition-all`}
+      />
+    </div>
+    {error && <span className="text-[10px] text-red-500 ml-1">{error}</span>}
+  </div>
+);
+
+const SelectField = ({ icon: Icon, label, error, children, ...props }: any) => (
+  <div className="flex flex-col gap-1.5 flex-1">
+    <label className="text-[11px] font-bold uppercase text-gray-500 ml-1">
+      {label}
+    </label>
+    <div className="relative">
+      <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 z-10" />
+      <select
+        {...props}
+        className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-900 border ${error ? "border-red-500" : "border-gray-200 dark:border-gray-700"} rounded-2xl outline-none appearance-none text-sm`}
+      >
+        {children}
+      </select>
+    </div>
+  </div>
+);

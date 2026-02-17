@@ -7,7 +7,7 @@ import { SuccessStepProps } from '@/types/package';
 import { ArrowPathIcon, CheckCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 
-export default function SuccessStep({ trackingNumber, isUserLoggedIn, onDownloadPDF, onReset }: SuccessStepProps) {
+export default function SuccessStep({ trackingNumber, onDownloadPDF, onReset }: SuccessStepProps) {
   return (
     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="min-h-[60vh] flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center space-y-6">

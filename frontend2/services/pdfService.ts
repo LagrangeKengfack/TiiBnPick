@@ -5,7 +5,7 @@
 import jsPDF from "jspdf";
 import OriginalQRCode from "qrcode";
 
-const APP_NAME = "TickBnPick";
+const APP_NAME = "TiiBnTick";
 const BRAND_ORANGE = [249, 115, 22]; // RGB for #F97316
 
 export const pdfService = {
@@ -51,6 +51,37 @@ export const pdfService = {
         const valueX = x + pdf.getTextWidth(`${label}: `) + 1;
         pdf.text(String(value || "N/A"), valueX, yPos);
       };
+
+      const addGridFieldForLongText = (
+        label: string,
+        value: string,
+        x: number,
+        yPos: number,
+        maxWidth: number,
+      ) => {
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`${label}:`, x, yPos);
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(60, 60, 60);
+
+        const labelWidth = pdf.getTextWidth(`${label}: `);
+        const valueX = x + labelWidth + 2;
+        const availableWidth = maxWidth - labelWidth - 5;
+
+        // Split text to fit width
+        const lines = pdf.splitTextToSize(
+          String(value || "N/A"),
+          availableWidth,
+        );
+        pdf.text(lines, valueX, yPos);
+
+        // Return height consumed: (number of lines * line height) + padding
+        return lines.length * 4.5;
+      };
+
 
       // --- 1. HEADER (Logo & QR Code) ---
       // Logo (Text based)
@@ -102,101 +133,126 @@ export const pdfService = {
 
       y += 25;
 
-      // --- 2. INTERVENANTS (Two Columns) ---
+      // --- 2. INTERVENANTS ---
       addSectionTitle("Intervenants");
       const startYInter = y;
+      const colWidth = pageWidth / 2 - margin - 5; // Define a safe boundary for each column
 
       // Column 1: Sender
-      addGridField("Expéditeur", allData.senderName, margin, y);
-      y += 6;
-      addGridField("Téléphone", allData.senderPhone, margin, y);
-      y += 6;
-      addGridField("Dépôt", allData.departurePointName, margin, y);
+      let senderY = startYInter;
+      senderY +=
+        addGridFieldForLongText(
+          "Expéditeur",
+          `${allData.senderLastName} ${allData.senderFirstName}`,
+          margin,
+          senderY,
+          colWidth,
+        ) + 2;
+      senderY +=
+        addGridFieldForLongText(
+          "Téléphone",
+          allData.senderPhone,
+          margin,
+          senderY,
+          colWidth,
+        ) + 2;
+      senderY +=
+        addGridFieldForLongText(
+          "Dépôt",
+          allData.departurePointName,
+          margin,
+          senderY,
+          colWidth,
+        ) + 2;
 
-      // Column 2: Recipient
-      let yCol2 = startYInter;
+      let recipientY = startYInter;
       const col2X = pageWidth / 2 + 5;
-      addGridField("Destinataire", allData.recipientName, col2X, yCol2);
-      yCol2 += 6;
-      addGridField("Téléphone", allData.recipientPhone, col2X, yCol2);
-      yCol2 += 6;
-      addGridField("Point de Retrait", allData.arrivalPointName, col2X, yCol2);
+      recipientY +=
+        addGridFieldForLongText(
+          "Destinataire",
+          allData.recipientName,
+          col2X,
+          recipientY,
+          colWidth,
+        ) + 2;
+      recipientY +=
+        addGridFieldForLongText(
+          "Téléphone",
+          allData.recipientPhone,
+          col2X,
+          recipientY,
+          colWidth,
+        ) + 2;
+      recipientY +=
+        addGridFieldForLongText(
+          "Point de Retrait",
+          allData.arrivalPointName,
+          col2X,
+          recipientY,
+          colWidth,
+        ) + 2;
 
-      y = Math.max(y, yCol2) + 15;
-
+      y = Math.max(senderY, recipientY) + 5;
       // --- 3. DÉTAILS DU COLIS ---
       addSectionTitle("Détails du colis");
       const startYPackage = y;
 
-      addGridField("Désignation", allData.designation, margin, y);
-      y += 6;
-      addGridField("Poids", `${allData.weight} kg`, margin, y);
-      y += 6;
+      // We calculate Designation height first
+      const designHeight = addGridFieldForLongText('Désignation', allData.designation, margin, y, 120);
+      y += designHeight + 2; // Move Y down by the height of the designation
 
+      y += addGridFieldForLongText('Poids', `${allData.weight} kg`, margin, y, 120) + 2;
+      
       let caracteristiques = [];
       if (allData.isFragile) caracteristiques.push("Fragile");
       if (allData.isPerishable) caracteristiques.push("Périssable");
-      addGridField(
-        "Spécificités",
-        caracteristiques.join(", ") || "Aucune",
-        margin,
-        y,
-      );
-
-      // Package Image (Right Side)
+      const specHeight = addGridFieldForLongText('Spécificités', caracteristiques.join(', ') || 'Aucune', margin, y, 120);
+      
+      // Handle Image (Fixed position relative to start of section)
       if (allData.photo) {
-        try {
-          // Calculate aspect ratio for 40mm width
-          pdf.addImage(
-            allData.photo,
-            "JPEG",
-            pageWidth - margin - 50,
-            startYPackage - 5,
-            50,
-            40,
-          );
-        } catch (e) {
-          console.error("PDF Image error", e);
-        }
-      }
+        try { pdf.addImage(allData.photo, 'JPEG', pageWidth - margin - 50, y - designHeight - 5, 50, 40); } 
+        catch (e) {
+
+      console.error("PDF Image error", e);
+    }
+  }
+  y = Math.max(y + specHeight + 10, y + 45); // Ensure we are below the image catch (e) {
 
       y = startYPackage + 45;
 
       // --- 4. RÉCAPITULATIF FINANCIER ---
       addSectionTitle("Récapitulatif Financier");
 
-      addGridField(
-        "Coût de base",
-        `${allData.basePrice.toLocaleString()} FCFA`,
-        margin,
-        y,
-      );
-      y += 6;
-      addGridField(
-        "Frais de trajet",
-        `${allData.travelPrice.toLocaleString()} FCFA`,
-        margin,
-        y,
-      );
-      y += 12;
+      const addFinanceRow = (label: string, value: number, isBold = false) => {
+        pdf.setFont("helvetica", isBold ? "bold" : "normal");
+        pdf.text(label, margin, y);
+        pdf.text(`${value.toLocaleString()} FCFA`, pageWidth - margin, y, {
+          align: "right",
+        });
+        y += 6;
+      };
 
-      pdf.setFont("helvetica", "bold");
-      const paymentStatusText =
+      addFinanceRow("Coût de base", allData.basePrice || 0);
+      addFinanceRow("Frais de trajet", allData.travelPrice || 0);
+      if (operatorFee > 0) addFinanceRow("Frais transaction", operatorFee);
+
+      y += 2;
+      pdf.setDrawColor(200);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      const totalLabel =
         selectedMethod === "recipient"
-          ? "Total à payer par le Destinataire "
-          : "Total payé par l'Expéditeur ";
-      addGridField(
-        paymentStatusText,
-        `${totalPrice.toLocaleString()} FCFA`,
-        margin,
-        y,
-      );
+          ? "Total à payer par le Destinataire"
+          : "Total payé par l'Expéditeur";
+      pdf.setFontSize(11);
+      addFinanceRow(totalLabel, totalPrice, true);
 
       y += 20;
 
       // --- 5. SIGNATURES ---
       addSectionTitle("Signature");
-      const sigY = y;
+      const sigY = y + 5;
 
       // Client Header
       pdf.setFont("helvetica", "bold");
@@ -218,12 +274,18 @@ export const pdfService = {
           pdf.addImage(
             allData.signatureUrl,
             "PNG",
-            margin + 10,
-            sigY + 5,
+            margin + 15,
+            sigY + 2,
             40,
             20,
           );
-        } catch (e) {}
+        } catch (e) {
+          console.error("Signature PDF Render Error:", e);
+          pdf.setFontSize(8);
+          pdf.setTextColor(200, 0, 0);
+          pdf.text("(Erreur de rendu signature)", margin + 15, sigY + 10);
+          pdf.setTextColor(0);
+        }
       }
 
       y += 45;
@@ -249,7 +311,7 @@ export const pdfService = {
       // Save
       pdf.save(`Bordereau_${trackingNumber}.pdf`);
     } catch (error) {
-      console.error("Erreur génération PDF:", error);
+      console.error("Erreur génération PDF: ", error);
     }
   },
 };
