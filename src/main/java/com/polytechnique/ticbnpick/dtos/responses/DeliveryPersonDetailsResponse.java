@@ -1,5 +1,6 @@
 package com.polytechnique.ticbnpick.dtos.responses;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,9 @@ public class DeliveryPersonDetailsResponse {
     private String phone;
     private String status;
     private String commercialName;
+    private String nuiNumber; // Taxpayer Number / NINE
+    @JsonProperty("nuiPhoto")
+    private String nuiPhoto; // Path to NIU photo
 
     // Personal Info
     private String nationalId;

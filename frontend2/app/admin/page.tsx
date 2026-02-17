@@ -79,7 +79,7 @@ interface Account {
   name: string
   email: string
   phone: string
-  role: 'DELIVERY' | 'AGENCY' | 'POINT'
+  role: 'DELIVERY' | 'AGENCY' | 'POINT' | 'CLIENT'
   status: 'ACTIVE' | 'SUSPENDED' | 'REVOKED'
   deliveriesCount: number
   lastActivityAt: string | null
@@ -97,6 +97,74 @@ interface DashboardStats {
 }
 
 type ActiveView = 'dashboard' | 'registrations' | 'accounts' | 'subscriptions'
+
+// Backend DTO interface
+interface BackendDeliveryPersonDTO {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  status: string
+  commercialName?: string
+  nationalId?: string
+  photoCard?: string
+  cniRecto?: string
+  cniVerso?: string
+  idCardVerified?: boolean
+  vehicleType?: string
+  vehicleBrand?: string
+  vehicleModel?: string
+  vehicleRegNumber?: string
+  vehicleColor?: string
+  vehicleFrontPhoto?: string
+  vehicleBackPhoto?: string
+  vehicleRegVerified?: boolean
+  insuranceVerified?: boolean
+  createdAt?: string
+  updatedAt?: string
+
+  nuiNumber?: string
+  nuiPhoto?: string
+}
+
+// Mapper function: Backend DTO -> Frontend Interface
+const mapBackendToFrontend = (dto: BackendDeliveryPersonDTO): DeliveryPersonRequest => {
+  console.log("Mapping DTO:", dto);
+  console.log("DTO NUI Photo:", dto.nuiPhoto);
+  const formatPath = (path?: string) => {
+    if (!path) return undefined
+    if (path.startsWith('http') || path.startsWith('data:')) return path
+    return path.startsWith('/') ? path : `/${path}`.replace(/\\/g, '/')
+  }
+
+  return {
+    id: dto.id,
+    name: `${dto.firstName} ${dto.lastName}`,
+    email: dto.email,
+    phone: dto.phone,
+    location: 'Non spécifié', // Backend doesn't provide location directly
+    vehicleType: dto.vehicleType || 'Non spécifié',
+    vehicleBrand: dto.vehicleBrand || 'Non spécifié',
+    vehicleModel: dto.vehicleModel || 'Non spécifié',
+    vehicleRegNumber: dto.vehicleRegNumber || 'Non spécifié',
+    status: (dto.status as 'PENDING' | 'APPROVED' | 'REJECTED') || 'PENDING',
+    idCardVerified: dto.idCardVerified ?? false,
+    vehicleRegVerified: dto.vehicleRegVerified ?? false,
+    insuranceVerified: dto.insuranceVerified ?? false,
+    createdAt: dto.createdAt || new Date().toISOString(),
+    updatedAt: dto.updatedAt || new Date().toISOString(),
+    profilePhoto: formatPath(dto.photoCard),
+    idCardRectoPhoto: formatPath(dto.cniRecto),
+    idCardVersoPhoto: formatPath(dto.cniVerso),
+    idCardNumber: dto.nationalId,
+    vehicleColor: dto.vehicleColor,
+    vehicleFrontPhoto: formatPath(dto.vehicleFrontPhoto),
+    vehicleBackPhoto: formatPath(dto.vehicleBackPhoto),
+    nineNumber: dto.nuiNumber,
+    niuPhoto: formatPath(dto.nuiPhoto),
+  }
+}
 
 export default function SuperAdminDashboard() {
   const { toast } = useToast()
@@ -120,6 +188,13 @@ export default function SuperAdminDashboard() {
 
   // Super admin info
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
+
+  // Fix hydration error by mounting only on client
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!authLoading) {
@@ -149,67 +224,13 @@ export default function SuperAdminDashboard() {
 
   // Fetch data on component mount
   useEffect(() => {
-    // Charger les données de test immédiatement
-    const testData: DeliveryPersonRequest[] = [
-      {
-        id: '1',
-        name: 'Jean Dupont',
-        email: 'jean.dupont@example.com',
-        phone: '+33612345678',
-        location: 'Paris, 75001',
-        vehicleType: 'Moto',
-        vehicleBrand: 'Honda',
-        vehicleModel: 'CB500',
-        vehicleRegNumber: 'AB-123-CD',
-        status: 'PENDING',
-        idCardVerified: true,
-        vehicleRegVerified: false,
-        insuranceVerified: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-        idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-        idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-        idCardNumber: 'AB123456789',
-        nineNumber: 'NINE12345678',
-        niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
-        vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        vehicleColor: 'Rouge',
-      },
-      {
-        id: '2',
-        name: 'Marie Martin',
-        email: 'marie.martin@example.com',
-        phone: '+33698765432',
-        location: 'Lyon, 69000',
-        vehicleType: 'Voiture',
-        vehicleBrand: 'Peugeot',
-        vehicleModel: '308',
-        vehicleRegNumber: 'XY-456-AB',
-        status: 'PENDING',
-        idCardVerified: true,
-        vehicleRegVerified: true,
-        insuranceVerified: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        profilePhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-        idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-        idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-        idCardNumber: 'CD987654321',
-        nineNumber: 'NINE87654321',
-        niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
-        vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        vehicleColor: 'Bleu',
-      },
-    ]
-
-    setRegistrationRequests(testData)
-    setLoading(false)
-    fetchAccounts()
-    fetchDashboardStats()
-  }, [])
+    if (mounted && user) {
+      fetchDashboardStats()
+      fetchRegistrations()
+      fetchAccounts()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, user])
 
   const fetchDashboardStats = async () => {
     try {
@@ -224,18 +245,12 @@ export default function SuperAdminDashboard() {
   const fetchRegistrations = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.get<DeliveryPersonRequest[]>('/api/admin/delivery-persons', {
+      const response = await apiClient.get<BackendDeliveryPersonDTO[]>('/api/admin/delivery-persons', {
         params: { status: 'PENDING' }
       })
 
-      // Map API response to our interface if needed, or use directly if matches
-      // The API returns DeliveryPersonDetailsResponse which matches our interface mostly
-      const data = response.data.map(item => ({
-        ...item,
-        // Ensure status is correctly typed
-        status: item.status as 'PENDING' | 'APPROVED' | 'REJECTED'
-      }))
-
+      // Map backend DTOs to frontend interface
+      const data = response.data.map(mapBackendToFrontend)
       setRegistrationRequests(data)
     } catch (error) {
       console.error('Error fetching registrations:', error)
@@ -249,11 +264,29 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  // Fetch accounts
+  // Fetch accounts (delivery persons)
   const fetchAccounts = async () => {
     try {
-      const response = await apiClient.get('/api/accounts')
-      setAccounts(response.data)
+      // Fetch all delivery persons from backend
+      const response = await apiClient.get<BackendDeliveryPersonDTO[]>('/api/admin/delivery-persons')
+
+      // Map to Account interface for the accounts view
+      const deliveryPersonAccounts: Account[] = response.data.map(dto => ({
+        id: dto.id,
+        name: `${dto.firstName} ${dto.lastName}`,
+        email: dto.email,
+        phone: dto.phone,
+        role: 'DELIVERY' as const,
+        status: dto.status === 'APPROVED' ? 'ACTIVE' :
+          dto.status === 'SUSPENDED' ? 'SUSPENDED' :
+            dto.status === 'REJECTED' ? 'REVOKED' : 'ACTIVE',
+        deliveriesCount: 0, // Not provided by backend
+        lastActivityAt: null,
+        createdAt: dto.createdAt || new Date().toISOString(),
+        updatedAt: dto.updatedAt || new Date().toISOString(),
+      }))
+
+      setAccounts(deliveryPersonAccounts)
     } catch (error) {
       console.error('Error fetching accounts:', error)
     }
@@ -319,43 +352,57 @@ export default function SuperAdminDashboard() {
   const confirmAction = async () => {
     try {
       if (actionDialog === 'approve' && selectedRequest) {
-        await apiClient.post(`/api/registrations/${selectedRequest.id}/approve`)
+        // Use backend endpoint: PUT /api/admin/delivery-persons/validate
+        await apiClient.put('/api/admin/delivery-persons/validate', {
+          deliveryPersonId: selectedRequest.id,
+          approved: true
+        })
         toast({
           title: 'Inscription approuvée',
           description: `Le livreur ${selectedRequest.name} a été approuvé avec succès.`
         })
         await fetchRegistrations()
-        await fetchAccounts()
+        await fetchDashboardStats()
       } else if (actionDialog === 'reject' && selectedRequest) {
-        await apiClient.post(`/api/registrations/${selectedRequest.id}/reject`, { reason: 'Rejeté par l\'administrateur' })
+        // Use backend endpoint: PUT /api/admin/delivery-persons/validate
+        await apiClient.put('/api/admin/delivery-persons/validate', {
+          deliveryPersonId: selectedRequest.id,
+          approved: false,
+          reason: 'Rejeté par l\'administrateur'
+        })
         toast({
           title: 'Inscription rejetée',
           description: `La demande de ${selectedRequest.name} a été rejetée.`,
           variant: 'destructive'
         })
         await fetchRegistrations()
+        await fetchDashboardStats()
       } else if (actionDialog === 'suspend' && selectedAccount) {
-        await apiClient.post(`/api/accounts/${selectedAccount.id}/suspend`, { endDate: suspensionEndDate ? suspensionEndDate.toISOString() : null })
+        // Use backend endpoint: PUT /api/admin/delivery-persons/{id}/suspend
+        await apiClient.put(`/api/admin/delivery-persons/${selectedAccount.id}/suspend`)
         toast({
           title: 'Compte suspendu',
           description: `Le compte de ${selectedAccount.name} a été suspendu.`
         })
         setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'SUSPENDED' } : a))
+        await fetchDashboardStats()
       } else if (actionDialog === 'revoke' && selectedAccount) {
-        await apiClient.post(`/api/accounts/${selectedAccount.id}/revoke`)
+        // Use backend endpoint: PUT /api/admin/delivery-persons/{id}/revoke
+        await apiClient.put(`/api/admin/delivery-persons/${selectedAccount.id}/revoke`)
         toast({
           title: 'Compte révoqué',
           description: `Le compte de ${selectedAccount.name} a été révoqué définitivement.`,
           variant: 'destructive'
         })
         setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'REVOKED' } : a))
+        await fetchDashboardStats()
       } else if (actionDialog === 'restore' && selectedAccount) {
-        await apiClient.post(`/api/accounts/${selectedAccount.id}/restore`)
+        // Note: Backend doesn't have a restore endpoint, would need to be added
         toast({
-          title: 'Compte restauré',
-          description: `Le compte de ${selectedAccount.name} a été restauré avec succès.`
+          title: 'Fonction non disponible',
+          description: 'La restauration de compte n\'est pas encore implémentée côté backend.',
+          variant: 'destructive'
         })
-        setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'ACTIVE' } : a))
       }
     } catch (error) {
       console.error('Error performing action:', error)
@@ -461,6 +508,17 @@ export default function SuperAdminDashboard() {
       month: '2-digit',
       year: 'numeric'
     })
+  }
+
+  if (!mounted) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <p className="text-muted-foreground">Chargement de l'interface...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -1023,65 +1081,73 @@ export default function SuperAdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Informations Personnelles (Suite) */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {selectedRequest.nineNumber && (
-                      <div>
-                        <label className="text-xs text-gray-500">Numéro NINE</label>
-                        <p className="font-mono font-bold text-orange-600">{selectedRequest.nineNumber}</p>
-                      </div>
-                    )}
-                  </div>
+                  {/* Documents Section Consolidated */}
+                  <div className="md:col-span-2">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" /> Documents d'identité & Administratifs
+                    </h4>
 
-                  {/* Document NIU */}
-                  {selectedRequest.niuPhoto && (
-                    <div>
-                      <h3 className="text-sm font-semibold mb-3 text-gray-900">Document NIU</h3>
-                      <div className="flex justify-center">
-                        <img
-                          src={selectedRequest.niuPhoto}
-                          alt="Document NIU"
-                          className="w-full max-h-48 rounded-lg object-cover border border-gray-200"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pièce d'Identité */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3 text-gray-900">Pièce d'Identité</h3>
-                    <div className="space-y-3">
-                      {selectedRequest.idCardNumber && (
-                        <div>
-                          <label className="text-xs text-gray-500">Numéro CNI</label>
-                          <p className="font-mono font-bold text-orange-600">{selectedRequest.idCardNumber}</p>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {selectedRequest.idCardRectoPhoto && (
-                          <div>
-                            <label className="text-xs text-gray-500 block mb-2">Photo CNI Recto</label>
-                            <img
-                              src={selectedRequest.idCardRectoPhoto}
-                              alt="Photo CNI Recto"
-                              className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
-                            />
+                    {/* CNI Photos */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="bg-muted p-3 rounded-lg">
+                        <p className="text-sm font-medium mb-1">CNI Recto</p>
+                        {selectedRequest.idCardRectoPhoto ? (
+                          <img
+                            src={selectedRequest.idCardRectoPhoto}
+                            alt="CNI Recto"
+                            className="w-full h-32 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(selectedRequest.idCardRectoPhoto, '_blank')}
+                          />
+                        ) : (
+                          <div className="w-full h-32 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                            Non disponible
                           </div>
                         )}
-                        {selectedRequest.idCardVersoPhoto && (
-                          <div>
-                            <label className="text-xs text-gray-500 block mb-2">Photo CNI Verso</label>
-                            <img
-                              src={selectedRequest.idCardVersoPhoto}
-                              alt="Photo CNI Verso"
-                              className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
-                            />
+                      </div>
+                      <div className="bg-muted p-3 rounded-lg">
+                        <p className="text-sm font-medium mb-1">CNI Verso</p>
+                        {selectedRequest.idCardVersoPhoto ? (
+                          <img
+                            src={selectedRequest.idCardVersoPhoto}
+                            alt="CNI Verso"
+                            className="w-full h-32 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(selectedRequest.idCardVersoPhoto, '_blank')}
+                          />
+                        ) : (
+                          <div className="w-full h-32 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                            Non disponible
                           </div>
                         )}
                       </div>
                     </div>
+
+                    {/* NIU & NINE Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-muted p-3 rounded-lg flex flex-col justify-center">
+                        <p className="text-sm font-medium mb-1">Numéro NINE / NIU</p>
+                        <p className="text-lg font-mono tracking-wide break-all text-orange-600 font-bold">
+                          {selectedRequest.nineNumber || 'Non renseigné'}
+                        </p>
+                      </div>
+                      <div className="bg-muted p-3 rounded-lg">
+                        <p className="text-sm font-medium mb-1">Document NIU</p>
+                        {selectedRequest.niuPhoto ? (
+                          <img
+                            src={selectedRequest.niuPhoto}
+                            alt="Document NIU"
+                            className="w-full h-32 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(selectedRequest.niuPhoto, '_blank')}
+                          />
+                        ) : (
+                          <div className="w-full h-32 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                            Non disponible
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
+
+
 
                   {/* Informations Véhicule */}
                   <div>
@@ -1178,7 +1244,8 @@ export default function SuperAdminDashboard() {
                   </Button>
                 </DialogFooter>
               </>
-            )}
+            )
+            }
           </DialogContent>
         </Dialog>
 
@@ -1264,7 +1331,7 @@ export default function SuperAdminDashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div >
-    </div >
+      </div>
+    </div>
   )
 }

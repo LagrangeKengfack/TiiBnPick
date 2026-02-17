@@ -42,7 +42,10 @@ public class DeliveryPersonMapper {
         person.setPhone(request.getPhone());
         person.setNationalId(request.getNationalId());
         person.setPhotoCard(request.getPhotoCard());
-        person.setNui(request.getNui());
+        person.setPhotoCard(request.getPhotoCard());
+        // Map nuiPhoto path to Person.nui field (since taxpayerNumber in DeliveryPerson stores the number)
+        person.setNui(request.getNuiPhoto());
+        person.setCniRecto(request.getCniRecto());
         person.setCniRecto(request.getCniRecto());
         person.setCniVerso(request.getCniVerso());
         person.setIsActive(false);
@@ -158,6 +161,8 @@ public class DeliveryPersonMapper {
         response.setPhone(person.getPhone());
         response.setStatus(deliveryPerson.getStatus() != null ? deliveryPerson.getStatus().getValue() : null);
         response.setCommercialName(deliveryPerson.getCommercialName());
+        response.setNuiNumber(deliveryPerson.getTaxpayerNumber());
+        response.setNuiPhoto(person.getNui()); // Mapped from Person.nui which now stores the photo path
         return response;
     }
 }

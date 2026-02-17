@@ -53,11 +53,28 @@ public class AuthenticationService {
                                 return response;
                             })
                             .switchIfEmpty(deliveryPersonRepository.findByPersonId(person.getId())
-                                    .map(deliveryPerson -> {
+                                    .flatMap(deliveryPerson -> {
+                                        // Check delivery person specific status
+                                        if (deliveryPerson
+                                                .getStatus() == com.polytechnique.ticbnpick.models.enums.deliveryPerson.DeliveryPersonStatus.SUSPENDED) {
+                                            return Mono
+                                                    .error(new InvalidCredentialsException("Compte livreur suspendu"));
+                                        }
+                                        if (deliveryPerson
+                                                .getStatus() == com.polytechnique.ticbnpick.models.enums.deliveryPerson.DeliveryPersonStatus.REJECTED) {
+                                            return Mono.error(new InvalidCredentialsException(
+                                                    "Compte livreur rejeté ou révoqué"));
+                                        }
+                                        if (deliveryPerson
+                                                .getStatus() == com.polytechnique.ticbnpick.models.enums.deliveryPerson.DeliveryPersonStatus.PENDING) {
+                                            return Mono.error(new InvalidCredentialsException(
+                                                    "Compte livreur en attente de validation"));
+                                        }
+
                                         response.setDeliveryPersonId(deliveryPerson.getId());
                                         response.setUserType("LIVREUR");
                                         response.setIsActive(deliveryPerson.getIsActive());
-                                        return response;
+                                        return Mono.just(response);
                                     }))
                             .defaultIfEmpty(response.getUserType() == null ? setDefaultAdmin(response) : response)
                             .map(finalResponse -> {

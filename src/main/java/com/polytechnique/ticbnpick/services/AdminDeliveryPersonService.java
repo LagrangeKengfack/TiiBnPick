@@ -81,6 +81,7 @@ public class AdminDeliveryPersonService {
                                         .then());
                     } else {
                         dp.setStatus(DeliveryPersonStatus.REJECTED);
+                        // dp.setIsActive(false); // Optional: ensure they are offline if rejected
                         return modificationDeliveryPersonService.updateDeliveryPerson(dp)
                                 .flatMap(updated -> lecturePersonService.findById(updated.getPersonId())
                                         .doOnNext(person -> {
@@ -118,6 +119,7 @@ public class AdminDeliveryPersonService {
                     }
 
                     dp.setStatus(DeliveryPersonStatus.SUSPENDED);
+                    dp.setIsActive(false); // Force offline
                     return modificationDeliveryPersonService.updateDeliveryPerson(dp)
                             .flatMap(updated -> lecturePersonService.findById(updated.getPersonId())
                                     .doOnNext(person -> {
@@ -154,6 +156,7 @@ public class AdminDeliveryPersonService {
                     }
 
                     dp.setStatus(DeliveryPersonStatus.REJECTED);
+                    dp.setIsActive(false); // Force offline
                     return modificationDeliveryPersonService.updateDeliveryPerson(dp)
                             .flatMap(updated -> lecturePersonService.findById(updated.getPersonId())
                                     .doOnNext(person -> {
@@ -216,6 +219,9 @@ public class AdminDeliveryPersonService {
         response.setPhone(person.getPhone());
         response.setStatus(dp.getStatus().name());
         response.setCommercialName(dp.getCommercialName());
+        response.setNuiNumber(dp.getTaxpayerNumber());
+        response.setNuiPhoto(person.getNui());
+        log.info("Mapping person NUI: {}", person.getNui());
 
         // Personal Info
         response.setNationalId(person.getNationalId());

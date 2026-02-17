@@ -39,6 +39,7 @@ public class SecurityConfig {
                                                 .pathMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
                                                                 "/webjars/**")
                                                 .permitAll()
+                                                .pathMatchers("/uploads/**").permitAll()
                                                 .pathMatchers("/api/admin/**").hasRole("ADMIN")
                                                 .anyExchange().authenticated())
                                 .build();
