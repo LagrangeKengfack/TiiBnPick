@@ -612,8 +612,7 @@ export default function RegisterPage() {
                       placeholder="Votre nom"
                       value={formData.nom}
                       onChange={(e) => updateField('nom', e.target.value)}
-                      readOnly={!!(user && role === 'livreur')}
-                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.nom ? 'border-red-500' : ''} ${user && role === 'livreur' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.nom ? 'border-red-500' : ''}`}
                     />
                   </div>
                   {fieldErrors.nom && <p className="text-red-500 text-xs mt-1">{fieldErrors.nom}</p>}
@@ -628,8 +627,7 @@ export default function RegisterPage() {
                       placeholder="Votre prénom"
                       value={formData.prenom}
                       onChange={(e) => updateField('prenom', e.target.value)}
-                      readOnly={!!(user && role === 'livreur')}
-                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.prenom ? 'border-red-500' : ''} ${user && role === 'livreur' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.prenom ? 'border-red-500' : ''}`}
                     />
                   </div>
                   {fieldErrors.prenom && <p className="text-red-500 text-xs mt-1">{fieldErrors.prenom}</p>}
@@ -645,8 +643,7 @@ export default function RegisterPage() {
                       value={formData.telephone}
                       onChange={(e) => updateField('telephone', e.target.value)}
                       maxLength={9}
-                      readOnly={!!(user && role === 'livreur')}
-                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.telephone ? 'border-red-500' : ''} ${user && role === 'livreur' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.telephone ? 'border-red-500' : ''}`}
                     />
                   </div>
                   {fieldErrors.telephone && <p className="text-red-500 text-xs mt-1">{fieldErrors.telephone}</p>}
@@ -678,8 +675,7 @@ export default function RegisterPage() {
                       placeholder="1234567890..."
                       value={formData.numeroCNI}
                       onChange={(e) => updateField('numeroCNI', e.target.value)}
-                      readOnly={!!(user && role === 'livreur')}
-                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.numeroCNI || cniError ? 'border-red-500' : ''} ${user && role === 'livreur' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      className={`pl-9 md:pl-10 border-gray-300 focus:border-orange-500 text-sm md:text-base ${fieldErrors.numeroCNI || cniError ? 'border-red-500' : ''}`}
                     />
                   </div>
                   {fieldErrors.numeroCNI && <p className="text-red-500 text-xs mt-1">{fieldErrors.numeroCNI}</p>}

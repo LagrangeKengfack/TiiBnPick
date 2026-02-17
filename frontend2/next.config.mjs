@@ -7,17 +7,19 @@ const nextConfig = {
     unoptimized: true,
   },
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8081/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
       {
         source: '/uploads/:path*',
-        destination: 'http://localhost:8081/uploads/:path*',
+        destination: `${backendUrl}/uploads/:path*`,
       },
     ]
   },
 }
 
 export default nextConfig
+

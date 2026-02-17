@@ -13,8 +13,7 @@ import {
   PlusIcon as PlusIconHero,
   GiftIcon
 } from '@heroicons/react/24/outline';
-import jsPDF from 'jspdf';
-import QRCode from 'qrcode';
+import { pdfService } from '@/services/pdfService';
 import { supabase } from '@/lib/supabase';
 import {
   PhoneIcon,
@@ -91,9 +90,7 @@ interface PaymentStepProps {
   allData: FinalData;
   onBack: () => void;
   onPaymentFinalized: (pricing: { basePrice: number, travelPrice: number, operatorFee: number, totalPrice: number, trackingNumber?: string }) => void;
-  onPaymentFinalized: (pricing: { basePrice: number, travelPrice: number, operatorFee: number, totalPrice: number, trackingNumber?: string }) => void;
   currentUser: LoggedInUser | null;
-  mode?: string;
 }
 
 
@@ -112,7 +109,7 @@ interface PaymentOptionProps {
 const PAYMENT_OPERATOR_FEE = 100;
 const APP_NAME = "PicknDrop Link";
 
-export default function PaymentStep({ allData, onBack, onPaymentFinalized, currentUser, mode }: PaymentStepProps) {
+export default function PaymentStep({ allData, onBack, onPaymentFinalized, currentUser }: PaymentStepProps) {
   const [selectedMethod, setSelectedMethod] = useState<'cash' | 'mobile' | 'recipient'>('cash');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
@@ -160,139 +157,13 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
   };
 
   const generateBordereauPDF = async () => {
-    try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 15;
-      let y = 20;
-
-      // FONCTIONS UTILITAIRES
-      const addSectionTitle = (title: string) => {
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(45, 55, 72); // Couleur sombre (slate-700)
-        pdf.text(title, margin, y);
-        y += 8;
-        pdf.setLineWidth(0.2);
-        pdf.line(margin, y - 3, pageWidth - margin, y - 3);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(0, 0, 0);
-      };
-
-      const addField = (label: string, value: string | undefined | null) => {
-        if (!value) return;
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(label, margin, y);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(String(value), margin + 45, y);
-        y += 6;
-      };
-
-      // 1. EN-TÊTE
-      pdf.setFontSize(22);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(249, 115, 22); // Orange
-      pdf.text(APP_NAME, margin, y - 5);
-
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'italic');
-      pdf.setTextColor(100, 116, 139); // slate-500
-      pdf.text('Votre solution de livraison de confiance', margin, y);
-
-      const qrDataURL = await QRCode.toDataURL(trackingNumber, { width: 110, margin: 1 });
-      const qrSize = 28;
-      pdf.addImage(qrDataURL, 'PNG', pageWidth - margin - qrSize, y - 12, qrSize, qrSize);
-
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`Bordereau d'Expédition`, pageWidth - margin - 35, y - 5, { align: 'right' });
-
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`N°: ${trackingNumber}`, pageWidth - margin - 35, y, { align: 'right' });
-      pdf.text(`Date: ${new Date().toLocaleDateString('fr-CM')}`, pageWidth - margin - 35, y + 5, { align: 'right' });
-
-      y += qrSize - 5;
-
-      // 2. EXPÉDITEUR & DESTINATAIRE
-      addSectionTitle('Intervenants');
-      const startYCols = y;
-      addField('Expéditeur:', `${allData.senderFirstName} ${allData.senderLastName}`);
-      addField('Téléphone:', allData.senderPhone);
-      addField('Point de Dépôt:', allData.departurePointName);
-
-      y = startYCols; // Reset y pour la deuxième colonne
-      pdf.text('', pageWidth / 2, y); // Placeholder pour aligner
-      addField('Destinataire:', `${allData.recipientFirstName} ${allData.recipientLastName}`);
-      addField('Téléphone:', allData.recipientPhone);
-      addField('Point de Retrait:', allData.arrivalPointName);
-      y = Math.max(y, startYCols + (3 * 6)); // S'assurer que 'y' est à la fin de la colonne la plus longue
-      y += 5;
-
-      // 3. DÉTAILS DU COLIS
-      addSectionTitle('Détails du Colis');
-      if (allData.photo) {
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Photo du Colis:', margin + 110, y - 6);
-        pdf.addImage(allData.photo, 'JPEG', margin + 110, y, 35, 35);
-      }
-      addField('Désignation:', allData.designation);
-      addField('Poids:', `${allData.weight} kg`);
-      let caracteristiques = [];
-      if (allData.isFragile) caracteristiques.push("Fragile");
-      if (allData.isPerishable) caracteristiques.push("Périssable");
-      if (allData.transportMethod) caracteristiques.push(`Transport: ${allData.transportMethod}`);
-      if (caracteristiques.length > 0) addField('Spécificités:', caracteristiques.join(', '));
-      y += 5;
-
-      // 4. RÉCAPITULATIF FINANCIER
-      addSectionTitle('Récapitulatif Financier');
-      addField('Coût de base:', `${allData.basePrice.toLocaleString('fr-FR')} FCFA`);
-      addField('Frais de trajet:', `${allData.travelPrice.toLocaleString('fr-FR')} FCFA`);
-      if (operatorFee > 0) addField('Frais transaction:', `${operatorFee.toLocaleString('fr-FR')} FCFA`);
-      pdf.setLineWidth(0.3);
-      pdf.line(margin, y, margin + 85, y);
-      y += 6;
-
-      pdf.setFont('helvetica', 'bold');
-      const paymentStatusText = selectedMethod === 'recipient'
-        ? 'Total à payer par le Destinataire:'
-        : 'Total payé par l\'Expéditeur:';
-      addField(paymentStatusText, `${totalPrice.toLocaleString('fr-FR')} FCFA`);
-      pdf.setFont('helvetica', 'normal');
-      y += 10;
-
-      // 5. SIGNATURE
-      addSectionTitle('Signature');
-      if (allData.signatureUrl) {
-        try {
-          pdf.addImage(allData.signatureUrl, 'PNG', margin, y, 50, 20);
-        } catch (e) {
-          console.error("Erreur d'ajout de signature");
-        }
-      } else {
-        pdf.text('Pas de signature numérique.', margin, y);
-      }
-      pdf.line(margin, y + 25, margin + 60, y + 25);
-      pdf.text("Signature de l'agent", margin + 100, y + 28);
-      pdf.line(margin + 90, y + 25, margin + 150, y + 25);
-
-      // 6. PIED DE PAGE
-      const finalY = pdf.internal.pageSize.getHeight() - 15;
-      pdf.setLineWidth(0.5);
-      pdf.line(margin, finalY - 5, pageWidth - margin, finalY - 5);
-      pdf.setFontSize(8);
-      pdf.setTextColor(150, 150, 150);
-      pdf.text(`Document généré le ${new Date().toLocaleString('fr-CM')}. ${APP_NAME} vous remercie.`, pageWidth / 2, finalY, { align: 'center' });
-
-      // SAUVEGARDE
-      pdf.save(`Bordereau_Expedition_${trackingNumber}.pdf`);
-    } catch (error) {
-      console.error("Erreur détaillée lors de la génération du PDF:", error);
-      alert("Une erreur est survenue lors de la génération du bordereau PDF.");
-    }
+    await pdfService.generateBordereauPDF(
+      allData,
+      trackingNumber,
+      totalPrice,
+      operatorFee,
+      selectedMethod,
+    );
   };
 
 
@@ -375,7 +246,6 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
           description: allData.description,
           photoPacket: allData.photo || undefined
         },
-        autoPublish: mode === 'publish'
       };
 
       console.log("📦 PAYLOAD ENVOYÉ AU BACKEND :", JSON.stringify(payload, null, 2));
@@ -391,14 +261,8 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
       setTrackingNumber(newTracking);
       setPaymentSuccess(true);
-      setTrackingNumber(newTracking);
-      setPaymentSuccess(true);
 
-      if (mode === 'publish') {
-        showNotification({ message: `Annonce publiée avec succès !`, type: 'success' });
-      } else {
-        showNotification({ message: `Annonce créée ! Réf : ${newTracking.substring(0, 8)}...`, type: 'success' });
-      }
+      showNotification({ message: `Annonce créée ! Réf : ${newTracking.substring(0, 8)}...`, type: 'success' });
 
     } catch (err: any) {
       console.error("❌ ERREUR D'ENVOI :", err);
@@ -751,7 +615,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
                   disabled={isProcessing || !canConfirmPayment()}
                   className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 disabled:bg-orange-400 dark:disabled:bg-orange-800 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transition-all transform hover:scale-105 disabled:scale-100 order-1 sm:order-2"
                 >
-                  {isProcessing ? 'Traitement...' : (mode === 'publish' ? 'Publier l\'annonce' : 'Confirmer l\'expédition')}
+                  {isProcessing ? 'Traitement...' : 'Confirmer l\'expédition'}
                 </button>
               </motion.div>
             </div>

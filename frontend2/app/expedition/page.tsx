@@ -29,8 +29,7 @@ import SignatureStep from './SignatureStep';
 import PaymentStep from './PaymentStepExpedition';
 import { CheckCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import { UserPlusIcon } from 'lucide-react';
-import jsPDF from 'jspdf';
-import OriginalQRCode from 'qrcode';
+import { pdfService } from '@/services/pdfService';
 import { useAuth } from '@/context/AuthContext';
 import { packageService, PackageCreationPayload } from '@/services/packageService';
 
@@ -174,12 +173,10 @@ const ShippingSteps = ({ currentStep = 1 }: { currentStep?: number }) => {
   );
 };
 
-import { useSearchParams } from 'next/navigation';
+
 
 export default function ShippingPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const mode = searchParams.get('mode');
   const [user, setUser] = useState<LoggedInUser | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -307,81 +304,30 @@ export default function ShippingPage() {
   };
 
   const generateBordereauPDF = async () => {
-    try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 15;
-      let y = 20;
-
-      // Utilitaires
-      const addSectionTitle = (title: string) => {
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(45, 55, 72);
-        pdf.text(title, margin, y);
-        y += 8;
-        pdf.setLineWidth(0.2);
-        pdf.line(margin, y - 3, pageWidth - margin, y - 3);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(0, 0, 0);
-      };
-      const addField = (label: string, value: string | undefined | null) => {
-        if (!value) return;
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(label, margin, y);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(String(value), margin + 45, y);
-        y += 6;
-      };
-
-      // HEADER
-      pdf.setFontSize(22);
-      pdf.setTextColor(249, 115, 22);
-      pdf.text("PicknDrop Link", margin, y - 5);
-
-      pdf.setFontSize(11);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`Bordereau d'Expédition`, pageWidth - margin - 35, y - 5, { align: 'right' });
-
-      pdf.setFontSize(9);
-      pdf.text(`N°: ${trackingNumber}`, pageWidth - margin - 35, y, { align: 'right' });
-
-      y += 25;
-
-      // DETAILS
-      addSectionTitle('Détails du Colis');
-
-      // Image
-      if (typeof formData.packageData.photo === 'string') {
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Photo du Colis:', margin + 110, y - 6);
-        try {
-          // Essai ajout image
-          pdf.addImage(formData.packageData.photo, 'JPEG', margin + 110, y, 35, 35);
-        } catch (e) {
-          // Si échec (format base64 invalide ou cors), on ignore
-        }
-      } else {
-        pdf.text('(Photo indisponible sur ce document)', margin + 110, y);
-      }
-
-      addField('Désignation:', formData.packageData.designation);
-      addField('Poids:', `${formData.packageData.weight} kg`);
-
-      addSectionTitle('Intervenants');
-      addField('Expéditeur:', `${formData.senderData.senderFirstName} ${formData.senderData.senderLastName}`);
-      addField('Destinataire:', `${formData.recipientData.recipientFirstName} ${formData.recipientData.recipientLastName}`);
-
-      addSectionTitle('Financier');
-      addField('Total:', `${formData.pricing.totalPrice} FCFA`);
-
-      pdf.save(`Bordereau_${trackingNumber}.pdf`);
-
-    } catch (error) {
-      console.error("Erreur PDF", error);
-      alert("Erreur lors de la génération du PDF.");
-    }
+    const allData = {
+      senderLastName: formData.senderData.senderLastName,
+      senderFirstName: formData.senderData.senderFirstName,
+      senderPhone: formData.senderData.senderPhone,
+      recipientName: `${formData.recipientData.recipientFirstName} ${formData.recipientData.recipientLastName}`,
+      recipientPhone: formData.recipientData.recipientPhone,
+      departurePointName: formData.routeData.departurePointName,
+      arrivalPointName: formData.routeData.arrivalPointName,
+      designation: formData.packageData.designation,
+      weight: formData.packageData.weight,
+      isFragile: formData.packageData.isFragile,
+      isPerishable: formData.packageData.isPerishable,
+      photo: typeof formData.packageData.photo === 'string' ? formData.packageData.photo : null,
+      signatureUrl: formData.signatureData.signatureUrl,
+      basePrice: formData.pricing.basePrice,
+      travelPrice: formData.pricing.travelPrice,
+    };
+    await pdfService.generateBordereauPDF(
+      allData,
+      trackingNumber,
+      formData.pricing.totalPrice,
+      formData.pricing.operatorFee,
+      'cash',
+    );
   };
 
   const handleCreateAccount = () => {
@@ -484,9 +430,7 @@ export default function ShippingPage() {
             localStorage.removeItem(EXPEDITION_FORM_STORAGE_KEY);
           }}
           onBack={() => setFormData(prev => ({ ...prev, currentStep: 5 }))}
-          onBack={() => setFormData(prev => ({ ...prev, currentStep: 5 }))}
           currentUser={user}
-          mode={mode || undefined}
         />;
       case 7:
         return (

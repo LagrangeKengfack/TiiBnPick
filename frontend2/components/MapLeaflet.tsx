@@ -29,39 +29,45 @@ const createCustomIcon = (color: string) => {
   });
 };
 
-// Component to handle map centering when center changes
-function ChangeView({ center, markers = [], route = null }: { center: LatLngExpression, markers?: any[], route?: any }) {
+const getCoordinates = (routeData: any) => {
+  if (!routeData) return [];
+  try {
+    // Standard GeoJSON Feature
+    if (routeData.type === 'Feature' && routeData.geometry && routeData.geometry.coordinates) {
+      return routeData.geometry.coordinates;
+    }
+    // OSRM response format (OSRM Routing Machine)
+    if (routeData.routes && routeData.routes[0]?.geometry?.coordinates) {
+      return routeData.routes[0].geometry.coordinates;
+    }
+    // Direct geometry
+    if (routeData.coordinates) {
+      return routeData.coordinates;
+    }
+  } catch (e) {
+    console.error("Error extracting coordinates", e);
+  }
+  return [];
+};
+
+// Component to automatically fit bounds to markers and route
+function FitBounds({ markers, route }: { markers: { position: LatLngExpression }[], route?: any }) {
   const map = useMap();
-
   useEffect(() => {
-    const L = require('leaflet');
-    const bounds = L.latLngBounds([]);
-    let hasBounds = false;
+    let points: any[] = markers.map(m => m.position);
 
-    // Add markers to bounds
-    if (markers.length > 0) {
-      markers.forEach(m => bounds.extend(m.position));
-      hasBounds = true;
+    if (route) {
+      const coords = getCoordinates(route);
+      if (coords.length > 0) {
+        points = [...points, ...coords.map((c: any) => [c[1], c[0]])];
+      }
     }
 
-    // Add route coordinates to bounds
-    // @ts-ignore
-    if (route?.type === 'Feature' && route?.geometry?.coordinates) {
-      // @ts-ignore
-      route.geometry.coordinates.forEach((c: any) => {
-        bounds.extend([c[1], c[0]]);
-      });
-      hasBounds = true;
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
     }
-
-    if (hasBounds) {
-      // Pad the bounds slightly so markers aren't on the edge
-      map.fitBounds(bounds, { padding: [50, 50], animate: true });
-    } else {
-      map.setView(center, map.getZoom(), { animate: true });
-    }
-  }, [center, markers, route, map]);
-
+  }, [markers, route, map]);
   return null;
 }
 
@@ -74,18 +80,10 @@ export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers 
 
   if (!isMounted) return <div className="w-full h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />;
 
-  // Safely extract coordinates for the route if it exists and is a Feature
-  // @ts-ignore
-  const routeCoordinates = (route?.type === 'Feature' && route?.geometry?.coordinates)
-    ? (route.geometry as any).coordinates
-    : null;
-
-  const routeLatLngs = routeCoordinates?.map((c: any) => [c[1], c[0]]) || [];
-
   return (
     <div className="w-full h-96 rounded-xl overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
       <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
-        <ChangeView center={center} markers={markers} route={route} />
+        <FitBounds markers={markers} route={route} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -99,9 +97,14 @@ export default function MapLeaflet({ center = [5.33, -4.03], zoom = 12, markers 
             <Popup>{m.label || 'Point'}</Popup>
           </Marker>
         ))}
-        {routeLatLngs.length > 0 && (
-          <Polyline positions={routeLatLngs} pathOptions={{ color: '#f97316', weight: 5, opacity: 0.8 }} />
-        )}
+        {route && (() => {
+          const coords = getCoordinates(route);
+          if (coords && coords.length > 0) {
+            const latlngs = coords.map((c: any) => [c[1], c[0]]);
+            return <Polyline positions={latlngs} pathOptions={{ color: '#f97316', weight: 5, opacity: 0.8 }} />;
+          }
+          return null;
+        })()}
       </MapContainer>
     </div>
   )
