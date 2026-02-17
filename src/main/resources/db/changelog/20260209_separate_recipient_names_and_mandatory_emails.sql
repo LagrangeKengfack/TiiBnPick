@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset antigravity:20260209-separate-recipient-names-and-mandatory-emails
+-- changeset TicBnPickTeam:20260209-separate-recipient-names-and-mandatory-emails
 -- Migration to split recipient name and make emails mandatory in announcements table
 
 -- 1. Add new columns for recipient names

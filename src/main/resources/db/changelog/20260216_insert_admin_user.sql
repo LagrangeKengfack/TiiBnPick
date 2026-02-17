@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset antigravity:20260216-insert-admin-user
+-- changeset TicBnPickTeam:20260216-insert-admin-user
 
 -- Insert Admin Person
 -- Password is 'password' hashed with BCrypt

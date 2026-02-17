@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset antigravity:20260216-insert-guest-client
+-- changeset TicBnPickTeam:20260216-insert-guest-client
 -- Insert a default Guest client for unauthenticated announcements
 
 -- 1. Insert Guest Person
