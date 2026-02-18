@@ -1,103 +1,115 @@
-'use client';
+"use client"
 
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
-import { AuthUser, getUser, login as authLogin, logout as authLogout, isAuthenticated, getAdminMe } from '@/services/authService';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { getClientById } from '@/services/clientService';
+
+export interface User {
+  token: string;
+  id: string;
+  lastName: string;
+  firstName: string;
+  email: string;
+  phone: string;
+  userType: 'ADMIN' | 'CLIENT' | 'LIVREUR';
+  isActive: boolean;
+  clientId?: string;
+  deliveryPersonId?: string;
+  rating?: number;
+  totalDeliveries?: number;
+  nationalId?: string;
+  password?: string;
+  memberSince?: string;
+}
 
 interface AuthContextType {
-  user: AuthUser | null;
-  isLoading: boolean;
-  isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  checkAuth: () => Promise<boolean>;
+  user: User | null;
+  loading: boolean;
+  login: (userData: User) => void;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Check authentication status on mount
   useEffect(() => {
-    const initAuth = async () => {
+    // Load user from localStorage on mount
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+
+    if (storedUser && token) {
       try {
-        if (isAuthenticated()) {
-          const storedUser = getUser();
-          if (storedUser) {
-            setUser(storedUser);
-          }
-        }
-      } catch (error) {
-        console.error('Auth init error:', error);
-      } finally {
-        setIsLoading(false);
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse stored user", e);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
       }
-    };
-
-    initAuth();
-  }, []);
-
-  const login = useCallback(async (email: string, password: string): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const authUser = await authLogin({ email, password });
-      setUser(authUser);
-    } finally {
-      setIsLoading(false);
     }
+    setLoading(false);
+    refreshUser();
   }, []);
 
-  const logout = useCallback(async (): Promise<void> => {
-    setIsLoading(true);
-    try {
-      await authLogout();
-      setUser(null);
-    } finally {
-      setIsLoading(false);
+  const login = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem('token', userData.token);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // Use window.location.href to force a full page reload and clear all memory state
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    } else {
+      router.push('/');
     }
-  }, []);
+  };
 
-  const checkAuth = useCallback(async (): Promise<boolean> => {
+  const refreshUser = async () => {
+    if (!user || (!user.clientId && !user.id)) return;
+
     try {
-      if (!isAuthenticated()) {
-        return false;
+      // Use clientId for clients, or id as fallback
+      const targetId = user.clientId || user.id;
+      const latestData = await getClientById(targetId);
+
+      if (latestData) {
+        const updatedUser: User = {
+          ...user,
+          ...latestData,
+          // Ensure we keep the token from current state if not returned by fetch
+          token: user.token
+        };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
       }
-      // Verify with backend
-      await getAdminMe();
-      return true;
-    } catch {
-      setUser(null);
-      return false;
+    } catch (error) {
+      console.error("Failed to refresh user data", error);
     }
-  }, []);
-
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    isLoggedIn: !!user,
-    login,
-    logout,
-    checkAuth,
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth(): AuthContextType {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Fallback or better throw error if used outside Provider
+    return { user: null, loading: false, login: () => { }, logout: () => { }, refreshUser: async () => { } } as AuthContextType;
   }
   return context;
-}
+};
 
 export default AuthContext;

@@ -16,9 +16,11 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -30,7 +32,6 @@ import java.util.UUID;
  * @date 03/02/2026
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class MatchingService {
 
@@ -38,9 +39,20 @@ public class MatchingService {
     private final DeliveryPersonSearchRepository deliveryPersonSearchRepository;
     private final NotificationService notificationService;
 
+    public MatchingService(
+            Optional<AnnouncementSearchRepository> announcementSearchRepository,
+            Optional<DeliveryPersonSearchRepository> deliveryPersonSearchRepository,
+            NotificationService notificationService) {
+        this.announcementSearchRepository = announcementSearchRepository.orElse(null);
+        this.deliveryPersonSearchRepository = deliveryPersonSearchRepository.orElse(null);
+        this.notificationService = notificationService;
+    }
+
     private static final double EARTH_RADIUS_KM = 6371.0;
     private static final double INITIAL_DELTA_KM = 1.5;
     private static final double DELTA_INCREMENT_KM = 0.5;
+    private static final double MAX_DELTA_KM = 10.0;
+    private static final long RETRY_WAIT_TIME_MINUTES = 1;
 
     /**
      * Consumes the AnnouncementPublishedEvent and triggers the matching process.
@@ -86,6 +98,11 @@ public class MatchingService {
 
         // Execute the full reactive pipeline synchronously to ensure Kafka delivery
         // guarantees
+        if (announcementSearchRepository == null) {
+            log.warn("Elasticsearch is disabled. Skipping announcement indexing and matching.");
+            return;
+        }
+
         announcementSearchRepository.save(announcementDoc)
                 .doOnSuccess(saved -> log.info("Announcement indexed in Elasticsearch: {}", saved.getId()))
                 .flatMap(saved -> performMatching(saved, INITIAL_DELTA_KM))
@@ -102,6 +119,11 @@ public class MatchingService {
 
         log.info("Starting matching for Announcement {} with delta={} km, Dmax={} km", announcement.getId(), delta,
                 dMax);
+
+        if (deliveryPersonSearchRepository == null) {
+            log.warn("Elasticsearch is disabled. Cannot find candidates for matching.");
+            return Mono.empty();
+        }
 
         // 3. Initial Search in Elasticsearch with Radius = Dmax
         return deliveryPersonSearchRepository
@@ -122,13 +144,16 @@ public class MatchingService {
                     }
 
                     if (eligibleCandidates.isEmpty()) {
-                        log.info("No eligible candidates found for delta={}. Expanding search...", delta);
+                        log.info("No eligible candidates found for delta={}. Current search expansion...", delta);
                         // 5. Expand Delta and Retry
-                        if (delta < 50.0) { // Safety break
+                        if (delta < MAX_DELTA_KM) {
                             return performMatching(announcement, delta + DELTA_INCREMENT_KM);
                         } else {
-                            log.warn("Matching failed after max expansion for Announcement {}", announcement.getId());
-                            return Mono.empty();
+                            log.info(
+                                    "No candidates found up to max delta of {} km. Waiting {} minute(s) before retry for announcement {}",
+                                    MAX_DELTA_KM, RETRY_WAIT_TIME_MINUTES, announcement.getId());
+                            return Mono.delay(Duration.ofMinutes(RETRY_WAIT_TIME_MINUTES))
+                                    .then(performMatching(announcement, INITIAL_DELTA_KM));
                         }
                     } else {
                         log.info("Found {} eligible candidates: {}", eligibleCandidates.size(),

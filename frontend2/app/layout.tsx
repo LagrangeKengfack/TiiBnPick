@@ -7,6 +7,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { NotificationProvider } from '@/context/NotificationContext'
 import { cookies } from 'next/headers'
 import ThemeCookieSync from '@/components/theme-cookie-sync'
+import { Toaster } from '@/components/ui/toaster'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -56,7 +57,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className={themeCookie === 'dark' ? 'dark' : 'light'} style={{ colorScheme: themeCookie }}>
+    <html lang="en" suppressHydrationWarning className={themeCookie === 'dark' ? 'dark' : 'light'} style={{ colorScheme: themeCookie as any }}>
       <body className={`font-sans antialiased`}>
         <ThemeProvider attribute="class">
           <AuthProvider>
@@ -64,6 +65,7 @@ export default async function RootLayout({
               {children}
               {/* Client component that keeps the cookie in sync when theme changes */}
               <ThemeCookieSync />
+              <Toaster />
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -43,6 +43,9 @@ class AnnouncementServiceTest {
     @Mock
     private PacketRepository packetRepository;
 
+    @Mock
+    private org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+
     @InjectMocks
     private AnnouncementService announcementService;
 
@@ -64,11 +67,12 @@ class AnnouncementServiceTest {
         Announcement savedAnnouncement = new Announcement();
         savedAnnouncement.setId(UUID.randomUUID());
         savedAnnouncement.setTitle("Test Announcement");
-        savedAnnouncement.setStatus(AnnouncementStatus.PUBLISHED);
 
-        when(packetRepository.save(any(Packet.class))).thenReturn(Mono.just(savedPacket));
-        when(addressRepository.save(any(Address.class))).thenReturn(Mono.just(savedAddress));
-        when(announcementRepository.save(any(Announcement.class))).thenReturn(Mono.just(savedAnnouncement));
+        when(addressRepository.findFirstByStreetIgnoreCaseAndCityIgnoreCaseAndDistrictIgnoreCaseAndCountryIgnoreCase(any(), any(), any(), any()))
+                .thenReturn(Mono.empty());
+        when(entityTemplate.insert(any(Address.class))).thenReturn(Mono.just(savedAddress));
+        when(entityTemplate.insert(any(Packet.class))).thenReturn(Mono.just(savedPacket));
+        when(entityTemplate.insert(any(Announcement.class))).thenReturn(Mono.just(savedAnnouncement));
 
         StepVerifier.create(announcementService.createAnnouncement(request))
                 .expectNextMatches(response -> response.getId().equals(savedAnnouncement.getId()) &&

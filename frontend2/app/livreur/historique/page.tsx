@@ -22,8 +22,10 @@ import {
   Phone,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { withAuth } from '@/components/hoc/withAuth'
+import { useAuth } from '@/context/AuthContext'
 
-export default function HistoriqueLivraisons() {
+function HistoriqueLivraisons() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterPeriod, setFilterPeriod] = useState('all')
@@ -412,3 +414,5 @@ function DownloadIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
+
+export default withAuth(HistoriqueLivraisons, ['LIVREUR'])

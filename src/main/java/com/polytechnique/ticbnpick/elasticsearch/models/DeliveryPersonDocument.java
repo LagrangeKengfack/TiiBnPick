@@ -23,7 +23,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "delivery-persons")
+@Document(indexName = "delivery-persons", createIndex = false)
 public class DeliveryPersonDocument {
 
     public UUID getId() {

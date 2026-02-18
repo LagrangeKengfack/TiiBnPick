@@ -13,6 +13,7 @@ import com.polytechnique.ticbnpick.repositories.AnnouncementRepository;
 import com.polytechnique.ticbnpick.events.AnnouncementPublishedEvent;
 import com.polytechnique.ticbnpick.repositories.PacketRepository;
 import com.polytechnique.ticbnpick.services.support.KafkaEventPublisher;
+import com.polytechnique.ticbnpick.services.support.FileStorageService;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -29,64 +30,132 @@ public class AnnouncementService {
     private final AddressRepository addressRepository;
     private final PacketRepository packetRepository;
     private final KafkaEventPublisher kafkaEventPublisher;
+    private final FileStorageService fileStorageService;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional("connectionFactoryTransactionManager")
     public Mono<AnnouncementResponseDTO> createAnnouncement(AnnouncementRequestDTO request) {
-        // 1. Save Packet
-        Packet packet = new Packet();
-        packet.setWidth(request.getPacket().getWidth());
-        packet.setLength(request.getPacket().getLength());
-        packet.setFragile(request.getPacket().getFragile());
-        packet.setDescription(request.getPacket().getDescription());
-        packet.setPhotoPacket(request.getPacket().getPhotoPacket());
-        packet.setIsPerishable(request.getPacket().getIsPerishable());
-        packet.setThickness(request.getPacket().getThickness());
-        packet.setDesignation(request.getPacket().getDesignation());
+        // 1. Prepare Addresses: Find existing or Create new
+        return findOrCreateAddress(request.getPickupAddress()).flatMap(savedPickup -> {
 
-        return packetRepository.save(packet).flatMap(savedPacket -> {
-            // 2. Save Pickup Address
-            Address pickup = maptoAddress(request.getPickupAddress());
-            return addressRepository.save(pickup).flatMap(savedPickup -> {
-                // 3. Save Delivery Address
-                Address delivery = maptoAddress(request.getDeliveryAddress());
-                return addressRepository.save(delivery).flatMap(savedDelivery -> {
-                    // 4. Save Announcement
-                    Announcement announcement = new Announcement();
-                    announcement.setClientId(request.getClientId());
-                    announcement.setPacketId(savedPacket.getId());
-                    announcement.setPickupAddressId(savedPickup.getId());
-                    announcement.setDeliveryAddressId(savedDelivery.getId());
-                    announcement.setTitle(request.getTitle());
-                    announcement.setDescription(request.getDescription());
-                    announcement.setStatus(AnnouncementStatus.PUBLISHED); // Default status
-                    announcement.setCreatedAt(Instant.now());
-                    announcement.setRecipientName(request.getRecipientName());
-                    announcement.setRecipientNumber(request.getRecipientNumber());
-                    announcement.setRecipientEmail(request.getRecipientEmail());
-                    announcement.setRecipientPhone(request.getRecipientPhone());
-                    announcement.setShipperName(request.getShipperName());
-                    announcement.setShipperEmail(request.getShipperEmail());
-                    announcement.setShipperPhone(request.getShipperPhone());
-                    announcement.setAmount(request.getAmount());
+            return findOrCreateAddress(request.getDeliveryAddress()).flatMap(savedDelivery -> {
 
-                    return announcementRepository.save(announcement)
-                            .map(savedAnnouncement -> mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
-                                    savedPacket));
+                // 3. Prepare Announcement with ID
+                Announcement announcement = new Announcement();
+                announcement.setId(UUID.randomUUID()); // Generate UUID manually
+                announcement.setClientId(request.getClientId());
+                // packetId will be set after packet is saved
+                UUID packetId = UUID.randomUUID();
+
+                announcement.setPacketId(packetId);
+                announcement.setPickupAddressId(savedPickup.getId());
+                announcement.setDeliveryAddressId(savedDelivery.getId());
+                announcement.setTitle(request.getTitle());
+                announcement.setDescription(request.getDescription());
+
+                boolean shouldAutoPublish = Boolean.TRUE.equals(request.getAutoPublish());
+                announcement.setStatus(shouldAutoPublish ? AnnouncementStatus.PUBLISHED : AnnouncementStatus.DRAFT);
+
+                announcement.setCreatedAt(Instant.now());
+                announcement.setRecipientFirstName(request.getRecipientFirstName());
+                announcement.setRecipientLastName(request.getRecipientLastName());
+                announcement.setRecipientEmail(request.getRecipientEmail());
+                announcement.setRecipientPhone(request.getRecipientPhone());
+                announcement.setShipperFirstName(request.getShipperFirstName());
+                announcement.setShipperLastName(request.getShipperLastName());
+                announcement.setShipperEmail(request.getShipperEmail());
+                announcement.setShipperPhone(request.getShipperPhone());
+                announcement.setAmount(request.getAmount());
+                announcement.setSignatureUrl(request.getSignatureUrl());
+                announcement.setPaymentMethod(request.getPaymentMethod());
+                announcement.setTransportMethod(request.getTransportMethod());
+                announcement.setDistance(request.getDistance());
+                announcement.setDuration(request.getDuration());
+
+                // Use template.insert() to FORCE INSERT with the manual ID
+                return entityTemplate.insert(announcement).flatMap(savedAnnouncement -> {
+                    // 4. Save Packet with known IDs
+                    Packet packet = new Packet();
+                    packet.setId(packetId); // Use the pre-generated ID
+
+                    packet.setWeight(request.getPacket().getWeight());
+                    packet.setWidth(request.getPacket().getWidth());
+                    packet.setHeight(request.getPacket().getHeight());
+                    packet.setLength(request.getPacket().getLength());
+                    packet.setFragile(request.getPacket().getFragile());
+                    packet.setDescription(request.getPacket().getDescription());
+                    packet.setIsPerishable(request.getPacket().getIsPerishable());
+                    packet.setThickness(request.getPacket().getThickness());
+                    packet.setDesignation(request.getPacket().getDesignation());
+
+                    String inputPhoto = request.getPacket().getPhotoPacket();
+                    return fileStorageService.saveBase64Image(inputPhoto, "packet")
+                            .defaultIfEmpty(inputPhoto != null ? inputPhoto : "")
+                            .flatMap(path -> {
+                                packet.setPhotoPacket(path);
+
+                                // Use template.insert() to FORCE INSERT with the manual ID
+                                return entityTemplate.insert(packet).map(
+                                        savedPacket -> {
+                                            savedAnnouncement.setId(announcement.getId()); // Ensure ID is set
+
+                                            // Handle Auto-Publish Event
+                                            if (shouldAutoPublish) {
+                                                mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
+                                                        savedPacket); // populate DTO first if needed but mapToResponse
+                                                                      // returns new obj
+                                                AnnouncementResponseDTO responseDTO = mapToResponse(savedAnnouncement,
+                                                        savedPickup, savedDelivery, savedPacket);
+
+                                                AnnouncementPublishedEvent event = new AnnouncementPublishedEvent();
+                                                event.setAnnouncement(responseDTO);
+                                                kafkaEventPublisher.publishAnnouncementPublished(event);
+
+                                                return responseDTO;
+                                            }
+
+                                            return mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
+                                                    savedPacket);
+                                        });
+                            });
                 });
             });
         });
+    }
+
+    private Mono<Address> findOrCreateAddress(AddressDTO dto) {
+        return addressRepository.findFirstByStreetIgnoreCaseAndCityIgnoreCaseAndDistrictIgnoreCaseAndCountryIgnoreCase(
+                dto.getStreet(), dto.getCity(), dto.getDistrict(), dto.getCountry())
+                .switchIfEmpty(Mono.defer(() -> {
+                    Address address = maptoAddress(dto);
+                    address.setId(UUID.randomUUID());
+                    // Use template.insert() to FORCE INSERT with the manual ID
+                    return entityTemplate.insert(address);
+                }));
     }
 
     public Flux<AnnouncementResponseDTO> getAllAnnouncements() {
         return announcementRepository.findAll().flatMap(this::populateDetails);
     }
 
+    public Flux<AnnouncementResponseDTO> getAnnouncementsByClientId(UUID clientId) {
+        return announcementRepository.findAllByClientId(clientId).flatMap(this::populateDetails);
+    }
+
     public Mono<AnnouncementResponseDTO> getAnnouncement(UUID id) {
         return announcementRepository.findById(id).flatMap(this::populateDetails);
     }
 
+    @Transactional("connectionFactoryTransactionManager")
     public Mono<Void> deleteAnnouncement(UUID id) {
-        return announcementRepository.deleteById(id);
+        return announcementRepository.findById(id)
+                .flatMap(announcement -> {
+                    Mono<Void> deletePacket = announcement.getPacketId() != null
+                            ? packetRepository.deleteById(announcement.getPacketId())
+                            : Mono.empty();
+
+                    return deletePacket.then(announcementRepository.delete(announcement));
+                });
     }
 
     private Mono<AnnouncementResponseDTO> populateDetails(Announcement announcement) {
@@ -108,6 +177,8 @@ public class AnnouncementService {
         address.setCountry(dto.getCountry());
         address.setDescription(dto.getDescription());
         address.setType(dto.getType());
+        address.setLatitude(dto.getLatitude());
+        address.setLongitude(dto.getLongitude());
         return address;
     }
 
@@ -121,14 +192,20 @@ public class AnnouncementService {
         response.setStatus(announcement.getStatus());
         response.setCreatedAt(announcement.getCreatedAt());
         response.setUpdatedAt(announcement.getUpdatedAt());
-        response.setRecipientName(announcement.getRecipientName());
-        response.setRecipientNumber(announcement.getRecipientNumber());
+        response.setRecipientFirstName(announcement.getRecipientFirstName());
+        response.setRecipientLastName(announcement.getRecipientLastName());
         response.setRecipientEmail(announcement.getRecipientEmail());
         response.setRecipientPhone(announcement.getRecipientPhone());
-        response.setShipperName(announcement.getShipperName());
+        response.setShipperFirstName(announcement.getShipperFirstName());
+        response.setShipperLastName(announcement.getShipperLastName());
         response.setShipperEmail(announcement.getShipperEmail());
         response.setShipperPhone(announcement.getShipperPhone());
         response.setAmount(announcement.getAmount());
+        response.setSignatureUrl(announcement.getSignatureUrl());
+        response.setPaymentMethod(announcement.getPaymentMethod());
+        response.setTransportMethod(announcement.getTransportMethod());
+        response.setDistance(announcement.getDistance());
+        response.setDuration(announcement.getDuration());
 
         response.setPickupAddress(mapToAddressDTO(pickup));
         response.setDeliveryAddress(mapToAddressDTO(delivery));
@@ -147,6 +224,8 @@ public class AnnouncementService {
         dto.setCountry(address.getCountry());
         dto.setDescription(address.getDescription());
         dto.setType(address.getType());
+        dto.setLatitude(address.getLatitude());
+        dto.setLongitude(address.getLongitude());
         return dto;
     }
 
@@ -154,7 +233,9 @@ public class AnnouncementService {
         if (packet == null)
             return null;
         PacketDTO dto = new PacketDTO();
+        dto.setWeight(packet.getWeight());
         dto.setWidth(packet.getWidth());
+        dto.setHeight(packet.getHeight());
         dto.setLength(packet.getLength());
         dto.setFragile(packet.getFragile());
         dto.setDescription(packet.getDescription());
@@ -173,14 +254,20 @@ public class AnnouncementService {
                     announcement.setDescription(request.getDescription());
                     announcement.setTitle(request.getTitle());
                     announcement.setDescription(request.getDescription());
-                    announcement.setRecipientName(request.getRecipientName());
-                    announcement.setRecipientNumber(request.getRecipientNumber());
+                    announcement.setRecipientFirstName(request.getRecipientFirstName());
+                    announcement.setRecipientLastName(request.getRecipientLastName());
                     announcement.setRecipientEmail(request.getRecipientEmail());
                     announcement.setRecipientPhone(request.getRecipientPhone());
-                    announcement.setShipperName(request.getShipperName());
+                    announcement.setShipperFirstName(request.getShipperFirstName());
+                    announcement.setShipperLastName(request.getShipperLastName());
                     announcement.setShipperEmail(request.getShipperEmail());
                     announcement.setShipperPhone(request.getShipperPhone());
                     announcement.setAmount(request.getAmount());
+                    announcement.setSignatureUrl(request.getSignatureUrl());
+                    announcement.setPaymentMethod(request.getPaymentMethod());
+                    announcement.setTransportMethod(request.getTransportMethod());
+                    announcement.setDistance(request.getDistance());
+                    announcement.setDuration(request.getDuration());
                     announcement.setUpdatedAt(Instant.now());
 
                     return announcementRepository.save(announcement).flatMap(savedAnnouncement -> {
@@ -189,15 +276,23 @@ public class AnnouncementService {
                             packetUpdate = packetRepository.findById(savedAnnouncement.getPacketId())
                                     .flatMap(packet -> {
                                         if (request.getPacket() != null) {
+                                            packet.setWeight(request.getPacket().getWeight());
                                             packet.setWidth(request.getPacket().getWidth());
+                                            packet.setHeight(request.getPacket().getHeight());
                                             packet.setLength(request.getPacket().getLength());
                                             packet.setFragile(request.getPacket().getFragile());
                                             packet.setDescription(request.getPacket().getDescription());
-                                            packet.setPhotoPacket(request.getPacket().getPhotoPacket());
                                             packet.setIsPerishable(request.getPacket().getIsPerishable());
                                             packet.setThickness(request.getPacket().getThickness());
                                             packet.setDesignation(request.getPacket().getDesignation());
-                                            return packetRepository.save(packet);
+
+                                            String inputPhoto = request.getPacket().getPhotoPacket();
+                                            return fileStorageService.saveBase64Image(inputPhoto, "packet")
+                                                    .defaultIfEmpty(inputPhoto != null ? inputPhoto : "")
+                                                    .flatMap(path -> {
+                                                        packet.setPhotoPacket(path);
+                                                        return packetRepository.save(packet);
+                                                    });
                                         }
                                         return Mono.just(packet);
                                     });
@@ -236,6 +331,8 @@ public class AnnouncementService {
         address.setCountry(dto.getCountry());
         address.setDescription(dto.getDescription());
         address.setType(dto.getType());
+        address.setLatitude(dto.getLatitude());
+        address.setLongitude(dto.getLongitude());
     }
 
     @Transactional("connectionFactoryTransactionManager")

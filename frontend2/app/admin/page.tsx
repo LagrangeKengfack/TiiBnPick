@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -112,29 +112,23 @@ export default function SuperAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // Super admin info - from auth context
-  const { user, isLoggedIn, isLoading: authLoading, logout, checkAuth } = useAuth()
+  const { user, loading: authLoading, logout } = useAuth()
   const adminName = user ? `${user.firstName} ${user.lastName}` : 'Admin'
-  const adminEmail = user?.email || 'admin@tiibnpick.com'
+  const adminEmail = user?.email || 'admin@tiibntick.com'
 
   // Auth verification state - prevents rendering dashboard until auth is confirmed
   const [authVerified, setAuthVerified] = useState(false)
-  const hasCheckedAuth = useRef(false)
 
-  // Check authentication on mount - runs only once
+  // Check authentication on mount
   useEffect(() => {
-    if (authLoading || hasCheckedAuth.current) return
+    if (authLoading) return
 
-    hasCheckedAuth.current = true
-    const verifyAuth = async () => {
-      const isValid = await checkAuth()
-      if (!isValid) {
-        router.replace('/')
-      } else {
-        setAuthVerified(true)
-      }
+    if (!user || user.userType !== 'ADMIN') {
+      router.replace('/')
+    } else {
+      setAuthVerified(true)
     }
-    verifyAuth()
-  }, [authLoading, checkAuth, router])
+  }, [authLoading, user, router])
 
   // Fetch accounts
   const fetchAccounts = async () => {
@@ -225,8 +219,8 @@ export default function SuperAdminDashboard() {
     )
   }
 
-  const handleLogout = async () => {
-    await logout()
+  const handleLogout = () => {
+    logout()
     router.push('/')
   }
 

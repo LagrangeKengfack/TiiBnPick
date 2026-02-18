@@ -26,6 +26,12 @@ public class Packet {
     @Column("id")
     private UUID id;
 
+    @Column("weight")
+    private Double weight;
+
+    @Column("height")
+    private Double height;
+
     @NotNull
     @Column("width")
     private Double width;

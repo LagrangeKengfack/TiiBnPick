@@ -1,29 +1,70 @@
 "use client"
 
 import React, { useState } from "react"
-import { Eye, EyeOff, Shield, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Shield, Loader2, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { login as loginService } from "@/services/authService"
 import { useAuth } from "@/context/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login, isLoading } = useAuth()
+  const { login } = useAuth()
+  const { toast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
+    e.stopPropagation()
 
+    if (!email || !password) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsLoading(true)
     try {
-      await login(email, password)
-      // Redirect to admin dashboard on success
-      router.push("/admin")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Identifiants invalides")
+      const response = await loginService(email, password)
+      setSuccess(true)
+
+      // Use AuthContext to store user and token
+      login(response)
+
+      setTimeout(() => {
+        if (response.userType === 'ADMIN') {
+          router.replace('/admin')
+        } else if (response.userType === 'CLIENT') {
+          router.replace('/client')
+        } else if (response.userType === 'LIVREUR') {
+          if (response.isActive) {
+            router.replace('/livreur')
+          } else {
+            setSuccess(false)
+            toast({
+              title: "Activation requise",
+              description: "Votre compte livreur n'est pas encore activé. Veuillez patienter ou contacter le support.",
+              variant: "destructive"
+            })
+          }
+        }
+      }, 1000)
+    } catch (err: any) {
+      toast({
+        title: "Échec de connexion",
+        description: err.message || "Email ou mot de passe invalide.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -36,10 +77,11 @@ export default function LoginPage() {
           <p className="text-[#5a6b8a]">Accédez à votre espace de gestion</p>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-            {error}
+        {/* Success Message */}
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-100 text-green-600 rounded-lg flex items-center gap-3 animate-pulse">
+            <CheckCircle2 className="shrink-0" size={20} />
+            <p className="text-sm font-medium">Authentification réussie !</p>
           </div>
         )}
 
@@ -96,7 +138,7 @@ export default function LoginPage() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || success}
             className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3.5 rounded-lg transition-colors mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isLoading ? (

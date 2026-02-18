@@ -14,15 +14,17 @@ import java.util.UUID;
 /**
  * Controller for admin operations on delivery persons.
  *
- * <p>Provides endpoints for administrative management of delivery person accounts:
+ * <p>
+ * Provides endpoints for administrative management of delivery person accounts:
  * <ul>
- *   <li>Validation of new registrations</li>
- *   <li>Suspension of active accounts</li>
- *   <li>Revocation of accounts</li>
- *   <li>Retrieval of detailed account information</li>
+ * <li>Validation of new registrations</li>
+ * <li>Suspension of active accounts</li>
+ * <li>Revocation of accounts</li>
+ * <li>Retrieval of detailed account information</li>
  * </ul>
  *
- * <p>All endpoints require admin authentication.
+ * <p>
+ * All endpoints require admin authentication.
  *
  * @author Kengfack Lagrange
  * @date 19/12/2025
@@ -37,11 +39,14 @@ public class AdminDeliveryPersonController {
     /**
      * Validates or rejects a delivery person's registration.
      *
-     * <p>Delegates to the service layer to process the admin's decision.
+     * <p>
+     * Delegates to the service layer to process the admin's decision.
      * Updates the delivery person status and sends appropriate notification email.
      *
-     * @param request the validation request body containing decision and optional reason
-     * @return a Mono&lt;ResponseEntity&lt;Void&gt;&gt; with status 200 OK on success
+     * @param request the validation request body containing decision and optional
+     *                reason
+     * @return a Mono&lt;ResponseEntity&lt;Void&gt;&gt; with status 200 OK on
+     *         success
      */
     @PutMapping("/validate")
     public Mono<ResponseEntity<Void>> validateRegistration(
@@ -53,11 +58,13 @@ public class AdminDeliveryPersonController {
     /**
      * Retrieves detailed information about a delivery person.
      *
-     * <p>Returns an aggregated view of the delivery person's profile,
+     * <p>
+     * Returns an aggregated view of the delivery person's profile,
      * including personal info and commercial details.
      *
      * @param id the UUID of the delivery person
-     * @return a Mono&lt;ResponseEntity&lt;DeliveryPersonDetailsResponse&gt;&gt; with the details
+     * @return a Mono&lt;ResponseEntity&lt;DeliveryPersonDetailsResponse&gt;&gt;
+     *         with the details
      */
     @GetMapping("/{id}")
     public Mono<ResponseEntity<DeliveryPersonDetailsResponse>> getDetails(@PathVariable UUID id) {
@@ -66,13 +73,27 @@ public class AdminDeliveryPersonController {
     }
 
     /**
+     * Retrieves all delivery persons, optionally filtered by status.
+     *
+     * @param status optional status to filter by
+     * @return a Flux of delivery person details
+     */
+    @GetMapping
+    public Mono<ResponseEntity<reactor.core.publisher.Flux<DeliveryPersonDetailsResponse>>> getAllDeliveryPersons(
+            @RequestParam(required = false) com.polytechnique.ticbnpick.models.enums.deliveryPerson.DeliveryPersonStatus status) {
+        return Mono.just(ResponseEntity.ok(adminService.getAllDeliveryPersons(status)));
+    }
+
+    /**
      * Suspends a delivery person's account.
      *
-     * <p>Changes the account status to SUSPENDED and sends a notification email.
+     * <p>
+     * Changes the account status to SUSPENDED and sends a notification email.
      * Only APPROVED accounts can be suspended.
      *
      * @param id the UUID of the delivery person to suspend
-     * @return a Mono&lt;ResponseEntity&lt;Void&gt;&gt; with status 200 OK on success
+     * @return a Mono&lt;ResponseEntity&lt;Void&gt;&gt; with status 200 OK on
+     *         success
      */
     @PutMapping("/{id}/suspend")
     public Mono<ResponseEntity<Void>> suspendDeliveryPerson(@PathVariable UUID id) {
@@ -83,11 +104,13 @@ public class AdminDeliveryPersonController {
     /**
      * Revokes (permanently deactivates) a delivery person's account.
      *
-     * <p>Changes the account status to REJECTED and sends a notification email.
+     * <p>
+     * Changes the account status to REJECTED and sends a notification email.
      * APPROVED or SUSPENDED accounts can be revoked.
      *
      * @param id the UUID of the delivery person to revoke
-     * @return a Mono&lt;ResponseEntity&lt;Void&gt;&gt; with status 200 OK on success
+     * @return a Mono&lt;ResponseEntity&lt;Void&gt;&gt; with status 200 OK on
+     *         success
      */
     @PutMapping("/{id}/revoke")
     public Mono<ResponseEntity<Void>> revokeDeliveryPerson(@PathVariable UUID id) {

@@ -1,5 +1,6 @@
 package com.polytechnique.ticbnpick.dtos.responses;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,5 +24,29 @@ public class DeliveryPersonDetailsResponse {
     private String phone;
     private String status;
     private String commercialName;
-    // Add other fields as needed
+    private String nuiNumber; // Taxpayer Number / NINE
+    @JsonProperty("nuiPhoto")
+    private String nuiPhoto; // Path to NIU photo
+
+    // Personal Info
+    private String nationalId;
+    private String photoCard;
+    private String cniRecto;
+    private String cniVerso;
+    private Boolean idCardVerified; // Derived or stored? Assuming manual verification for now
+
+    // Vehicle Info
+    private String vehicleType; // From LogisticsType
+    private String vehicleBrand; // Placeholder/Future
+    private String vehicleModel; // Placeholder/Future
+    private String vehicleRegNumber; // Plate number
+    private String vehicleColor;
+    private String vehicleFrontPhoto;
+    private String vehicleBackPhoto;
+    private Boolean vehicleRegVerified; // Placeholder
+    private Boolean insuranceVerified; // Placeholder
+
+    // Meta
+    private String createdAt;
+    private String updatedAt;
 }

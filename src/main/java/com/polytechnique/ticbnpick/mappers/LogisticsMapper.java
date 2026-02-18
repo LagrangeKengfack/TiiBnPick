@@ -29,7 +29,10 @@ public class LogisticsMapper {
         logistics.setPlateNumber(request.getPlateNumber());
         logistics.setBackPhoto(request.getBackPhoto());
         logistics.setFrontPhoto(request.getFrontPhoto());
-        logistics.setLuggageMaxCapacity(request.getLuggageMaxCapacity());
+        logistics.setLength(request.getLength());
+        logistics.setWidth(request.getWidth());
+        logistics.setHeight(request.getHeight());
+        logistics.setUnit(request.getUnit());
         logistics.setTankCapacity(request.getTankCapacity());
         logistics.setTotalSeatNumber(request.getTotalSeatNumber());
         logistics.setColor(request.getColor());

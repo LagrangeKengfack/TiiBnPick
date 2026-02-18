@@ -57,21 +57,26 @@ public class Announcement {
     @Column("duration")
     private Integer duration;
 
-    @Column("recipient_name")
-    private String recipientName;
+    @Column("recipient_firstname")
+    private String recipientFirstName;
 
-    @Column("recipient_number")
-    private String recipientNumber;
+    @Column("recipient_lastname")
+    private String recipientLastName;
 
+    @NotNull
     @Column("recipient_email")
     private String recipientEmail;
 
     @Column("recipient_phone")
     private String recipientPhone;
 
-    @Column("shipper_name")
-    private String shipperName;
+    @Column("shipper_firstname")
+    private String shipperFirstName;
 
+    @Column("shipper_lastname")
+    private String shipperLastName;
+
+    @NotNull
     @Column("shipper_email")
     private String shipperEmail;
 
@@ -80,6 +85,18 @@ public class Announcement {
 
     @Column("amount")
     private Double amount;
+
+    @Column("signature_url")
+    private String signatureUrl;
+
+    @Column("payment_method")
+    private String paymentMethod;
+
+    @Column("transport_method")
+    private String transportMethod;
+
+    @Column("distance")
+    private Double distance;
 
     @Column("created_at")
     private Instant createdAt;

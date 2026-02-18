@@ -44,6 +44,12 @@ public class Logistics {
     @Column("logistics_class")
     private LogisticsClass logisticsClass;
 
+    @Column("brand")
+    private String brand;
+
+    @Column("model")
+    private String model;
+
     @Column("rating")
     private Double rating;
 
@@ -56,8 +62,17 @@ public class Logistics {
     @Column("tank_capacity")
     private Double tankCapacity;
 
-    @Column("luggage_max_capacity")
-    private Double luggageMaxCapacity;
+    @Column("length")
+    private Double length;
+
+    @Column("width")
+    private Double width;
+
+    @Column("height")
+    private Double height;
+
+    @Column("unit")
+    private String unit;
 
     @Column("total_seat_number")
     private Integer totalSeatNumber;

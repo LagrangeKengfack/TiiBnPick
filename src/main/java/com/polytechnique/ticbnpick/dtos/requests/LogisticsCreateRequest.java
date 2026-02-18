@@ -19,7 +19,10 @@ public class LogisticsCreateRequest {
     private LogisticsType logisticsType;
     private LogisticsClass logisticsClass;
     private String plateNumber;
-    private Double luggageMaxCapacity;
+    private Double length;
+    private Double width;
+    private Double height;
+    private String unit;
     private String backPhoto;
     private String frontPhoto;
     private Double tankCapacity;

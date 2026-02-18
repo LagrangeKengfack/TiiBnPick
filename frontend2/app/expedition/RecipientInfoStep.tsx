@@ -2,16 +2,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Phone, Mail, MapPin, Home, ArrowRight, ArrowLeft, Target, Sparkles, Circle, Globe, Building, Navigation } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 interface RecipientData {
-  recipientName: string;
+  recipientFirstName: string;
+  recipientLastName: string;
   recipientPhone: string;
   recipientEmail: string;
   recipientCountry: string;
   recipientRegion: string;
   recipientCity: string;
   recipientAddress: string;
-  recipientLieuDit: string;
+  recipientLatitude?: number;
+  recipientLongitude?: number;
 }
 
 interface RecipientInfoStepProps {
@@ -30,7 +33,7 @@ const countries = {
         cities: ['Yaoundé', 'Mbalmayo', 'Akonolinga', 'Bafia', 'Ntui', 'Mfou', 'Obala', 'Okola', 'Soa']
       },
       'littoral': {
-        name: 'Littoral', 
+        name: 'Littoral',
         cities: ['Douala', 'Edéa', 'Nkongsamba', 'Yabassi', 'Loum', 'Manjo', 'Mbanga', 'Mouanko']
       },
       'ouest': {
@@ -42,7 +45,7 @@ const countries = {
         cities: ['Bamenda', 'Kumbo', 'Wum', 'Ndop', 'Mbengwi', 'Bali', 'Bafut']
       },
       'sud-ouest': {
-        name: 'Sud-Ouest', 
+        name: 'Sud-Ouest',
         cities: ['Buéa', 'Limbe', 'Kumba', 'Mamfe', 'Tiko', 'Idenau', 'Fontem']
       },
       'adamaoua': {
@@ -91,7 +94,7 @@ const countries = {
         cities: ['Ibadan', 'Ogbomoso', 'Oyo', 'Iseyin', 'Saki', 'Igboho', 'Eruwa']
       },
       'kaduna': {
-        name: 'Kaduna', 
+        name: 'Kaduna',
         cities: ['Kaduna', 'Zaria', 'Kafanchan', 'Kagoro', 'Zonkwa', 'Makarfi']
       },
       'ogun': {
@@ -207,26 +210,14 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- CORRECTION START ---
-  // Effet pour réinitialiser la région et la ville si le pays change et que la région n'est plus valide.
-  useEffect(() => {
-    if (formData.recipientCountry) {
-      const countryData = countries[formData.recipientCountry as keyof typeof countries];
-      if (countryData && !countryData.regions.hasOwnProperty(formData.recipientRegion)) {
-        setFormData(prev => ({ ...prev, recipientRegion: '', recipientCity: '' }));
-      }
-    }
-  }, [formData.recipientCountry, formData.recipientRegion]);
-
-  // Effet pour réinitialiser la ville si la région change et que la ville n'est plus valide.
-  useEffect(() => {
-    if (formData.recipientCountry && formData.recipientRegion) {
-      const countryData = countries[formData.recipientCountry as keyof typeof countries];
-      const regionData = (countryData.regions as any)[formData.recipientRegion];
-      if (regionData && !regionData.cities.includes(formData.recipientCity)) {
-        setFormData(prev => ({ ...prev, recipientCity: '' }));
-      }
-    }
-  }, [formData.recipientCountry, formData.recipientRegion, formData.recipientCity]);
+  // Mapping pour convertir les noms de pays en clés internes
+  const mapCountryToKey = (countryName: string): string => {
+    const name = countryName.toLowerCase();
+    if (name.includes('cameroun') || name.includes('cameroon')) return 'cameroun';
+    if (name.includes('nigeria')) return 'nigeria';
+    return '';
+  };
+  // LES EFFETS DE RÉINITIALISATION ONT ÉTÉ SUPPRIMÉS POUR ÉVITER LES SUPPRESSIONS INTEMPESTIVES
   // --- CORRECTION END ---
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -239,8 +230,14 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (formData.recipientName.trim().length < 2) {
-      newErrors.recipientName = "Nom requis";
+    if (formData.recipientFirstName.trim().length < 2) {
+      newErrors.recipientFirstName = "Prénom requis";
+    }
+    if (formData.recipientLastName.trim().length < 2) {
+      newErrors.recipientLastName = "Nom requis";
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.recipientEmail)) {
+      newErrors.recipientEmail = "Email invalide";
     }
     if (!/^(6|2)(?:[235-9]\d{7})$/.test(formData.recipientPhone.replace(/\s/g, ''))) {
       newErrors.recipientPhone = "Format invalide";
@@ -256,9 +253,6 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
     }
     if (!formData.recipientAddress.trim()) {
       newErrors.recipientAddress = "Adresse requise";
-    }
-    if (!formData.recipientLieuDit.trim()) {
-      newErrors.recipientLieuDit = "Lieu-dit requis";
     }
     return newErrors;
   };
@@ -287,7 +281,7 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
     }
     return [];
   })();
-  
+
 
   return (
     <div className="min-h-screen bg-transparent dark:bg-transparent relative overflow-hidden">
@@ -348,14 +342,27 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   icon={User}
-                  id="recipientName"
-                  name="recipientName"
-                  value={formData.recipientName}
+                  id="recipientLastName"
+                  name="recipientLastName"
+                  value={formData.recipientLastName}
                   onChange={handleChange}
-                  label="Nom Complet"
-                  placeholder="Marie Mbarga"
-                  error={errors.recipientName}
+                  label="Nom"
+                  placeholder="Mbarga"
+                  error={errors.recipientLastName}
                 />
+                <InputField
+                  icon={User}
+                  id="recipientFirstName"
+                  name="recipientFirstName"
+                  value={formData.recipientFirstName}
+                  onChange={handleChange}
+                  label="Prénom"
+                  placeholder="Marie"
+                  error={errors.recipientFirstName}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   icon={Phone}
                   id="recipientPhone"
@@ -366,18 +373,18 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
                   placeholder="677123456"
                   error={errors.recipientPhone}
                 />
+                <InputField
+                  icon={Mail}
+                  type="email"
+                  id="recipientEmail"
+                  name="recipientEmail"
+                  value={formData.recipientEmail}
+                  onChange={handleChange}
+                  label="Email"
+                  placeholder="nom@exemple.com"
+                  error={errors.recipientEmail}
+                />
               </div>
-
-              <InputField
-                icon={Mail}
-                type="email"
-                id="recipientEmail"
-                name="recipientEmail"
-                value={formData.recipientEmail}
-                onChange={handleChange}
-                label="Email (optionnel)"
-                placeholder="nom@exemple.com"
-              />
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <SelectField
@@ -395,59 +402,80 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
                   ))}
                 </SelectField>
 
-                <SelectField
-                  icon={Building}
-                  id="recipientRegion"
-                  name="recipientRegion"
-                  value={formData.recipientRegion}
-                  onChange={handleChange}
-                  label="Région de destination"
-                  error={errors.recipientRegion}
-                  disabled={!formData.recipientCountry}
-                >
-                  <option value="">Sélectionner une région</option>
-                  {Object.entries(availableRegions).map(([key, region]) => (
-                    <option key={key} value={key}>{(region as RegionData).name}</option>
-                  ))}
-                </SelectField>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <SelectField
+                    icon={Building}
+                    id="recipientRegion"
+                    name="recipientRegion"
+                    value={formData.recipientRegion}
+                    onChange={(e: any) => {
+                      const region = e.target.value;
+                      const city = region === 'centre' ? 'Yaoundé' : 'Douala';
+                      setFormData(prev => ({
+                        ...prev,
+                        recipientRegion: region,
+                        recipientCity: city
+                      }));
+                    }}
+                    label="Région de destination"
+                    error={errors.recipientRegion}
+                    disabled={!formData.recipientCountry}
+                  >
+                    <option value="">Sélectionner une région</option>
+                    <option value="centre">Centre</option>
+                    <option value="littoral">Littoral</option>
+                  </SelectField>
 
-                <SelectField
-                  icon={Navigation}
-                  id="recipientCity"
-                  name="recipientCity"
-                  value={formData.recipientCity}
-                  onChange={handleChange}
-                  label="Ville de destination"
-                  error={errors.recipientCity}
-                  disabled={!formData.recipientRegion}
-                >
-                  <option value="">Sélectionner une ville</option>
-                  {availableCities.map((city) => (
-                    <option key={city} value={city}>{city}</option>
-                  ))}
-                </SelectField>
+                  <SelectField
+                    icon={Navigation}
+                    id="recipientCity"
+                    name="recipientCity"
+                    value={formData.recipientCity}
+                    label="Ville de destination"
+                    error={errors.recipientCity}
+                    onChange={handleChange}
+                  >
+                    <option value="">Sélectionner une ville</option>
+                    {availableCities.map((city: string) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                    {formData.recipientCity && !availableCities.includes(formData.recipientCity) && (
+                      <option value={formData.recipientCity}>{formData.recipientCity}</option>
+                    )}
+                  </SelectField>
+                </div>
               </div>
 
-              <InputField
-                icon={MapPin}
-                id="recipientAddress"
-                name="recipientAddress"
-                value={formData.recipientAddress}
-                onChange={handleChange}
-                label="Adresse Complète"
-                placeholder="Mvan, Yaoundé"
-                error={errors.recipientAddress}
+
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5 tracking-wider">
+                Adresse de livraison
+              </label>
+              <AddressAutocomplete
+                onSelect={(address) => {
+                  const countryKey = mapCountryToKey(address.country);
+                  setFormData(prev => ({
+                    ...prev,
+                    recipientAddress: address.street,
+                    recipientCity: address.city || prev.recipientCity,
+                    recipientRegion: address.district || prev.recipientRegion,
+                    recipientCountry: countryKey || prev.recipientCountry,
+                    recipientLatitude: address.latitude,
+                    recipientLongitude: address.longitude
+                  }));
+                  // Clear errors for fields that were just auto-filled
+                  setErrors(prev => ({
+                    ...prev,
+                    recipientAddress: '',
+                    recipientCity: '',
+                    recipientRegion: '',
+                    recipientCountry: ''
+                  }));
+                }}
+                defaultValue={formData.recipientAddress}
+                city={formData.recipientCity}
+                placeholder="Rue, Quartier..."
               />
-              <InputField
-                icon={Home}
-                id="recipientLieuDit"
-                name="recipientLieuDit"
-                value={formData.recipientLieuDit}
-                onChange={handleChange}
-                label="Lieu-dit"
-                placeholder="Face Boulangerie Mvan, portail rouge"
-                error={errors.recipientLieuDit}
-              />
+              {errors.recipientAddress && <p className="text-[10px] text-red-500 mt-1">{errors.recipientAddress}</p>}
 
               <AnimatePresence>
                 {Object.values(errors).some(error => error) && (
@@ -482,8 +510,8 @@ export default function RecipientInfoStep({ initialData, onContinue, onBack }: R
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className={`inline-flex items-center justify-center px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl dark:shadow-gray-900/30 dark:hover:shadow-gray-900/50
-                    ${isSubmitting 
-                      ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
+                    ${isSubmitting
+                      ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
                       : 'bg-orange-600 dark:bg-orange-600 hover:bg-orange-700 dark:hover:bg-orange-500 active:bg-orange-800 dark:active:bg-orange-700'} 
                     text-white transform hover:-translate-y-0.5`}
                 >

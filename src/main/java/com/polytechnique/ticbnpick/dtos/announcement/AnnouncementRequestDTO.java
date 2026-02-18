@@ -10,14 +10,21 @@ public class AnnouncementRequestDTO {
     private UUID clientId;
     private String title;
     private String description;
-    private String recipientName;
-    private String recipientNumber;
+    private String recipientFirstName;
+    private String recipientLastName;
     private String recipientEmail;
     private String recipientPhone;
-    private String shipperName;
+    private String shipperFirstName;
+    private String shipperLastName;
     private String shipperEmail;
     private String shipperPhone;
-    private Double amount;
+    private Float amount;
+    private String signatureUrl;
+    private String paymentMethod;
+    private String transportMethod;
+    private Double distance;
+    private Integer duration;
+    private Boolean autoPublish;
 
     private AddressDTO pickupAddress;
     private AddressDTO deliveryAddress;

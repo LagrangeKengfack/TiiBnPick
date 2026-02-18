@@ -29,7 +29,7 @@ public class Person implements Persistable<UUID> {
     @Id
     @Column("id")
     private UUID id;
-    
+
     /**
      * Transient field to track if this is a new entity.
      * This is used by Spring Data R2DBC to determine whether to INSERT or UPDATE.
@@ -75,6 +75,15 @@ public class Person implements Persistable<UUID> {
     @Column("nui")
     private String nui;
 
+    @Column("nui_photo")
+    private String nuiPhoto;
+
+    @Column("cni_recto")
+    private String cniRecto;
+
+    @Column("cni_verso")
+    private String cniVerso;
+
     @Column("is_active")
     private Boolean isActive;
 
@@ -83,7 +92,8 @@ public class Person implements Persistable<UUID> {
 
     /**
      * Implementation of Persistable interface.
-     * Returns whether this entity is new (should be INSERTED) or existing (should be UPDATED).
+     * Returns whether this entity is new (should be INSERTED) or existing (should
+     * be UPDATED).
      */
     @Override
     public boolean isNew() {

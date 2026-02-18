@@ -44,7 +44,10 @@ public class DeliveryPersonUpdateValidator {
                 request.getLogisticsClass() != null ||
                 request.getColor() != null ||
                 request.getTankCapacity() != null ||
-                request.getLuggageMaxCapacity() != null ||
+                request.getLength() != null ||
+                request.getWidth() != null ||
+                request.getHeight() != null ||
+                request.getUnit() != null ||
                 request.getTotalSeatNumber() != null ||
                 request.getStreet() != null ||
                 request.getCity() != null ||

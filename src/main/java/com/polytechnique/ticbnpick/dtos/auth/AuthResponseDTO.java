@@ -14,18 +14,24 @@ public class AuthResponseDTO {
     private String firstName;
     private String email;
     private String phone;
+    private String password;
     private String photoCard;
-    
+
     // Additional Person fields
     private String nationalId;
     private String criminalRecord;
     private Double rating;
     private Integer totalDeliveries;
 
+    // Role based fields
+    private String userType; // ADMIN, CLIENT, LIVREUR
+    private String role;
+    private Boolean isActive;
+
     // Client specific fields
     private java.util.UUID clientId;
     private String loyaltyStatus;
 
-    // Role field
-    private String role;
+    // Delivery person specific fields
+    private java.util.UUID deliveryPersonId;
 }

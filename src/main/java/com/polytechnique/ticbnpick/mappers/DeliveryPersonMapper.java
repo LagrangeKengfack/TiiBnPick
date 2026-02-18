@@ -42,8 +42,13 @@ public class DeliveryPersonMapper {
         person.setPhone(request.getPhone());
         person.setNationalId(request.getNationalId());
         person.setPhotoCard(request.getPhotoCard());
-        person.setNui(request.getNui());
-        person.setIsActive(true);
+        person.setPhotoCard(request.getPhotoCard());
+        // Map nuiPhoto path to Person.nui field (since taxpayerNumber in DeliveryPerson stores the number)
+        person.setNui(request.getNuiPhoto());
+        person.setCniRecto(request.getCniRecto());
+        person.setCniRecto(request.getCniRecto());
+        person.setCniVerso(request.getCniVerso());
+        person.setIsActive(false);
         return person;
     }
 
@@ -63,7 +68,7 @@ public class DeliveryPersonMapper {
         deliveryPerson.setSiret(request.getSiret());
         deliveryPerson.setCommissionRate(request.getCommissionRate());
         deliveryPerson.setTaxpayerNumber(request.getNui());
-        deliveryPerson.setIsActive(true);
+        deliveryPerson.setIsActive(false);
         return deliveryPerson;
     }
 
@@ -91,7 +96,10 @@ public class DeliveryPersonMapper {
         logistics.setBackPhoto(request.getBackPhoto());
         logistics.setFrontPhoto(request.getFrontPhoto());
         logistics.setTankCapacity(request.getTankCapacity());
-        logistics.setLuggageMaxCapacity(request.getLuggageMaxCapacity());
+        logistics.setLength(request.getLength());
+        logistics.setWidth(request.getWidth());
+        logistics.setHeight(request.getHeight());
+        logistics.setUnit(request.getUnit());
         logistics.setTotalSeatNumber(request.getTotalSeatNumber());
         logistics.setColor(request.getColor());
         return logistics;
@@ -153,6 +161,8 @@ public class DeliveryPersonMapper {
         response.setPhone(person.getPhone());
         response.setStatus(deliveryPerson.getStatus() != null ? deliveryPerson.getStatus().getValue() : null);
         response.setCommercialName(deliveryPerson.getCommercialName());
+        response.setNuiNumber(deliveryPerson.getTaxpayerNumber());
+        response.setNuiPhoto(person.getNui()); // Mapped from Person.nui which now stores the photo path
         return response;
     }
 }

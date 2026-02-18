@@ -38,6 +38,11 @@ public class AnnouncementController {
         return announcementService.getAllAnnouncements();
     }
 
+    @GetMapping("/client/{clientId}")
+    public Flux<AnnouncementResponseDTO> getAnnouncementsByClientId(@PathVariable UUID clientId) {
+        return announcementService.getAnnouncementsByClientId(clientId);
+    }
+
     @GetMapping("/{id}")
     public Mono<AnnouncementResponseDTO> getAnnouncement(@PathVariable UUID id) {
         return announcementService.getAnnouncement(id);
