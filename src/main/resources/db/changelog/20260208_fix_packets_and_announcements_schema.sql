@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset TiiBnTickTeam:20260208-fix-packets-and-announcements-schema
+-- changeset TicBnPickTeam:20260208-fix-packets-and-announcements-schema
 DO $$ 
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='packets' AND column_name='perishable')

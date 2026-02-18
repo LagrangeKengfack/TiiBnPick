@@ -9,9 +9,9 @@
         <relativePath/>
     </parent>
     <groupId>com.polytechnique</groupId>
-    <artifactId>TiiBnTick</artifactId>
+    <artifactId>TicBnPick</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>TiiBnTick</name>
+    <name>TicBnPick</name>
     <description>TiiBnTick - Delivery Platform</description>
     
     <properties>
@@ -212,6 +212,18 @@
                 <configuration>
                     <propertyFile>src/main/resources/application.properties</propertyFile>
                     <changeLogFile>src/main/resources/db/changelog/changelog-master.xml</changeLogFile>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
