@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset TicBnPickTeam:20260216-insert-guest-client
+-- changeset TiiBnTickTeam:20260216-insert-guest-client
 -- Insert a default Guest client for unauthenticated announcements
 
 -- 1. Insert Guest Person
@@ -8,7 +8,7 @@ VALUES (
     '00000000-0000-0000-0000-000000000001', -- Fixed ID for Guest Person
     'Guest', 
     'User', 
-    'guest@ticbnpick.com', 
+    'guest@tiibntick.com', 
     '+000000000000', 
     '$2a$10$NotARealPasswordHashForGuestUser123', -- Dummy BCrypt hash
     'GUEST_NATIONAL_ID', 

@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd">
 
-    <changeSet id="002-add-brand-model-to-logistics" author="TicBnPickTeam">
+    <changeSet id="002-add-brand-model-to-logistics" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
@@ -17,7 +17,7 @@
         </addColumn>
     </changeSet>
 
-    <changeSet id="002b-add-model-to-logistics" author="TicBnPickTeam">
+    <changeSet id="002b-add-model-to-logistics" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>

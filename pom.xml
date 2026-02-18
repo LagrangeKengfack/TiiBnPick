@@ -9,10 +9,10 @@
         <relativePath/>
     </parent>
     <groupId>com.polytechnique</groupId>
-    <artifactId>TicBnPick</artifactId>
+    <artifactId>TiiBnTick</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>TicBnPick</name>
-    <description>TicBnPick - Delivery Platform</description>
+    <name>TiiBnTick</name>
+    <description>TiiBnTick - Delivery Platform</description>
     
     <properties>
         <java.version>21</java.version>

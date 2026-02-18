@@ -14,7 +14,7 @@ if os.path.exists(".env"):
 # Database Connection Details
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5433")
-DB_NAME = os.getenv("POSTGRES_DB", "ticbnpick")
+DB_NAME = os.getenv("POSTGRES_DB", "tiibntick")
 DB_USER = os.getenv("DB_USERNAME", "fca")
 DB_PASS = os.getenv("DB_PASSWORD", "fca18")
 
@@ -67,7 +67,7 @@ def load_addresses():
             for el in elements:
                 tags = el.get('tags', {})
                 
-                # Map OSM tags to TicBnPick schema
+                # Map OSM tags to TiiBnTick schema
                 street = f"{tags.get('addr:housenumber', '')} {tags.get('addr:street', '')}".strip()
                 if not street:
                     street = tags.get('name', '')

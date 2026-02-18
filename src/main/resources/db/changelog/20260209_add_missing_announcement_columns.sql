@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset TicBnPickTeam:20260209-add-missing-announcement-columns
+-- changeset TiiBnTickTeam:20260209-add-missing-announcement-columns
 -- Add missing columns to announcements table to match the Java model
 
 ALTER TABLE announcements ADD COLUMN IF NOT EXISTS signature_url TEXT;

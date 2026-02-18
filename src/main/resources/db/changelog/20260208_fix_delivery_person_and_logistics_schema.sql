@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset TicBnPickTeam:20260208-fix-delivery-person-and-logistics-schema
+-- changeset TiiBnTickTeam:20260208-fix-delivery-person-and-logistics-schema
 DO $$ 
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='delivery_persons' AND column_name='nui') THEN

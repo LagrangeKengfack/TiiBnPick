@@ -124,95 +124,95 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/update-schema-duration.sql" relativeToChangelogFile="false"/>
     </changeSet>
-    <changeSet id="018-add-address-coordinates" author="TicBnPickTeam">
+    <changeSet id="018-add-address-coordinates" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/update-address-coordinates.sql" relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="019-create-announcement-subscription" author="TicBnPickTeam">
+    <changeSet id="019-create-announcement-subscription" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/create-announcement-subscription.sql" relativeToChangelogFile="false"/>
     </changeSet>
-    <changeSet id="020-update-logistic-packet-announcement" author="TicBnPickTeam">
+    <changeSet id="020-update-logistic-packet-announcement" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/update-schema-logistic-packet-announcement.sql" relativeToChangelogFile="false"/>
     </changeSet>
-    <changeSet id="021-add-cni-photos-to-person" author="TicBnPickTeam">
+    <changeSet id="021-add-cni-photos-to-person" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260207_add_cni_photos_to_person.sql" relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="022-update-logistics-dimensions" author="TicBnPickTeam">
+    <changeSet id="022-update-logistics-dimensions" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260207_update_logistics_dimensions.sql" relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="023-add-nui-is-active-to-person" author="TicBnPickTeam">
+    <changeSet id="023-add-nui-is-active-to-person" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260208_add_nui_is_active_to_person.sql" relativeToChangelogFile="false"/>
     </changeSet>
-    <changeSet id="024-fix-delivery-person-and-logistics-schema" author="TicBnPickTeam">
+    <changeSet id="024-fix-delivery-person-and-logistics-schema" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260208_fix_delivery_person_and_logistics_schema.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
-    <changeSet id="025-fix-packets-and-announcements-schema" author="TicBnPickTeam">
+    <changeSet id="025-fix-packets-and-announcements-schema" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260208_fix_packets_and_announcements_schema.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
-    <changeSet id="026-add-distance-to-announcements" author="TicBnPickTeam">
+    <changeSet id="026-add-distance-to-announcements" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260209_add_distance_to_announcements.sql" relativeToChangelogFile="false"/>
     </changeSet>
-    <changeSet id="027-separate-shipper-names" author="TicBnPickTeam">
+    <changeSet id="027-separate-shipper-names" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260209_separate_shipper_names.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
-    <changeSet id="028-separate-recipient-names-and-mandatory-emails" author="TicBnPickTeam">
+    <changeSet id="028-separate-recipient-names-and-mandatory-emails" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260209_separate_recipient_names_and_mandatory_emails.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
-    <changeSet id="029-add-missing-announcement-columns" author="TicBnPickTeam">
+    <changeSet id="029-add-missing-announcement-columns" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260209_add_missing_announcement_columns.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
-    <changeSet id="030-add-weight-to-packets" author="TicBnPickTeam">
+    <changeSet id="030-add-weight-to-packets" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260210_add_weight_to_packets.sql" relativeToChangelogFile="false"/>
     </changeSet>
-    <changeSet id="031-ensure-all-announcement-columns" author="TicBnPickTeam">
+    <changeSet id="031-ensure-all-announcement-columns" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260210_ensure_all_announcement_columns.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
 
-    <changeSet id="032-drop-recipient-number" author="TicBnPickTeam">
+    <changeSet id="032-drop-recipient-number" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260216_drop_recipient_number.sql" relativeToChangelogFile="false"/>
     </changeSet>
-    <changeSet id="033-insert-guest-client" author="TicBnPickTeam">
+    <changeSet id="033-insert-guest-client" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260216_insert_guest_client.sql" relativeToChangelogFile="false"/>
     </changeSet>
-    <changeSet id="034-fix-packet-circular-dependency" author="TicBnPickTeam">
+    <changeSet id="034-fix-packet-circular-dependency" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260216_fix_packet_circular_dependency.sql" relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="035-add-role-to-person" author="TicBnPickTeam">
+    <changeSet id="035-add-role-to-person" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/add-role-to-person.sql" relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="036-updatePerson" author="TicBnPickTeam">
+    <changeSet id="036-updatePerson" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/updatePerson.sql" relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="037-fix-type-mismatches" author="TicBnPickTeam">
+    <changeSet id="037-fix-type-mismatches" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/fix-type-mismatches.sql" relativeToChangelogFile="false"/>
     </changeSet>
 
-    <changeSet id="038-insert-admin-user" author="TicBnPickTeam">
+    <changeSet id="038-insert-admin-user" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260216_insert_admin_user.sql" relativeToChangelogFile="false"/>
     </changeSet>

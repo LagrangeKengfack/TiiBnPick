@@ -1441,7 +1441,7 @@ export default function RegisterPage() {
                   <p className="text-gray-600 max-w-sm mx-auto">
                     {role === 'livreur'
                       ? "Félicitations ! Votre dossier d'inscription a été soumis avec succès pour examen."
-                      : "Votre compte client a été créé avec succès. Bienvenue chez TicBnPick !"}
+                      : "Votre compte client a été créé avec succès. Bienvenue chez TiiBnTick !"}
                   </p>
                 </div>
 
