@@ -35,7 +35,7 @@ public class DeliveryPersonRegistrationRequest {
     private String commercialName;
     private String nui;
     private Double commissionRate;
-    private Double siret;
+    private String siret;
 
     @NotBlank(message = "Password is required")
     private String password;

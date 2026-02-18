@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -30,10 +31,20 @@ import {
   MapPin,
   Bike,
   Car,
+  CreditCard,
+  Loader2,
+  Calendar as CalendarIcon,
 } from 'lucide-react'
 import { TruckIcon } from '@heroicons/react/24/outline'
 import { MdDeliveryDining } from 'react-icons/md'
 import { BsBicycle } from 'react-icons/bs'
+import { format } from 'date-fns'
+import { Calendar } from '@/components/ui/calendar'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 // Types
 interface DeliveryPersonRequest {
@@ -53,10 +64,15 @@ interface DeliveryPersonRequest {
   createdAt: string
   updatedAt: string
   profilePhoto?: string
+  idCardRectoPhoto?: string
+  idCardVersoPhoto?: string
   idCardPhoto?: string
   idCardNumber?: string
+  nineNumber?: string
+  niuPhoto?: string
   vehicleFrontPhoto?: string
   vehicleBackPhoto?: string
+  vehicleColor?: string
 }
 
 interface Account {
@@ -64,15 +80,17 @@ interface Account {
   name: string
   email: string
   phone: string
-  role: 'DELIVERY' | 'AGENCY' | 'POINT'
+  role: 'DELIVERY' | 'AGENCY' | 'POINT' | 'CLIENT'
   status: 'ACTIVE' | 'SUSPENDED' | 'REVOKED'
   deliveriesCount: number
   lastActivityAt: string | null
   createdAt: string
   updatedAt: string
+  subscriptionStatus?: 'ACTIVE' | 'INACTIVE' | 'EXPIRED'
+  subscriptionEndDate?: string | null
 }
 
-type ActiveView = 'dashboard' | 'registrations' | 'accounts'
+type ActiveView = 'dashboard' | 'registrations' | 'accounts' | 'subscriptions'
 
 export default function SuperAdminDashboard() {
   const { toast } = useToast()
@@ -81,29 +99,55 @@ export default function SuperAdminDashboard() {
   const [selectedRequest, setSelectedRequest] = useState<DeliveryPersonRequest | null>(null)
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
   const [actionDialog, setActionDialog] = useState<'approve' | 'reject' | 'suspend' | 'revoke' | 'restore' | null>(null)
+  const [suspensionEndDate, setSuspensionEndDate] = useState<Date | undefined>(undefined)
   const [activeView, setActiveView] = useState<ActiveView>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const [registrationRequests, setRegistrationRequests] = useState<DeliveryPersonRequest[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
-  
+
   // Filtres pour la page comptes
   const [accountTypeFilter, setAccountTypeFilter] = useState<'all' | 'DELIVERY' | 'CLIENT'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Super admin info
-  const superAdminName = 'Charles Henry'
+  // Super admin info - from auth context
+  const { user, isLoggedIn, isLoading: authLoading, logout, checkAuth } = useAuth()
+  const adminName = user ? `${user.firstName} ${user.lastName}` : 'Admin'
+  const adminEmail = user?.email || 'admin@tiibnpick.com'
 
-  const handleLogout = () => {
-    router.push('/')
+  // Auth verification state - prevents rendering dashboard until auth is confirmed
+  const [authVerified, setAuthVerified] = useState(false)
+  const hasCheckedAuth = useRef(false)
+
+  // Check authentication on mount - runs only once
+  useEffect(() => {
+    if (authLoading || hasCheckedAuth.current) return
+
+    hasCheckedAuth.current = true
+    const verifyAuth = async () => {
+      const isValid = await checkAuth()
+      if (!isValid) {
+        router.replace('/')
+      } else {
+        setAuthVerified(true)
+      }
+    }
+    verifyAuth()
+  }, [authLoading, checkAuth, router])
+
+  // Fetch accounts
+  const fetchAccounts = async () => {
+    try {
+      const response = await fetch('/api/accounts')
+      if (response.ok) {
+        const data = await response.json()
+        setAccounts(data)
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error)
+    }
   }
-
-  const sidebarItems = [
-    { id: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'registrations' as const, icon: UserCheck, label: 'Inscriptions' },
-    { id: 'accounts' as const, icon: ShieldCheck, label: 'Comptes' },
-  ]
 
   // Fetch data on component mount
   useEffect(() => {
@@ -126,10 +170,14 @@ export default function SuperAdminDashboard() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-        idCardPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
+        idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
+        idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
         idCardNumber: 'AB123456789',
+        nineNumber: 'NINE12345678',
+        niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
         vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
         vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
+        vehicleColor: 'Rouge',
       },
       {
         id: '2',
@@ -148,17 +196,46 @@ export default function SuperAdminDashboard() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         profilePhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-        idCardPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
+        idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
+        idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
         idCardNumber: 'CD987654321',
+        nineNumber: 'NINE87654321',
+        niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
         vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
         vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
+        vehicleColor: 'Bleu',
       },
     ]
-    
+
     setRegistrationRequests(testData)
     setLoading(false)
     fetchAccounts()
   }, [])
+
+  // Show loading screen until auth is verified - prevents dashboard flash
+  // IMPORTANT: This guard must be AFTER all hooks to comply with Rules of Hooks
+  if (authLoading || !authVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-10 h-10 animate-spin text-orange-600 mx-auto" />
+          <p className="text-muted-foreground">Vérification de l'authentification...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    router.push('/')
+  }
+
+  const sidebarItems = [
+    { id: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'registrations' as const, icon: UserCheck, label: 'Inscriptions' },
+    { id: 'accounts' as const, icon: ShieldCheck, label: 'Comptes' },
+    { id: 'subscriptions' as const, icon: CreditCard, label: 'Abonnements' },
+  ]
 
   // Fetch registration requests
   const fetchRegistrations = async () => {
@@ -254,18 +331,7 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  // Fetch accounts
-  const fetchAccounts = async () => {
-    try {
-      const response = await fetch('/api/accounts')
-      if (response.ok) {
-        const data = await response.json()
-        setAccounts(data)
-      }
-    } catch (error) {
-      console.error('Error fetching accounts:', error)
-    }
-  }
+
 
   // Stats calculations
   const stats = {
@@ -288,6 +354,7 @@ export default function SuperAdminDashboard() {
 
   const handleSuspendAccount = (account: Account) => {
     setSelectedAccount(account)
+    setSuspensionEndDate(undefined)
     setActionDialog('suspend')
   }
 
@@ -299,6 +366,14 @@ export default function SuperAdminDashboard() {
   const handleRestoreAccount = (account: Account) => {
     setSelectedAccount(account)
     setActionDialog('restore')
+  }
+
+  const handleActivateSubscription = (account: Account) => {
+    // Subscription not yet implemented - greyed out
+    toast({
+      title: 'Fonctionnalité à venir',
+      description: 'La gestion des abonnements sera disponible prochainement.',
+    })
   }
 
   const confirmAction = async () => {
@@ -337,7 +412,9 @@ export default function SuperAdminDashboard() {
         }
       } else if (actionDialog === 'suspend' && selectedAccount) {
         const response = await fetch(`/api/accounts/${selectedAccount.id}/suspend`, {
-          method: 'POST'
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endDate: suspensionEndDate ? suspensionEndDate.toISOString() : null })
         })
 
         if (response.ok) {
@@ -345,7 +422,7 @@ export default function SuperAdminDashboard() {
             title: 'Compte suspendu',
             description: `Le compte de ${selectedAccount.name} a été suspendu.`
           })
-          await fetchAccounts()
+          setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'SUSPENDED' as const } : a))
         } else {
           throw new Error('Failed to suspend')
         }
@@ -515,8 +592,8 @@ export default function SuperAdminDashboard() {
                 onClick={() => setActiveView(item.id)}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all',
-                  isActive 
-                    ? 'bg-white text-orange-600 font-semibold shadow-md' 
+                  isActive
+                    ? 'bg-white text-orange-600 font-semibold shadow-md'
                     : 'text-white hover:bg-orange-500/50 hover:text-white'
                 )}
               >
@@ -531,15 +608,15 @@ export default function SuperAdminDashboard() {
         <div className="p-4 border-t border-orange-700">
           <div className="flex items-center gap-3 text-white">
             <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-semibold flex-shrink-0">
-              {superAdminName.split(' ').map(n => n[0]).join('')}
+              {adminName.split(' ').map(n => n[0]).join('')}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate text-sm">{superAdminName}</p>
-              <p className="text-xs text-orange-100 truncate">admin@tiibnpick.com</p>
+              <p className="font-medium truncate text-sm">{adminName}</p>
+              <p className="text-xs text-orange-100 truncate">{adminEmail}</p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="flex-shrink-0 text-white hover:text-white hover:bg-orange-500/50"
               onClick={handleLogout}
             >
@@ -558,9 +635,10 @@ export default function SuperAdminDashboard() {
               {activeView === 'dashboard' && 'Dashboard'}
               {activeView === 'registrations' && 'Demandes d\'inscription'}
               {activeView === 'accounts' && 'Gestion des comptes'}
+              {activeView === 'subscriptions' && 'Gestion des Abonnements'}
             </h2>
           </div>
-          <Button 
+          <Button
             onClick={() => { fetchRegistrations(); fetchAccounts() }}
             variant="outline"
             size="sm"
@@ -578,12 +656,12 @@ export default function SuperAdminDashboard() {
               {/* Welcome Section */}
               <div className="mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold">
-                  Bienvenue, <span className="text-orange-600">{superAdminName}</span>
+                  Bienvenue, <span className="text-orange-600">{adminName}</span>
                 </h2>
               </div>
 
               {/* Stats Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <Card className="hover:shadow-md transition-shadow flex flex-col">
                   <CardHeader className="pb-3 px-4 py-3">
                     <CardDescription className="text-[10px] md:text-xs text-black">En attente</CardDescription>
@@ -657,6 +735,19 @@ export default function SuperAdminDashboard() {
                     </CardTitle>
                     <CardDescription className="text-xs md:text-sm">Suspendez ou révoquez les comptes utilisateurs</CardDescription>
                   </CardHeader>
+                </Card>
+
+                <Card className="cursor-pointer hover:shadow-md transition-shadow relative opacity-50 pointer-events-none" onClick={() => setActiveView('subscriptions')}>
+                  <CardHeader>
+                    <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                      Gérer les abonnements
+                    </CardTitle>
+                    <CardDescription className="text-xs md:text-sm">Activez les abonnements des livreurs</CardDescription>
+                  </CardHeader>
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-lg">
+                    <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-300 text-xs">Bientôt disponible</Badge>
+                  </div>
                 </Card>
               </div>
             </div>
@@ -738,31 +829,28 @@ export default function SuperAdminDashboard() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setAccountTypeFilter('all')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          accountTypeFilter === 'all'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'all'
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
                       >
                         Tous ({accounts.length})
                       </button>
                       <button
                         onClick={() => setAccountTypeFilter('DELIVERY')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          accountTypeFilter === 'DELIVERY'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'DELIVERY'
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
                       >
                         Livreurs ({accounts.filter(a => a.role === 'DELIVERY').length})
                       </button>
                       <button
                         onClick={() => setAccountTypeFilter('CLIENT')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          accountTypeFilter === 'CLIENT'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${accountTypeFilter === 'CLIENT'
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
                       >
                         Clients ({accounts.filter(a => a.role === 'CLIENT').length})
                       </button>
@@ -914,9 +1002,88 @@ export default function SuperAdminDashboard() {
               </Card>
             </div>
           )}
+
+
+          {/* Subscriptions View - Greyed out / Coming Soon */}
+          {activeView === 'subscriptions' && (
+            <div className="space-y-6 relative">
+              {/* Overlay "Bientôt disponible" */}
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-gray-900/70 rounded-lg backdrop-blur-sm">
+                <div className="text-center space-y-3">
+                  <CreditCard className="w-12 h-12 text-gray-400 mx-auto" />
+                  <h3 className="text-xl font-semibold text-gray-500">Bientôt disponible</h3>
+                  <p className="text-sm text-gray-400 max-w-md">La gestion des abonnements sera disponible dans une prochaine mise à jour.</p>
+                </div>
+              </div>
+
+              {/* Content underneath (greyed out) */}
+              <div className="opacity-40 pointer-events-none select-none">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Gestion des Abonnements</h2>
+                    <p className="text-muted-foreground">
+                      Gérez et activez les abonnements des livreurs.
+                    </p>
+                  </div>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Livreurs</CardTitle>
+                    <CardDescription>Liste des livreurs et état de leur abonnement</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Livreur</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Statut Abonnement</TableHead>
+                          <TableHead>Expiration</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {accounts.filter(a => a.role === 'DELIVERY').map((account) => (
+                          <TableRow key={account.id}>
+                            <TableCell className="font-medium">{account.name}</TableCell>
+                            <TableCell>
+                              <div className="flex flex-col text-sm text-muted-foreground">
+                                <span>{account.email}</span>
+                                <span>{account.phone}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={account.subscriptionStatus === 'ACTIVE' ? 'default' : 'secondary'}
+                                className={account.subscriptionStatus === 'ACTIVE' ? 'bg-green-600 hover:bg-green-700' : ''}>
+                                {account.subscriptionStatus === 'ACTIVE' ? 'Actif' : 'Inactif'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {account.subscriptionEndDate ? formatDate(account.subscriptionEndDate) : '-'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {account.subscriptionStatus !== 'ACTIVE' && (
+                                <Button
+                                  size="sm"
+                                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                                  onClick={() => handleActivateSubscription(account)}
+                                >
+                                  Activer (30 jours)
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
         </main>
 
-        {/* Registration Details Dialog */}
         <Dialog open={selectedRequest !== null} onOpenChange={(open) => !open && setSelectedRequest(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             {selectedRequest && (
@@ -934,8 +1101,8 @@ export default function SuperAdminDashboard() {
                     <div>
                       <h3 className="text-sm font-semibold mb-3 text-gray-900">Photo du Livreur</h3>
                       <div className="flex justify-center">
-                        <img 
-                          src={selectedRequest.profilePhoto} 
+                        <img
+                          src={selectedRequest.profilePhoto}
                           alt="Photo du livreur"
                           className="w-32 h-32 rounded-lg object-cover border border-gray-200"
                         />
@@ -966,6 +1133,30 @@ export default function SuperAdminDashboard() {
                     </div>
                   </div>
 
+                  {/* Informations Personnelles (Suite) */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedRequest.nineNumber && (
+                      <div>
+                        <label className="text-xs text-gray-500">Numéro NINE</label>
+                        <p className="font-mono font-bold text-orange-600">{selectedRequest.nineNumber}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Document NIU */}
+                  {selectedRequest.niuPhoto && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3 text-gray-900">Document NIU</h3>
+                      <div className="flex justify-center">
+                        <img
+                          src={selectedRequest.niuPhoto}
+                          alt="Document NIU"
+                          className="w-full max-h-48 rounded-lg object-cover border border-gray-200"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Pièce d'Identité */}
                   <div>
                     <h3 className="text-sm font-semibold mb-3 text-gray-900">Pièce d'Identité</h3>
@@ -976,16 +1167,29 @@ export default function SuperAdminDashboard() {
                           <p className="font-mono font-bold text-orange-600">{selectedRequest.idCardNumber}</p>
                         </div>
                       )}
-                      {selectedRequest.idCardPhoto && (
-                        <div>
-                          <label className="text-xs text-gray-500 block mb-2">Photo CNI</label>
-                          <img 
-                            src={selectedRequest.idCardPhoto} 
-                            alt="Photo CNI"
-                            className="w-full max-h-48 rounded-lg object-cover border border-gray-200"
-                          />
-                        </div>
-                      )}
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {selectedRequest.idCardRectoPhoto && (
+                          <div>
+                            <label className="text-xs text-gray-500 block mb-2">Photo CNI Recto</label>
+                            <img
+                              src={selectedRequest.idCardRectoPhoto}
+                              alt="Photo CNI Recto"
+                              className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
+                            />
+                          </div>
+                        )}
+                        {selectedRequest.idCardVersoPhoto && (
+                          <div>
+                            <label className="text-xs text-gray-500 block mb-2">Photo CNI Verso</label>
+                            <img
+                              src={selectedRequest.idCardVersoPhoto}
+                              alt="Photo CNI Verso"
+                              className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -998,17 +1202,25 @@ export default function SuperAdminDashboard() {
                         <p className="font-medium">{selectedRequest.vehicleType}</p>
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500">Marque</label>
-                        <p className="font-medium">{selectedRequest.vehicleBrand}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500">Modèle</label>
-                        <p className="font-medium">{selectedRequest.vehicleModel}</p>
+                        <label className="text-xs text-gray-500">Nom du véhicule</label>
+                        <p className="font-medium">{selectedRequest.vehicleBrand} {selectedRequest.vehicleModel}</p>
                       </div>
                       <div>
                         <label className="text-xs text-gray-500">Plaque d'Immatriculation</label>
                         <p className="font-mono font-bold text-lg text-orange-600">{selectedRequest.vehicleRegNumber}</p>
                       </div>
+                      {selectedRequest.vehicleColor && (
+                        <div>
+                          <label className="text-xs text-gray-500">Couleur</label>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-200"
+                              style={{ backgroundColor: selectedRequest.vehicleColor.toLowerCase() === 'blanc' ? '#ffffff' : selectedRequest.vehicleColor.toLowerCase() === 'noir' ? '#000000' : selectedRequest.vehicleColor }}
+                            />
+                            <p className="font-medium">{selectedRequest.vehicleColor}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Photos du Véhicule */}
@@ -1019,8 +1231,8 @@ export default function SuperAdminDashboard() {
                           {selectedRequest.vehicleFrontPhoto && (
                             <div>
                               <label className="text-xs text-gray-500 block mb-2">Vue Avant</label>
-                              <img 
-                                src={selectedRequest.vehicleFrontPhoto} 
+                              <img
+                                src={selectedRequest.vehicleFrontPhoto}
                                 alt="Vue avant du véhicule"
                                 className="w-full h-32 rounded-lg object-cover border border-gray-200"
                               />
@@ -1029,8 +1241,8 @@ export default function SuperAdminDashboard() {
                           {selectedRequest.vehicleBackPhoto && (
                             <div>
                               <label className="text-xs text-gray-500 block mb-2">Vue Arrière</label>
-                              <img 
-                                src={selectedRequest.vehicleBackPhoto} 
+                              <img
+                                src={selectedRequest.vehicleBackPhoto}
                                 alt="Vue arrière du véhicule"
                                 className="w-full h-32 rounded-lg object-cover border border-gray-200"
                               />
@@ -1041,51 +1253,11 @@ export default function SuperAdminDashboard() {
                     )}
                   </div>
 
-                  {/* Vérifications */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3 text-gray-900">Vérifications</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Pièce d'Identité Vérifiée</span>
-                        <Badge variant={selectedRequest.idCardVerified ? 'default' : 'destructive'}>
-                          {selectedRequest.idCardVerified ? '✓ Vérifiée' : '✗ Non vérifiée'}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Immatriculation Vérifiée</span>
-                        <Badge variant={selectedRequest.vehicleRegVerified ? 'default' : 'destructive'}>
-                          {selectedRequest.vehicleRegVerified ? '✓ Vérifiée' : '✗ Non vérifiée'}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm">Assurance Vérifiée</span>
-                        <Badge variant={selectedRequest.insuranceVerified ? 'default' : 'destructive'}>
-                          {selectedRequest.insuranceVerified ? '✓ Vérifiée' : '✗ Non vérifiée'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Statut */}
                   <div>
                     <label className="text-xs text-gray-500">Statut</label>
                     <div className="mt-2">
                       {getStatusBadge(selectedRequest.status)}
-                    </div>
-                  </div>
-
-                  {/* Dates */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3 text-gray-900">Historique</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <label className="text-xs text-gray-500">Créée le</label>
-                        <p className="font-medium">{formatDate(selectedRequest.createdAt)}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500">Mise à jour</label>
-                        <p className="font-medium">{formatDate(selectedRequest.updatedAt)}</p>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1117,13 +1289,12 @@ export default function SuperAdminDashboard() {
         </Dialog>
 
         {/* Confirmation Dialog */}
-        <AlertDialog open={actionDialog !== null}>
+        <AlertDialog open={actionDialog !== null && actionDialog !== 'suspend'}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {actionDialog === 'approve' && 'Confirmer l\'approbation'}
                 {actionDialog === 'reject' && 'Rejeter la demande'}
-                {actionDialog === 'suspend' && 'Suspendre le compte'}
                 {actionDialog === 'revoke' && 'Révoquer le compte'}
                 {actionDialog === 'restore' && 'Restaurer le compte'}
               </AlertDialogTitle>
@@ -1131,12 +1302,11 @@ export default function SuperAdminDashboard() {
             <AlertDialogDescription>
               {actionDialog === 'approve' && selectedRequest && `Êtes-vous sûr de vouloir approuver la demande de ${selectedRequest.name} ?`}
               {actionDialog === 'reject' && selectedRequest && `Êtes-vous sûr de vouloir rejeter la demande de ${selectedRequest.name} ?`}
-              {actionDialog === 'suspend' && selectedAccount && `Êtes-vous sûr de vouloir suspendre le compte de ${selectedAccount.name} ?`}
               {actionDialog === 'revoke' && selectedAccount && `Êtes-vous sûr de vouloir révoquer le compte de ${selectedAccount.name} ?`}
               {actionDialog === 'restore' && selectedAccount && `Êtes-vous sûr de vouloir restaurer le compte de ${selectedAccount.name} ?`}
             </AlertDialogDescription>
             <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogCancel className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700">Annuler</AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmAction}
                 className="bg-orange-600 hover:bg-orange-700"
@@ -1146,6 +1316,58 @@ export default function SuperAdminDashboard() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Dialog spécifique pour la suspension avec date */}
+        <Dialog open={actionDialog === 'suspend'} onOpenChange={(open) => !open && setActionDialog(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Suspendre le compte</DialogTitle>
+              <DialogDescription>
+                Êtes-vous sûr de vouloir suspendre le compte de {selectedAccount?.name} ?
+                Vous pouvez définir une date de fin de suspension optionnelle.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center space-x-2 py-4">
+              <div className="grid flex-1 gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !suspensionEndDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {suspensionEndDate ? format(suspensionEndDate, "PPP") : <span>Choisir une date de fin</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={suspensionEndDate}
+                      onSelect={setSuspensionEndDate}
+                      initialFocus
+                      disabled={(date) => date < new Date()}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <DialogFooter className="sm:justify-end">
+              <Button variant="outline" onClick={() => setActionDialog(null)} className="text-orange-600 border-orange-600 hover:bg-orange-50 hover:text-orange-700">
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmAction}
+                className="bg-orange-600 hover:bg-orange-700 text-white border-orange-600"
+              >
+                Confirmer la suspension
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

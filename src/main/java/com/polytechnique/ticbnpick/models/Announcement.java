@@ -79,7 +79,7 @@ public class Announcement {
     private String shipperPhone;
 
     @Column("amount")
-    private Float amount;
+    private Double amount;
 
     @Column("created_at")
     private Instant createdAt;

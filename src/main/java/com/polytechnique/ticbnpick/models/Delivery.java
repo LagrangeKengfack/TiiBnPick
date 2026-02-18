@@ -45,7 +45,7 @@ public class Delivery {
     private Integer tarif;
 
     @Column("note_livreur")
-    private Float noteLivreur;
+    private Double noteLivreur;
 
     @NotNull
     @Column("pickup_min_time")

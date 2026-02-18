@@ -62,7 +62,7 @@ public class DeliveryPerson {
     private Double commissionRate;
 
     @Column("siret")
-    private Double siret;
+    private String siret;
 
     @Column("longitude_gps")
     private Float longitudeGps;

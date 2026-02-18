@@ -25,4 +25,7 @@ public class AuthResponseDTO {
     // Client specific fields
     private java.util.UUID clientId;
     private String loyaltyStatus;
+
+    // Role field
+    private String role;
 }
