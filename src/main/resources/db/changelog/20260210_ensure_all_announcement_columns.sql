@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset TiiBnTickTeam:20260210-ensure-all-announcement-columns
+-- changeset TicBnPickTeam:20260210-ensure-all-announcement-columns
 -- Ensure all required columns exist in announcements table to match Announcement.java model
 
 -- Core columns (should already exist from create-announcement.sql)
