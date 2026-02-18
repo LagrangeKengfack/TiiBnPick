@@ -209,7 +209,7 @@
 
     <changeSet id="037-fix-type-mismatches" author="TiiBnTickTeam">
         <validCheckSum>ANY</validCheckSum>
-        <sqlFile path="db/changelog/fix-type-mismatches.sql" relativeToChangelogFile="false"/>
+        <sqlFile path="db/changelog/fix-type-mismatches.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
 
     <changeSet id="038-insert-admin-user" author="TiiBnTickTeam">

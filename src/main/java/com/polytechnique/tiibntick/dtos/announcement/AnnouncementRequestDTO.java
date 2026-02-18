@@ -18,7 +18,7 @@ public class AnnouncementRequestDTO {
     private String shipperLastName;
     private String shipperEmail;
     private String shipperPhone;
-    private Float amount;
+    private Double amount;
     private String signatureUrl;
     private String paymentMethod;
     private String transportMethod;
