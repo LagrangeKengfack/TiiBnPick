@@ -35,4 +35,12 @@ public interface DeliveryPersonRepository extends ReactiveCrudRepository<Deliver
      * @return a Flux of delivery persons
      */
     Flux<DeliveryPerson> findAllByStatus(DeliveryPersonStatus status);
+
+    /**
+     * Finds all active delivery persons with known GPS location.
+     * Used as fallback when Elasticsearch is unavailable.
+     *
+     * @return a Flux of delivery persons with GPS coordinates
+     */
+    Flux<DeliveryPerson> findAllByIsActiveTrueAndLatitudeGpsIsNotNullAndLongitudeGpsIsNotNull();
 }

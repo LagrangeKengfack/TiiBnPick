@@ -49,3 +49,16 @@ export const deleteDeliveryPerson = async (id: string) => {
         throw error;
     }
 };
+
+export const updateLocation = async (id: string, latitude: number, longitude: number) => {
+    try {
+        const response = await apiClient.patch(`${API_URL}/${id}/location`, {
+            latitude,
+            longitude
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating delivery person location:', error);
+        throw error;
+    }
+};

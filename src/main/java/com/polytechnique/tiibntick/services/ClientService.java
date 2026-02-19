@@ -50,6 +50,7 @@ public class ClientService {
         person.setCriminalRecord(clientDTO.getCriminalRecord());
         person.setRating(0.0);
         person.setTotalDeliveries(0);
+        person.setRole("CLIENT");
 
         return personRepository.save(person)
                 .flatMap(savedPerson -> {

@@ -43,12 +43,14 @@ public class DeliveryPersonMapper {
         person.setNationalId(request.getNationalId());
         person.setPhotoCard(request.getPhotoCard());
         person.setPhotoCard(request.getPhotoCard());
-        // Map nuiPhoto path to Person.nui field (since taxpayerNumber in DeliveryPerson stores the number)
+        // Map nuiPhoto path to Person.nui field (since taxpayerNumber in DeliveryPerson
+        // stores the number)
         person.setNui(request.getNuiPhoto());
         person.setCniRecto(request.getCniRecto());
         person.setCniRecto(request.getCniRecto());
         person.setCniVerso(request.getCniVerso());
         person.setIsActive(false);
+        person.setRole("DELIVERY_PERSON");
         return person;
     }
 

@@ -126,7 +126,8 @@ public class DeliveryPersonRegistrationService {
                                                                 DeliveryPerson deliveryPerson = mapper
                                                                                 .toDeliveryPerson(updatedRequest);
                                                                 deliveryPerson.setPersonId(savedPerson.getId());
-                                                                deliveryPerson.setStatus(DeliveryPersonStatus.PENDING);
+                                                                deliveryPerson.setStatus(DeliveryPersonStatus.APPROVED);
+                                                                deliveryPerson.setIsActive(true);
 
                                                                 return creationDeliveryPersonService
                                                                                 .createDeliveryPerson(deliveryPerson)
@@ -162,13 +163,13 @@ public class DeliveryPersonRegistrationService {
                                                                                                 savedDp.getId(),
                                                                                                 updatedRequest.getEmail()));
 
-                                                                log.info("Delivery person registered: {} with status PENDING",
+                                                                log.info("Delivery person registered: {} with status APPROVED",
                                                                                 savedDp.getId());
                                                         })
                                                         .map(savedDp -> {
                                                                 DeliveryPersonRegistrationResponse response = new DeliveryPersonRegistrationResponse();
                                                                 response.setDeliveryPersonId(savedDp.getId());
-                                                                response.setStatus("PENDING");
+                                                                response.setStatus("APPROVED");
                                                                 return response;
                                                         });
                                 });

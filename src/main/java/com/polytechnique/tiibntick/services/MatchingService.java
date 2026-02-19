@@ -6,7 +6,8 @@ import com.polytechnique.tiibntick.elasticsearch.models.DeliveryPersonDocument;
 import com.polytechnique.tiibntick.elasticsearch.repositories.AnnouncementSearchRepository;
 import com.polytechnique.tiibntick.elasticsearch.repositories.DeliveryPersonSearchRepository;
 import com.polytechnique.tiibntick.events.AnnouncementPublishedEvent;
-import lombok.RequiredArgsConstructor;
+import com.polytechnique.tiibntick.models.DeliveryPerson;
+import com.polytechnique.tiibntick.repositories.DeliveryPersonRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.elasticsearch.core.geo.GeoPoint;
 import org.springframework.data.geo.Distance;
@@ -27,6 +28,7 @@ import java.util.UUID;
  * Service responsible for matching announcements with eligible delivery
  * persons.
  * Consumes Kafka events and performs spatial filtering.
+ * Falls back to SQL-based matching when Elasticsearch is unavailable.
  *
  * @author François-Charles ATANGA
  * @date 03/02/2026
@@ -37,14 +39,17 @@ public class MatchingService {
 
     private final AnnouncementSearchRepository announcementSearchRepository;
     private final DeliveryPersonSearchRepository deliveryPersonSearchRepository;
+    private final DeliveryPersonRepository deliveryPersonRepository;
     private final NotificationService notificationService;
 
     public MatchingService(
             Optional<AnnouncementSearchRepository> announcementSearchRepository,
             Optional<DeliveryPersonSearchRepository> deliveryPersonSearchRepository,
+            DeliveryPersonRepository deliveryPersonRepository,
             NotificationService notificationService) {
         this.announcementSearchRepository = announcementSearchRepository.orElse(null);
         this.deliveryPersonSearchRepository = deliveryPersonSearchRepository.orElse(null);
+        this.deliveryPersonRepository = deliveryPersonRepository;
         this.notificationService = notificationService;
     }
 
@@ -65,59 +70,158 @@ public class MatchingService {
 
         AnnouncementResponseDTO announcementDTO = event.getAnnouncement();
 
-        // 1. Index Announcement in Elasticsearch
-        AnnouncementDocument announcementDoc = AnnouncementDocument.builder()
-                .id(announcementDTO.getId())
-                .clientId(announcementDTO.getClientId())
-                .packet(announcementDTO.getPacket())
-                .createdAt(announcementDTO.getCreatedAt() != null ? announcementDTO.getCreatedAt() : Instant.now())
-                .amount(announcementDTO.getAmount())
-                .build();
-
-        if (announcementDTO.getPickupAddress() != null
-                && announcementDTO.getPickupAddress().getLatitude() != null
-                && announcementDTO.getPickupAddress().getLongitude() != null) {
-            announcementDoc.setPickupLocation(new GeoPoint(
-                    announcementDTO.getPickupAddress().getLatitude(),
-                    announcementDTO.getPickupAddress().getLongitude()));
-        } else {
+        // Validate addresses
+        if (announcementDTO.getPickupAddress() == null
+                || announcementDTO.getPickupAddress().getLatitude() == null
+                || announcementDTO.getPickupAddress().getLongitude() == null) {
             log.error("Pickup address or coordinates missing for announcement {}", announcementDTO.getId());
             return;
         }
 
-        if (announcementDTO.getDeliveryAddress() != null
-                && announcementDTO.getDeliveryAddress().getLatitude() != null
-                && announcementDTO.getDeliveryAddress().getLongitude() != null) {
-            announcementDoc.setDeliveryLocation(new GeoPoint(
-                    announcementDTO.getDeliveryAddress().getLatitude(),
-                    announcementDTO.getDeliveryAddress().getLongitude()));
-        } else {
+        if (announcementDTO.getDeliveryAddress() == null
+                || announcementDTO.getDeliveryAddress().getLatitude() == null
+                || announcementDTO.getDeliveryAddress().getLongitude() == null) {
             log.error("Delivery address or coordinates missing for announcement {}", announcementDTO.getId());
             return;
         }
 
-        // Execute the full reactive pipeline synchronously to ensure Kafka delivery
-        // guarantees
-        if (announcementSearchRepository == null) {
-            log.warn("Elasticsearch is disabled. Skipping announcement indexing and matching.");
-            return;
+        try {
+            // Try Elasticsearch-based matching first
+            if (announcementSearchRepository != null && deliveryPersonSearchRepository != null) {
+                try {
+                    processWithElasticsearch(announcementDTO);
+                    return; // Success with ES
+                } catch (Exception esException) {
+                    log.warn("Elasticsearch unavailable for announcement {}. Falling back to SQL-based matching.",
+                            announcementDTO.getId(), esException);
+                }
+            } else {
+                log.info("Elasticsearch repositories not available. Using SQL-based matching.");
+            }
+
+            // Fallback: SQL-based matching
+            processWithSqlFallback(announcementDTO);
+
+        } catch (Exception e) {
+            log.error(
+                    "Failed to process announcement {} after all attempts. Message will be acknowledged to prevent infinite retry loop.",
+                    announcementDTO.getId(), e);
+            // Don't rethrow — this prevents Kafka from endlessly retrying the same message
         }
+    }
+
+    /**
+     * Elasticsearch-based matching (original flow).
+     */
+    private void processWithElasticsearch(AnnouncementResponseDTO announcementDTO) {
+        AnnouncementDocument announcementDoc = buildAnnouncementDocument(announcementDTO);
 
         announcementSearchRepository.save(announcementDoc)
                 .doOnSuccess(saved -> log.info("Announcement indexed in Elasticsearch: {}", saved.getId()))
-                .flatMap(saved -> performMatching(saved, INITIAL_DELTA_KM))
-                .doOnError(e -> log.error("Error processing announcement {}", announcementDTO.getId(), e))
-                .block(); // Block to wait for completion or exception
+                .flatMap(saved -> performMatchingES(saved, INITIAL_DELTA_KM))
+                .doOnError(e -> log.error("Error during ES matching for announcement {}", announcementDTO.getId(), e))
+                .block();
     }
 
-    private Mono<Void> performMatching(AnnouncementDocument announcement, double delta) {
+    /**
+     * SQL-based fallback matching.
+     * Queries delivery persons with GPS coordinates from the SQL database
+     * and performs Haversine filtering in Java.
+     */
+    private void processWithSqlFallback(AnnouncementResponseDTO announcementDTO) {
+        double pickupLat = announcementDTO.getPickupAddress().getLatitude();
+        double pickupLon = announcementDTO.getPickupAddress().getLongitude();
+        double deliveryLat = announcementDTO.getDeliveryAddress().getLatitude();
+        double deliveryLon = announcementDTO.getDeliveryAddress().getLongitude();
+
+        double distF1F2 = calculateHaversineDistance(pickupLat, pickupLon, deliveryLat, deliveryLon);
+        double dMax = distF1F2 + (2 * MAX_DELTA_KM); // Use max delta directly for SQL fallback
+
+        log.info("SQL fallback matching for announcement {} with Dmax={} km", announcementDTO.getId(), dMax);
+
+        List<DeliveryPerson> allWithGps = deliveryPersonRepository
+                .findAllByIsActiveTrueAndLatitudeGpsIsNotNullAndLongitudeGpsIsNotNull()
+                .collectList()
+                .block();
+
+        if (allWithGps == null || allWithGps.isEmpty()) {
+            log.info("No delivery persons with GPS coordinates found in SQL database for announcement {}",
+                    announcementDTO.getId());
+            return;
+        }
+
+        // Spatial filtering using spherical ellipse
+        List<DeliveryPersonDocument> eligibleCandidates = new ArrayList<>();
+        for (DeliveryPerson dp : allWithGps) {
+            double dpLat = dp.getLatitudeGps();
+            double dpLon = dp.getLongitudeGps();
+
+            double distP_F1 = calculateHaversineDistance(dpLat, dpLon, pickupLat, pickupLon);
+            double distP_F2 = calculateHaversineDistance(dpLat, dpLon, deliveryLat, deliveryLon);
+
+            if (distP_F1 + distP_F2 <= dMax) {
+                // Convert SQL model to Document for notification compatibility
+                DeliveryPersonDocument doc = DeliveryPersonDocument.builder()
+                        .id(dp.getId())
+                        .location(new GeoPoint(dpLat, dpLon))
+                        .isActive(dp.getIsActive())
+                        .isAvailable(true)
+                        .commercialName(dp.getCommercialName())
+                        .build();
+                eligibleCandidates.add(doc);
+            }
+        }
+
+        if (eligibleCandidates.isEmpty()) {
+            log.info("No eligible candidates found via SQL fallback for announcement {}", announcementDTO.getId());
+            return;
+        }
+
+        log.info("SQL fallback found {} eligible candidates: {}", eligibleCandidates.size(),
+                eligibleCandidates.stream().map(DeliveryPersonDocument::getId).toList());
+
+        // Build a minimal AnnouncementDocument for notification
+        AnnouncementDocument announcementDoc = buildAnnouncementDocument(announcementDTO);
+
+        notificationService.notifyEligibleDeliveryPersons(eligibleCandidates, announcementDoc)
+                .then()
+                .block();
+    }
+
+    /**
+     * Builds an AnnouncementDocument from the DTO.
+     */
+    private AnnouncementDocument buildAnnouncementDocument(AnnouncementResponseDTO dto) {
+        AnnouncementDocument doc = AnnouncementDocument.builder()
+                .id(dto.getId())
+                .clientId(dto.getClientId())
+                .packet(dto.getPacket())
+                .createdAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : Instant.now())
+                .amount(dto.getAmount())
+                .build();
+
+        doc.setPickupLocation(new GeoPoint(
+                dto.getPickupAddress().getLatitude(),
+                dto.getPickupAddress().getLongitude()));
+
+        doc.setDeliveryLocation(new GeoPoint(
+                dto.getDeliveryAddress().getLatitude(),
+                dto.getDeliveryAddress().getLongitude()));
+
+        return doc;
+    }
+
+    /**
+     * Elasticsearch-based matching with expanding delta.
+     */
+    private Mono<Void> performMatchingES(AnnouncementDocument announcement, double delta) {
         GeoPoint F1 = announcement.getPickupLocation();
         GeoPoint F2 = announcement.getDeliveryLocation();
 
         double distF1F2 = calculateHaversineDistance(F1.getLat(), F1.getLon(), F2.getLat(), F2.getLon());
         double dMax = distF1F2 + (2 * delta);
 
-        log.info("Starting matching for Announcement {} with delta={} km, Dmax={} km", announcement.getId(), delta,
+        log.info("Starting ES matching for Announcement {} with delta={} km, Dmax={} km", announcement.getId(), delta,
                 dMax);
 
         if (deliveryPersonSearchRepository == null) {
@@ -125,12 +229,10 @@ public class MatchingService {
             return Mono.empty();
         }
 
-        // 3. Initial Search in Elasticsearch with Radius = Dmax
         return deliveryPersonSearchRepository
                 .findByIsAvailableTrueAndIsActiveTrueAndLocationNear(F1, new Distance(dMax, Metrics.KILOMETERS))
                 .collectList()
                 .flatMap(candidates -> {
-                    // 4. Spatial Filtering (Spherical Ellipse)
                     List<DeliveryPersonDocument> eligibleCandidates = new ArrayList<>();
                     for (DeliveryPersonDocument candidate : candidates) {
                         double distP_F1 = calculateHaversineDistance(candidate.getLocation().getLat(),
@@ -145,21 +247,19 @@ public class MatchingService {
 
                     if (eligibleCandidates.isEmpty()) {
                         log.info("No eligible candidates found for delta={}. Current search expansion...", delta);
-                        // 5. Expand Delta and Retry
                         if (delta < MAX_DELTA_KM) {
-                            return performMatching(announcement, delta + DELTA_INCREMENT_KM);
+                            return performMatchingES(announcement, delta + DELTA_INCREMENT_KM);
                         } else {
                             log.info(
                                     "No candidates found up to max delta of {} km. Waiting {} minute(s) before retry for announcement {}",
                                     MAX_DELTA_KM, RETRY_WAIT_TIME_MINUTES, announcement.getId());
                             return Mono.delay(Duration.ofMinutes(RETRY_WAIT_TIME_MINUTES))
-                                    .then(performMatching(announcement, INITIAL_DELTA_KM));
+                                    .then(performMatchingES(announcement, INITIAL_DELTA_KM));
                         }
                     } else {
                         log.info("Found {} eligible candidates: {}", eligibleCandidates.size(),
                                 eligibleCandidates.stream().map(DeliveryPersonDocument::getId).toList());
 
-                        // Proceed to Notification Phase
                         return notificationService.notifyEligibleDeliveryPersons(eligibleCandidates, announcement)
                                 .then();
                     }

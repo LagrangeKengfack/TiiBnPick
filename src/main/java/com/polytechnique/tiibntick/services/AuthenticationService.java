@@ -65,11 +65,15 @@ public class AuthenticationService {
                                             return Mono.error(new InvalidCredentialsException(
                                                     "Compte livreur rejeté ou révoqué"));
                                         }
-                                        if (deliveryPerson
-                                                .getStatus() == com.polytechnique.tiibntick.models.enums.deliveryPerson.DeliveryPersonStatus.PENDING) {
-                                            return Mono.error(new InvalidCredentialsException(
-                                                    "Veuillez attendre que l'admin vous enregistre"));
-                                        }
+                                        /*
+                                         * if (deliveryPerson
+                                         * .getStatus() ==
+                                         * com.polytechnique.tiibntick.models.enums.deliveryPerson.DeliveryPersonStatus.
+                                         * PENDING) {
+                                         * return Mono.error(new InvalidCredentialsException(
+                                         * "Veuillez attendre que l'admin vous enregistre"));
+                                         * }
+                                         */
 
                                         response.setDeliveryPersonId(deliveryPerson.getId());
                                         response.setUserType("LIVREUR");

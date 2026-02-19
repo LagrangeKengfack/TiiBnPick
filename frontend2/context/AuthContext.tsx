@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { getClientById } from '@/services/clientService';
 import { getDeliveryPerson } from '@/services/deliveryPersonService';
@@ -39,6 +39,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasRefreshed = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -50,8 +51,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
-        // Trigger a refresh with the parsed user if possible, 
-        // or just let the next render's effect handle it.
       } catch (e) {
         console.error("Failed to parse stored user", e);
         localStorage.removeItem('user');
@@ -61,12 +60,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
-  // Trigger refresh when user is first loaded
+  // Trigger refresh once after user is loaded from localStorage
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !loading && !hasRefreshed.current) {
+      hasRefreshed.current = true;
       refreshUser();
     }
-  }, [loading]);
+  }, [user, loading]);
 
   const login = (userData: User) => {
     setUser(userData);

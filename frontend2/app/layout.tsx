@@ -8,6 +8,7 @@ import { NotificationProvider } from '@/context/NotificationContext'
 import { cookies } from 'next/headers'
 import ThemeCookieSync from '@/components/theme-cookie-sync'
 import { Toaster } from '@/components/ui/toaster'
+import LocationTracker from '@/components/LocationTracker'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -62,6 +63,7 @@ export default async function RootLayout({
         <ThemeProvider attribute="class">
           <AuthProvider>
             <NotificationProvider>
+              <LocationTracker />
               {children}
               {/* Client component that keeps the cookie in sync when theme changes */}
               <ThemeCookieSync />
