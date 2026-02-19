@@ -15,7 +15,7 @@ VALUES (
     'GUEST_PHOTO_CARD_URL',
     0
 )
-ON CONFLICT (email) DO NOTHING; -- Assuming email is unique constraint
+ON CONFLICT (id) DO NOTHING; -- Assuming id is unique constraint
 
 -- 2. Insert Guest Client linked to Guest Person
 INSERT INTO clients (id, person_id, loyalty_status)

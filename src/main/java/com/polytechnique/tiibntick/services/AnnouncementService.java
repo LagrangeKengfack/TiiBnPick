@@ -40,85 +40,79 @@ public class AnnouncementService {
 
             return findOrCreateAddress(request.getDeliveryAddress()).flatMap(savedDelivery -> {
 
-                // 3. Prepare Announcement with ID
-                Announcement announcement = new Announcement();
-                announcement.setId(UUID.randomUUID()); // Generate UUID manually
-                announcement.setClientId(request.getClientId());
-                // packetId will be set after packet is saved
+                // 3. Prepare Packet first (must exist before announcement due to FK constraint)
                 UUID packetId = UUID.randomUUID();
+                Packet packet = new Packet();
+                packet.setId(packetId);
+                packet.setWeight(request.getPacket().getWeight());
+                packet.setWidth(request.getPacket().getWidth());
+                packet.setHeight(request.getPacket().getHeight());
+                packet.setLength(request.getPacket().getLength());
+                packet.setFragile(request.getPacket().getFragile());
+                packet.setDescription(request.getPacket().getDescription());
+                packet.setIsPerishable(request.getPacket().getIsPerishable());
+                packet.setThickness(request.getPacket().getThickness());
+                packet.setDesignation(request.getPacket().getDesignation());
 
-                announcement.setPacketId(packetId);
-                announcement.setPickupAddressId(savedPickup.getId());
-                announcement.setDeliveryAddressId(savedDelivery.getId());
-                announcement.setTitle(request.getTitle());
-                announcement.setDescription(request.getDescription());
+                String inputPhoto = request.getPacket().getPhotoPacket();
+                return fileStorageService.saveBase64Image(inputPhoto, "packet")
+                        .defaultIfEmpty(inputPhoto != null ? inputPhoto : "")
+                        .flatMap(path -> {
+                            packet.setPhotoPacket(path);
 
-                boolean shouldAutoPublish = Boolean.TRUE.equals(request.getAutoPublish());
-                announcement.setStatus(shouldAutoPublish ? AnnouncementStatus.PUBLISHED : AnnouncementStatus.DRAFT);
+                            // Save Packet FIRST (FK constraint requires it to exist before announcement)
+                            return entityTemplate.insert(packet).flatMap(savedPacket -> {
 
-                announcement.setCreatedAt(Instant.now());
-                announcement.setRecipientFirstName(request.getRecipientFirstName());
-                announcement.setRecipientLastName(request.getRecipientLastName());
-                announcement.setRecipientEmail(request.getRecipientEmail());
-                announcement.setRecipientPhone(request.getRecipientPhone());
-                announcement.setShipperFirstName(request.getShipperFirstName());
-                announcement.setShipperLastName(request.getShipperLastName());
-                announcement.setShipperEmail(request.getShipperEmail());
-                announcement.setShipperPhone(request.getShipperPhone());
-                announcement.setAmount(request.getAmount());
-                announcement.setSignatureUrl(request.getSignatureUrl());
-                announcement.setPaymentMethod(request.getPaymentMethod());
-                announcement.setTransportMethod(request.getTransportMethod());
-                announcement.setDistance(request.getDistance());
-                announcement.setDuration(request.getDuration());
+                                // 4. Now prepare and save Announcement with the existing packet_id
+                                Announcement announcement = new Announcement();
+                                announcement.setId(UUID.randomUUID());
+                                announcement.setClientId(request.getClientId());
+                                announcement.setPacketId(savedPacket.getId());
+                                announcement.setPickupAddressId(savedPickup.getId());
+                                announcement.setDeliveryAddressId(savedDelivery.getId());
+                                announcement.setTitle(request.getTitle());
+                                announcement.setDescription(request.getDescription());
 
-                // Use template.insert() to FORCE INSERT with the manual ID
-                return entityTemplate.insert(announcement).flatMap(savedAnnouncement -> {
-                    // 4. Save Packet with known IDs
-                    Packet packet = new Packet();
-                    packet.setId(packetId); // Use the pre-generated ID
+                                boolean shouldAutoPublish = Boolean.TRUE.equals(request.getAutoPublish());
+                                announcement.setStatus(
+                                        shouldAutoPublish ? AnnouncementStatus.PUBLISHED : AnnouncementStatus.DRAFT);
 
-                    packet.setWeight(request.getPacket().getWeight());
-                    packet.setWidth(request.getPacket().getWidth());
-                    packet.setHeight(request.getPacket().getHeight());
-                    packet.setLength(request.getPacket().getLength());
-                    packet.setFragile(request.getPacket().getFragile());
-                    packet.setDescription(request.getPacket().getDescription());
-                    packet.setIsPerishable(request.getPacket().getIsPerishable());
-                    packet.setThickness(request.getPacket().getThickness());
-                    packet.setDesignation(request.getPacket().getDesignation());
-
-                    String inputPhoto = request.getPacket().getPhotoPacket();
-                    return fileStorageService.saveBase64Image(inputPhoto, "packet")
-                            .defaultIfEmpty(inputPhoto != null ? inputPhoto : "")
-                            .flatMap(path -> {
-                                packet.setPhotoPacket(path);
+                                announcement.setCreatedAt(Instant.now());
+                                announcement.setRecipientFirstName(request.getRecipientFirstName());
+                                announcement.setRecipientLastName(request.getRecipientLastName());
+                                announcement.setRecipientEmail(request.getRecipientEmail());
+                                announcement.setRecipientPhone(request.getRecipientPhone());
+                                announcement.setShipperFirstName(request.getShipperFirstName());
+                                announcement.setShipperLastName(request.getShipperLastName());
+                                announcement.setShipperEmail(request.getShipperEmail());
+                                announcement.setShipperPhone(request.getShipperPhone());
+                                announcement.setAmount(request.getAmount());
+                                announcement.setSignatureUrl(request.getSignatureUrl());
+                                announcement.setPaymentMethod(request.getPaymentMethod());
+                                announcement.setTransportMethod(request.getTransportMethod());
+                                announcement.setDistance(request.getDistance());
+                                announcement.setDuration(request.getDuration());
 
                                 // Use template.insert() to FORCE INSERT with the manual ID
-                                return entityTemplate.insert(packet).map(
-                                        savedPacket -> {
-                                            savedAnnouncement.setId(announcement.getId()); // Ensure ID is set
+                                return entityTemplate.insert(announcement).map(savedAnnouncement -> {
 
-                                            // Handle Auto-Publish Event
-                                            if (shouldAutoPublish) {
-                                                mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
-                                                        savedPacket); // populate DTO first if needed but mapToResponse
-                                                                      // returns new obj
-                                                AnnouncementResponseDTO responseDTO = mapToResponse(savedAnnouncement,
-                                                        savedPickup, savedDelivery, savedPacket);
+                                    // Handle Auto-Publish Event
+                                    if (shouldAutoPublish) {
+                                        AnnouncementResponseDTO responseDTO = mapToResponse(savedAnnouncement,
+                                                savedPickup, savedDelivery, savedPacket);
 
-                                                AnnouncementPublishedEvent event = new AnnouncementPublishedEvent();
-                                                event.setAnnouncement(responseDTO);
-                                                kafkaEventPublisher.publishAnnouncementPublished(event);
+                                        AnnouncementPublishedEvent event = new AnnouncementPublishedEvent();
+                                        event.setAnnouncement(responseDTO);
+                                        kafkaEventPublisher.publishAnnouncementPublished(event);
 
-                                                return responseDTO;
-                                            }
+                                        return responseDTO;
+                                    }
 
-                                            return mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
-                                                    savedPacket);
-                                        });
+                                    return mapToResponse(savedAnnouncement, savedPickup, savedDelivery,
+                                            savedPacket);
+                                });
                             });
-                });
+                        });
             });
         });
     }
@@ -151,10 +145,26 @@ public class AnnouncementService {
         return announcementRepository.findById(id)
                 .flatMap(announcement -> {
                     Mono<Void> deletePacket = announcement.getPacketId() != null
-                            ? packetRepository.deleteById(announcement.getPacketId())
+                            ? packetRepository.findById(announcement.getPacketId())
+                                    .flatMap(packet -> {
+                                        Mono<Void> deletePhoto = packet.getPhotoPacket() != null
+                                                && !packet.getPhotoPacket().isEmpty()
+                                                        ? fileStorageService.deleteFile(packet.getPhotoPacket()).then()
+                                                        : Mono.empty();
+                                        return deletePhoto
+                                                .then(packetRepository.deleteById(announcement.getPacketId()));
+                                    })
                             : Mono.empty();
 
-                    return deletePacket.then(announcementRepository.delete(announcement));
+                    Mono<Void> deleteSignature = announcement.getSignatureUrl() != null
+                            && !announcement.getSignatureUrl().isEmpty()
+                                    ? fileStorageService.deleteFile(announcement.getSignatureUrl()).then()
+                                    : Mono.empty();
+
+                    // Delete Announcement FIRST to satisfy FK constraint (Announcement -> Packet)
+                    return announcementRepository.delete(announcement)
+                            .then(deletePacket)
+                            .then(deleteSignature);
                 });
     }
 

@@ -9,6 +9,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const MapLeaflet = dynamic(() => import('@/components/MapLeaflet'), {
   ssr: false,
@@ -43,6 +53,7 @@ import {
   getAnnouncementByClientId,
   deleteAnnouncement,
   publishAnnouncement,
+  updateAnnouncement,
   AnnouncementResponseDTO
 } from '@/services/announcementService'
 import { toast } from 'sonner'
@@ -90,25 +101,71 @@ export function ClientLanding() {
     }
   }
 
-  // Fonction pour supprimer une annonce
-  const handleDeleteAnnouncement = async (id: string) => {
-    if (!confirm('Voulez-vous vraiment supprimer cette annonce ?')) return
+  // State pour la boîte de dialogue de suppression
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [announcementToDelete, setAnnouncementToDelete] = useState<string | null>(null)
+
+  // Fonction pour demander la suppression (ouvre la modale)
+  const confirmDelete = (id: string) => {
+    setAnnouncementToDelete(id)
+    setDeleteDialogOpen(true)
+  }
+
+  // Fonction pour exécuter la suppression après confirmation
+  const executeDelete = async () => {
+    if (!announcementToDelete) return
+
     try {
-      await deleteAnnouncement(id)
-      toast.success('Annonce supprimée')
-      setMyAnnouncements((prev) => prev.filter((ann) => ann.id !== id))
+      await deleteAnnouncement(announcementToDelete)
+      toast.success('Annonce supprimée avec succès')
+      setMyAnnouncements((prev) => prev.filter((ann) => ann.id !== announcementToDelete))
     } catch (error) {
       toast.error('Erreur lors de la suppression')
+    } finally {
+      setDeleteDialogOpen(false)
+      setAnnouncementToDelete(null)
     }
   }
 
   // Fonction pour mettre à jour une annonce
-  const handleUpdateAnnouncement = (updatedAnn: any) => {
-    setMyAnnouncements((prev) =>
-      prev.map((ann) => (ann.id === updatedAnn.id ? updatedAnn : ann))
-    );
-    setSelectedAnnouncement(updatedAnn);
-    setIsEditing(false);
+  const handleUpdateAnnouncement = async (updatedFields: any) => {
+    if (!selectedAnnouncement) return;
+    try {
+      const payload = {
+        clientId: selectedAnnouncement.clientId,
+        title: selectedAnnouncement.title,
+        description: selectedAnnouncement.description,
+        recipientFirstName: selectedAnnouncement.recipientFirstName,
+        recipientLastName: selectedAnnouncement.recipientLastName,
+        recipientEmail: selectedAnnouncement.recipientEmail,
+        recipientPhone: selectedAnnouncement.recipientPhone,
+        shipperFirstName: selectedAnnouncement.shipperFirstName,
+        shipperLastName: selectedAnnouncement.shipperLastName,
+        shipperEmail: selectedAnnouncement.shipperEmail,
+        shipperPhone: selectedAnnouncement.shipperPhone,
+        amount: updatedFields.amount ?? selectedAnnouncement.amount,
+        signatureUrl: selectedAnnouncement.signatureUrl,
+        paymentMethod: selectedAnnouncement.paymentMethod,
+        transportMethod: selectedAnnouncement.transportMethod,
+        distance: selectedAnnouncement.distance,
+        duration: selectedAnnouncement.duration,
+        pickupAddress: selectedAnnouncement.pickupAddress,
+        deliveryAddress: selectedAnnouncement.deliveryAddress,
+        packet: {
+          ...selectedAnnouncement.packet,
+          ...updatedFields.packet,
+        },
+      };
+      const updated = await updateAnnouncement(selectedAnnouncement.id, payload);
+      setMyAnnouncements((prev) =>
+        prev.map((ann) => (ann.id === updated.id ? updated : ann))
+      );
+      setSelectedAnnouncement(updated);
+      setIsEditing(false);
+      toast.success('Annonce mise à jour avec succès');
+    } catch (error) {
+      toast.error('Erreur lors de la mise à jour de l\'annonce');
+    }
   };
 
 
@@ -255,7 +312,7 @@ export function ClientLanding() {
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between">
                             <div className="space-y-1">
-                              <CardTitle className="text-base">{announcement.id.substring(0, 8).toUpperCase()}</CardTitle>
+                              <CardTitle className="text-xs break-all pr-2">{announcement.id}</CardTitle>
                             </div>
                             <Badge variant={announcement.status === 'PUBLISHED' ? "default" : "secondary"} className={announcement.status === 'PUBLISHED' ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"}>
                               {announcement.status === 'PUBLISHED' ? "Publiée" : "Non publiée"}
@@ -284,11 +341,11 @@ export function ClientLanding() {
                           <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
                             <div className="flex items-center gap-2">
                               <MapIcon className="w-4 h-4" />
-                              <span>25.5 km</span>
+                              <span>{announcement.distance ?? '--'} km</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4" />
-                              <span>45 min</span>
+                              <span>{announcement.duration ? Math.round(announcement.duration) : '--'} min</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4 text-green-600" />
@@ -309,7 +366,7 @@ export function ClientLanding() {
                               size="sm"
                               variant="outline"
                               className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
-                              onClick={() => handleDeleteAnnouncement(announcement.id)}
+                              onClick={() => confirmDelete(announcement.id)}
                             >
                               Supprimer
                             </Button>
@@ -357,7 +414,7 @@ export function ClientLanding() {
                         </div>
                         <div>
                           <DialogTitle className="text-xl">Détails de l'annonce</DialogTitle>
-                          <DialogDescription className="font-mono text-orange-600">{selectedAnnouncement?.id}</DialogDescription>
+                          <DialogDescription className="font-mono text-xs text-orange-600 break-all">{selectedAnnouncement?.id}</DialogDescription>
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -368,10 +425,11 @@ export function ClientLanding() {
                             if (isEditing) {
                               const designation = (document.getElementById('edit-designation') as HTMLInputElement)?.value;
                               const description = (document.getElementById('edit-description') as HTMLTextAreaElement)?.value;
+                              const amountStr = (document.getElementById('edit-amount') as HTMLInputElement)?.value;
+                              const amount = amountStr ? parseFloat(amountStr) : selectedAnnouncement.amount;
                               handleUpdateAnnouncement({
-                                ...selectedAnnouncement,
+                                amount,
                                 packet: {
-                                  ...selectedAnnouncement.packet,
                                   designation: designation || selectedAnnouncement.packet.designation,
                                   description: description || selectedAnnouncement.packet.description
                                 }
@@ -399,7 +457,7 @@ export function ClientLanding() {
                             <p className="font-semibold text-gray-900">
                               {selectedAnnouncement?.shipperFirstName} {selectedAnnouncement?.shipperLastName}
                             </p>
-                            <p className="text-sm text-gray-600 font-medium">{selectedAnnouncement?.shipperPhone || 'N/A'}</p>
+                            <p className="text-sm text-gray-600 font-medium">{selectedAnnouncement?.shipperPhone?.replace(/^\+237/, '') || 'N/A'}</p>
                             <p className="text-sm text-gray-500">
                               {selectedAnnouncement?.pickupAddress?.street || selectedAnnouncement?.pickupAddress?.description || selectedAnnouncement?.pickupAddress?.district}, {selectedAnnouncement?.pickupAddress?.city}
                             </p>
@@ -409,8 +467,8 @@ export function ClientLanding() {
                           <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
                           <div>
                             <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Point de Livraison (Destinataire)</p>
-                            <p className="font-semibold text-gray-900">{selectedAnnouncement?.recipientName || 'N/A'}</p>
-                            <p className="text-sm text-gray-600 font-medium">{selectedAnnouncement?.recipientPhone || 'N/A'}</p>
+                            <p className="font-semibold text-gray-900">{selectedAnnouncement?.recipientLastName} {selectedAnnouncement?.recipientFirstName}</p>
+                            <p className="text-sm text-gray-600 font-medium">{selectedAnnouncement?.recipientPhone?.replace(/^\+237/, '') || 'N/A'}</p>
                             <p className="text-sm text-gray-500">
                               {selectedAnnouncement?.deliveryAddress?.street || selectedAnnouncement?.deliveryAddress?.description || selectedAnnouncement?.deliveryAddress?.district}, {selectedAnnouncement?.deliveryAddress?.city}
                             </p>
@@ -443,15 +501,22 @@ export function ClientLanding() {
                       <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100">
                         <div className="flex items-center gap-2">
                           <MapIcon className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold text-gray-900">25.5 km</span>
+                          <span className="font-bold text-gray-900">{selectedAnnouncement?.distance ?? '--'} km</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold text-gray-900">45 min</span>
+                          <span className="font-bold text-gray-900">{selectedAnnouncement?.duration ? Math.round(selectedAnnouncement.duration) : '--'} min</span>
                         </div>
-                        <div className="text-lg font-black text-orange-600">
-                          {selectedAnnouncement?.amount?.toLocaleString() || 0} FCFA
-                        </div>
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <Input id="edit-amount" type="number" defaultValue={selectedAnnouncement?.amount} className="h-9 w-28 text-sm font-bold text-orange-600 border-orange-200 focus:border-orange-500" />
+                            <span className="text-sm font-bold text-orange-600">FCFA</span>
+                          </div>
+                        ) : (
+                          <div className="text-lg font-black text-orange-600">
+                            {selectedAnnouncement?.amount?.toLocaleString() || 0} FCFA
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -539,6 +604,27 @@ export function ClientLanding() {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action est irréversible. Elle supprimera définitivement votre annonce
+                      ainsi que toutes les photos et données associées de nos serveurs.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={executeDelete}
+                      className="bg-red-600 hover:bg-red-700 text-white focus:ring-red-600"
+                    >
+                      Supprimer définitivement
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </section>
         )}

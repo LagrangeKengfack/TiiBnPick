@@ -10,8 +10,8 @@ export interface AnnouncementResponseDTO {
     status: string;
     createdAt: string;
     updatedAt: string;
-    recipientName: string;
-
+    recipientFirstName: string;
+    recipientLastName: string;
     recipientEmail: string;
     recipientPhone: string;
     shipperFirstName: string;
@@ -154,6 +154,16 @@ export const publishAnnouncement = async (id: string): Promise<AnnouncementRespo
         return response.data;
     } catch (error: any) {
         console.error('Error publishing announcement:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const updateAnnouncement = async (id: string, payload: Partial<AnnouncementCreationPayload>): Promise<AnnouncementResponseDTO> => {
+    try {
+        const response = await apiClient.put(`${API_URL}/${id}`, payload);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error updating announcement:', error.response?.data?.message || error.response?.data || error.message);
         throw error;
     }
 };

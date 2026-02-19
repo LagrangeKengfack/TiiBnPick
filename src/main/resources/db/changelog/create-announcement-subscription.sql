@@ -1,4 +1,4 @@
-CREATE TABLE announcement_subscriptions (
+CREATE TABLE IF NOT EXISTS announcement_subscriptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     announcement_id UUID NOT NULL,
     delivery_person_id UUID NOT NULL,

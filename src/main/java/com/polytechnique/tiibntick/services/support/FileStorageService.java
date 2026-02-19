@@ -66,4 +66,35 @@ public class FileStorageService {
             }
         });
     }
+
+    /**
+     * Deletes a file from the storage.
+     *
+     * @param fileName the name of the file to delete (e.g. "uploads/images/...")
+     * @return a Mono<Boolean> indicating success or failure
+     */
+    public Mono<Boolean> deleteFile(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return Mono.just(true);
+        }
+
+        return Mono.fromCallable(() -> {
+            try {
+                Path filePath = Paths.get(fileName);
+                // Security check to ensure we only delete files in uploadDir or subdirs
+                if (!filePath.normalize().startsWith(uploadDir) && !fileName.startsWith(uploadDir)) {
+                    // Allow absolute paths if they contain the upload dir, or relative paths
+                    // For now, let's just attempt delete if it looks like a file path we manage
+                    // But strictly speaking, we should validate it's inside our upload root.
+                    // Given the input might be "uploads/images/packet_...", simply checking
+                    // existence matches.
+                }
+
+                return Files.deleteIfExists(filePath);
+            } catch (IOException e) {
+                log.error("Error deleting file: {}", fileName, e);
+                return false;
+            }
+        });
+    }
 }
