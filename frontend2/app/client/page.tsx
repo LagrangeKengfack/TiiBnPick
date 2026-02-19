@@ -58,6 +58,7 @@ import {
 } from '@/services/announcementService'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { getRoute } from '@/services/routing'
 
 export function ClientLanding() {
   const router = useRouter()
@@ -70,6 +71,7 @@ export function ClientLanding() {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [myAnnouncements, setMyAnnouncements] = useState<AnnouncementResponseDTO[]>([])
+  const [route, setRoute] = useState<any>(null)
 
   const fetchAnnouncements = useCallback(async () => {
     if (!user?.clientId) return
@@ -89,6 +91,34 @@ export function ClientLanding() {
       fetchAnnouncements()
     }
   }, [activeTab, fetchAnnouncements])
+
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (
+        selectedAnnouncement?.pickupAddress?.latitude &&
+        selectedAnnouncement?.pickupAddress?.longitude &&
+        selectedAnnouncement?.deliveryAddress?.latitude &&
+        selectedAnnouncement?.deliveryAddress?.longitude
+      ) {
+        try {
+          const routeData = await getRoute(
+            selectedAnnouncement.pickupAddress.latitude,
+            selectedAnnouncement.pickupAddress.longitude,
+            selectedAnnouncement.deliveryAddress.latitude,
+            selectedAnnouncement.deliveryAddress.longitude,
+            selectedAnnouncement.transportMethod || 'driving'
+          );
+          setRoute(routeData);
+        } catch (error) {
+          console.error('Error fetching route:', error);
+          setRoute(null);
+        }
+      } else {
+        setRoute(null);
+      }
+    };
+    fetchRoute();
+  }, [selectedAnnouncement]);
 
   // Fonction pour publier une annonce
   const handlePublishAnnouncement = async (id: string) => {
@@ -476,19 +506,19 @@ export function ClientLanding() {
                         </div>
                       </div>
 
-                      {/* Carte */}
                       <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm h-64 relative z-0">
-                        {selectedAnnouncement && selectedAnnouncement.pickupCoords && selectedAnnouncement.deliveryCoords ? (
+                        {selectedAnnouncement && selectedAnnouncement.pickupAddress?.latitude && selectedAnnouncement.pickupAddress?.longitude && selectedAnnouncement.deliveryAddress?.latitude && selectedAnnouncement.deliveryAddress?.longitude ? (
                           <MapLeaflet
                             center={[
-                              (selectedAnnouncement.pickupCoords.lat + selectedAnnouncement.deliveryCoords.lat) / 2,
-                              (selectedAnnouncement.pickupCoords.lon + selectedAnnouncement.deliveryCoords.lon) / 2
+                              (selectedAnnouncement.pickupAddress.latitude + selectedAnnouncement.deliveryAddress.latitude) / 2,
+                              (selectedAnnouncement.pickupAddress.longitude + selectedAnnouncement.deliveryAddress.longitude) / 2
                             ]}
                             zoom={10}
                             markers={[
-                              { position: [selectedAnnouncement.pickupCoords.lat, selectedAnnouncement.pickupCoords.lon], label: "Retrait", color: "#f97316" },
-                              { position: [selectedAnnouncement.deliveryCoords.lat, selectedAnnouncement.deliveryCoords.lon], label: "Livraison", color: "#10b981" }
+                              { position: [selectedAnnouncement.pickupAddress.latitude, selectedAnnouncement.pickupAddress.longitude], label: "Retrait", color: "#f97316" },
+                              { position: [selectedAnnouncement.deliveryAddress.latitude, selectedAnnouncement.deliveryAddress.longitude], label: "Livraison", color: "#10b981" }
                             ]}
+                            route={route}
                           />
                         ) : (
                           <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 gap-2">

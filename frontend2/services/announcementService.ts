@@ -26,6 +26,8 @@ export interface AnnouncementResponseDTO {
         country: string;
         description: string;
         type: string;
+        latitude?: number;
+        longitude?: number;
     };
     deliveryAddress: {
         street: string;
@@ -34,6 +36,8 @@ export interface AnnouncementResponseDTO {
         country: string;
         description: string;
         type: string;
+        latitude?: number;
+        longitude?: number;
     };
     packet: {
         width: number;
