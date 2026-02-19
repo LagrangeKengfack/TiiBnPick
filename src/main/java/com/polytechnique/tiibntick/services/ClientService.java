@@ -113,6 +113,7 @@ public class ClientService {
                         .switchIfEmpty(
                                 Mono.error(new ResourceNotFoundException("Person", "id", existingClient.getPersonId())))
                         .flatMap(existingPerson -> {
+                            existingPerson.setNewEntity(false);
                             existingPerson.setLastName(clientDTO.getLastName());
                             existingPerson.setFirstName(clientDTO.getFirstName());
                             existingPerson.setPhone(clientDTO.getPhone());

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { getClientById } from '@/services/clientService';
+import { getDeliveryPerson } from '@/services/deliveryPersonService';
 
 export interface User {
   token: string;
@@ -20,6 +21,9 @@ export interface User {
   nationalId?: string;
   password?: string;
   memberSince?: string;
+  street?: string;
+  city?: string;
+  commercialName?: string;
 }
 
 interface AuthContextType {
@@ -44,7 +48,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (storedUser && token) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        // Trigger a refresh with the parsed user if possible, 
+        // or just let the next render's effect handle it.
       } catch (e) {
         console.error("Failed to parse stored user", e);
         localStorage.removeItem('user');
@@ -52,8 +59,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     setLoading(false);
-    refreshUser();
   }, []);
+
+  // Trigger refresh when user is first loaded
+  useEffect(() => {
+    if (user && !loading) {
+      refreshUser();
+    }
+  }, [loading]);
 
   const login = (userData: User) => {
     setUser(userData);
@@ -77,15 +90,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user || (!user.clientId && !user.id)) return;
 
     try {
-      // Use clientId for clients, or id as fallback
-      const targetId = user.clientId || user.id;
-      const latestData = await getClientById(targetId);
+      let latestData;
+      if (user.userType === 'LIVREUR' && user.deliveryPersonId) {
+        latestData = await getDeliveryPerson(user.deliveryPersonId);
+      } else if (user.userType === 'CLIENT') {
+        const targetId = user.clientId || user.id;
+        latestData = await getClientById(targetId);
+      }
 
       if (latestData) {
         const updatedUser: User = {
           ...user,
           ...latestData,
-          // Ensure we keep the token from current state if not returned by fetch
+          // Map backend 'id' (deliveryPersonId or clientId) to the correct field
+          // and keep the original person 'id'
+          id: user.id,
+          deliveryPersonId: user.userType === 'LIVREUR' ? (latestData.id || user.deliveryPersonId) : user.deliveryPersonId,
+          clientId: user.userType === 'CLIENT' ? (latestData.id || user.clientId) : user.clientId,
           token: user.token
         };
         setUser(updatedUser);

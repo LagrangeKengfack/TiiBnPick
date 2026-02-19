@@ -16,6 +16,10 @@ import com.polytechnique.tiibntick.services.logistics.LectureLogisticsService;
 import com.polytechnique.tiibntick.services.logistics.ModificationLogisticsService;
 import com.polytechnique.tiibntick.services.person.LecturePersonService;
 import com.polytechnique.tiibntick.services.person.ModificationPersonService;
+import com.polytechnique.tiibntick.services.person.SuppressionPersonService;
+import com.polytechnique.tiibntick.services.deliveryperson.SuppressionDeliveryPersonService;
+import com.polytechnique.tiibntick.services.logistics.SuppressionLogisticsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,6 +65,14 @@ class DeliveryPersonProfileServiceTest {
 
     @Mock
     private ModificationPersonService modificationPersonService;
+    @Mock
+    private SuppressionDeliveryPersonService suppressionDeliveryPersonService;
+    @Mock
+    private SuppressionPersonService suppressionPersonService;
+    @Mock
+    private SuppressionLogisticsService suppressionLogisticsService;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private DeliveryPersonProfileService service;
@@ -99,6 +111,7 @@ class DeliveryPersonProfileServiceTest {
         when(personAddressRepository.findByPersonId(dp.getPersonId())).thenReturn(Flux.just(personAddress));
         when(addressRepository.findById(personAddress.getAddressId())).thenReturn(Mono.just(address));
         when(modificationAddressService.updateAddress(any())).thenReturn(Mono.just(address));
+        when(passwordEncoder.encode(any())).thenReturn("ENCODED");
 
         // Act & Assert
         StepVerifier.create(service.updateProfile(dpId, request))
@@ -166,5 +179,28 @@ class DeliveryPersonProfileServiceTest {
         verify(modificationDeliveryPersonService).updateDeliveryPerson(any());
         verify(modificationPersonService, never()).updatePerson(any());
         verify(modificationAddressService, never()).updateAddress(any());
+    }
+
+    @Test
+    void deleteProfile_ShouldDeleteInCascade() {
+        // Arrange
+        UUID dpId = UUID.randomUUID();
+        UUID personId = UUID.randomUUID();
+        DeliveryPerson dp = new DeliveryPerson();
+        dp.setId(dpId);
+        dp.setPersonId(personId);
+
+        when(lectureDeliveryPersonService.findById(dpId)).thenReturn(Mono.just(dp));
+        when(suppressionLogisticsService.deleteByDeliveryPersonId(dpId)).thenReturn(Mono.empty());
+        when(suppressionDeliveryPersonService.deleteById(dpId)).thenReturn(Mono.empty());
+        when(suppressionPersonService.deleteById(personId)).thenReturn(Mono.empty());
+
+        // Act & Assert
+        StepVerifier.create(service.deleteProfile(dpId))
+                .verifyComplete();
+
+        verify(suppressionLogisticsService).deleteByDeliveryPersonId(dpId);
+        verify(suppressionDeliveryPersonService).deleteById(dpId);
+        verify(suppressionPersonService).deleteById(personId);
     }
 }

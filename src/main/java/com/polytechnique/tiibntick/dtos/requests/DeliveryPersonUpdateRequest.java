@@ -15,7 +15,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DeliveryPersonUpdateRequest {
+    private String firstName;
+    private String lastName;
+    private String email;
     private String phone;
+    private String password;
     private String commercialName;
 
     // Sensitive fields

@@ -16,8 +16,13 @@ import com.polytechnique.tiibntick.services.logistics.LectureLogisticsService;
 import com.polytechnique.tiibntick.services.logistics.ModificationLogisticsService;
 import com.polytechnique.tiibntick.services.person.LecturePersonService;
 import com.polytechnique.tiibntick.services.person.ModificationPersonService;
+import com.polytechnique.tiibntick.services.person.SuppressionPersonService;
+import com.polytechnique.tiibntick.services.deliveryperson.SuppressionDeliveryPersonService;
+import com.polytechnique.tiibntick.services.logistics.SuppressionLogisticsService;
+import com.polytechnique.tiibntick.dtos.responses.DeliveryPersonDetailsResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -46,6 +51,10 @@ public class DeliveryPersonProfileService {
     private final AddressRepository addressRepository;
     private final CreationAddressService creationAddressService;
     private final ModificationAddressService modificationAddressService;
+    private final SuppressionDeliveryPersonService suppressionDeliveryPersonService;
+    private final SuppressionPersonService suppressionPersonService;
+    private final SuppressionLogisticsService suppressionLogisticsService;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Updates a delivery person's profile with the provided data.
@@ -65,6 +74,8 @@ public class DeliveryPersonProfileService {
      */
     public Mono<Void> updateProfile(UUID deliveryPersonId, DeliveryPersonUpdateRequest request) {
         return lectureDeliveryPersonService.findById(deliveryPersonId)
+                .switchIfEmpty(Mono.error(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Delivery Person not found")))
                 .flatMap(dp -> {
                     Mono<Void> updatePerson = updatePersonFields(dp, request);
                     Mono<Void> updateDeliveryPerson = updateDeliveryPersonFields(dp, request);
@@ -72,9 +83,92 @@ public class DeliveryPersonProfileService {
                     Mono<Void> updateAddress = updateAddressFields(dp.getPersonId(), request);
 
                     return Mono.when(updatePerson, updateDeliveryPerson, updateLogistics, updateAddress);
-                })
+                });
+    }
+
+    /**
+     * Deletes a delivery person profile completely.
+     * Deletes Logistics, DeliveryPerson, and the associated Person.
+     *
+     * @param deliveryPersonId the UUID of the delivery person to delete
+     * @return a Mono<Void> signaling completion
+     */
+    public Mono<Void> deleteProfile(UUID deliveryPersonId) {
+        return lectureDeliveryPersonService.findById(deliveryPersonId)
                 .switchIfEmpty(Mono.error(new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND, "Delivery Person not found")));
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Delivery Person not found")))
+                .flatMap(dp -> {
+                    UUID personId = dp.getPersonId();
+                    return suppressionLogisticsService.deleteByDeliveryPersonId(deliveryPersonId)
+                            .then(suppressionDeliveryPersonService.deleteById(deliveryPersonId))
+                            .then(suppressionPersonService.deleteById(personId));
+                });
+    }
+
+    /**
+     * Retrieves aggregated details of a delivery person.
+     *
+     * @param deliveryPersonId the UUID of the delivery person
+     * @return a Mono containing the detailed response DTO
+     */
+    public Mono<DeliveryPersonDetailsResponse> getProfile(UUID deliveryPersonId) {
+        return lectureDeliveryPersonService.findById(deliveryPersonId)
+                .switchIfEmpty(Mono.error(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Delivery Person not found")))
+                .flatMap(dp -> lecturePersonService.findById(dp.getPersonId())
+                        .flatMap(person -> lectureLogisticsService.findByDeliveryPersonId(dp.getId())
+                                .flatMap(logistics -> personAddressRepository.findByPersonId(person.getId()).next()
+                                        .flatMap(pa -> addressRepository.findById(pa.getAddressId()))
+                                        .map(addr -> mapToDetailsResponse(dp, person, logistics, addr))
+                                        .defaultIfEmpty(mapToDetailsResponse(dp, person, logistics, null)))
+                                .switchIfEmpty(
+                                        Mono.defer(() -> personAddressRepository.findByPersonId(person.getId()).next()
+                                                .flatMap(pa -> addressRepository.findById(pa.getAddressId()))
+                                                .map(addr -> mapToDetailsResponse(dp, person, null, addr))
+                                                .defaultIfEmpty(mapToDetailsResponse(dp, person, null, null))))));
+    }
+
+    private DeliveryPersonDetailsResponse mapToDetailsResponse(DeliveryPerson dp,
+            com.polytechnique.tiibntick.models.Person person, com.polytechnique.tiibntick.models.Logistics logistics,
+            Address address) {
+        DeliveryPersonDetailsResponse response = new DeliveryPersonDetailsResponse();
+        response.setId(dp.getId());
+        response.setFirstName(person.getFirstName());
+        response.setLastName(person.getLastName());
+        response.setEmail(person.getEmail());
+        response.setPhone(person.getPhone());
+        response.setStatus(dp.getStatus().name());
+        response.setCommercialName(dp.getCommercialName());
+        response.setNuiNumber(dp.getTaxpayerNumber());
+        response.setNuiPhoto(person.getNuiPhoto());
+
+        if (address != null) {
+            response.setStreet(address.getStreet());
+            response.setCity(address.getCity());
+        }
+
+        // Personal Info
+        response.setNationalId(person.getNationalId());
+        response.setPhotoCard(person.getPhotoCard());
+        response.setCniRecto(person.getCniRecto());
+        response.setCniVerso(person.getCniVerso());
+
+        // Vehicle Info from Logistics
+        if (logistics != null) {
+            response.setVehicleType(logistics.getLogisticsType().name());
+            response.setVehicleBrand(logistics.getBrand());
+            response.setVehicleModel(logistics.getModel());
+            response.setVehicleRegNumber(logistics.getPlateNumber());
+            response.setVehicleColor(logistics.getColor());
+            response.setVehicleFrontPhoto(logistics.getFrontPhoto());
+            response.setVehicleBackPhoto(logistics.getBackPhoto());
+        }
+
+        // Meta
+        response.setCreatedAt(dp.getCreatedAt() != null ? dp.getCreatedAt().toString() : null);
+        response.setUpdatedAt(dp.getUpdatedAt() != null ? dp.getUpdatedAt().toString() : null);
+
+        return response;
     }
 
     /**
@@ -87,9 +181,26 @@ public class DeliveryPersonProfileService {
     private Mono<Void> updatePersonFields(DeliveryPerson dp, DeliveryPersonUpdateRequest request) {
         return lecturePersonService.findById(dp.getPersonId())
                 .flatMap(person -> {
+                    person.setNewEntity(false);
                     boolean changed = false;
+                    if (request.getFirstName() != null) {
+                        person.setFirstName(request.getFirstName());
+                        changed = true;
+                    }
+                    if (request.getLastName() != null) {
+                        person.setLastName(request.getLastName());
+                        changed = true;
+                    }
+                    if (request.getEmail() != null) {
+                        person.setEmail(request.getEmail());
+                        changed = true;
+                    }
                     if (request.getPhone() != null) {
                         person.setPhone(request.getPhone());
+                        changed = true;
+                    }
+                    if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                        person.setPassword(passwordEncoder.encode(request.getPassword()));
                         changed = true;
                     }
 

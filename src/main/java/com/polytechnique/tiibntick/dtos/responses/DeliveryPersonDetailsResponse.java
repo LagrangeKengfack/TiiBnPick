@@ -28,6 +28,9 @@ public class DeliveryPersonDetailsResponse {
     @JsonProperty("nuiPhoto")
     private String nuiPhoto; // Path to NIU photo
 
+    private String street;
+    private String city;
+
     // Personal Info
     private String nationalId;
     private String photoCard;

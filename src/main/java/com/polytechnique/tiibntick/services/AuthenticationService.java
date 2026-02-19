@@ -24,10 +24,10 @@ public class AuthenticationService {
 
     public Mono<AuthResponseDTO> login(AuthRequestDTO request) {
         return personRepository.findByEmail(request.getEmail())
-                .switchIfEmpty(Mono.error(new InvalidCredentialsException("Email non trouvé")))
+                .switchIfEmpty(Mono.error(new InvalidCredentialsException("Email non existant")))
                 .flatMap(person -> {
                     if (!passwordEncoder.matches(request.getPassword(), person.getPassword())) {
-                        return Mono.error(new InvalidCredentialsException("Mot de passe incorrect"));
+                        return Mono.error(new InvalidCredentialsException("Mot de passe pas correct"));
                     }
 
                     AuthResponseDTO response = new AuthResponseDTO();
@@ -68,7 +68,7 @@ public class AuthenticationService {
                                         if (deliveryPerson
                                                 .getStatus() == com.polytechnique.tiibntick.models.enums.deliveryPerson.DeliveryPersonStatus.PENDING) {
                                             return Mono.error(new InvalidCredentialsException(
-                                                    "Compte livreur en attente de validation"));
+                                                    "Veuillez attendre que l'admin vous enregistre"));
                                         }
 
                                         response.setDeliveryPersonId(deliveryPerson.getId());

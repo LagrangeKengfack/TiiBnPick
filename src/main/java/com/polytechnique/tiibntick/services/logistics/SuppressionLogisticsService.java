@@ -22,12 +22,23 @@ public class SuppressionLogisticsService {
     /**
      * Deletes a Logistics entry by its unique identifier.
      *
-     * <p>Removes the Logistics record from the repository.
+     * <p>
+     * Removes the Logistics record from the repository.
      *
      * @param id the UUID of the logistics entry to delete
      * @return a Mono&lt;Void&gt; signaling completion
      */
     public Mono<Void> deleteById(UUID id) {
         return logisticsRepository.deleteById(id);
+    }
+
+    /**
+     * Deletes a Logistics entry by delivery person ID.
+     *
+     * @param deliveryPersonId the UUID of the delivery person
+     * @return a Mono<Void> signaling completion
+     */
+    public Mono<Void> deleteByDeliveryPersonId(UUID deliveryPersonId) {
+        return logisticsRepository.deleteByDeliveryPersonId(deliveryPersonId);
     }
 }

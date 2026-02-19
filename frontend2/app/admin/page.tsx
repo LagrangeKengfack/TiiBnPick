@@ -45,6 +45,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { withAuth } from '@/components/hoc/withAuth'
 
 // Types
 interface DeliveryPersonRequest {
@@ -1366,3 +1367,5 @@ export default function SuperAdminDashboard() {
     </div>
   )
 }
+
+export default withAuth(SuperAdminDashboard, ['ADMIN'])

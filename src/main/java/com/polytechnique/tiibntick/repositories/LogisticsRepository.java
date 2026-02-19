@@ -14,7 +14,6 @@ import reactor.core.publisher.Mono;
  */
 public interface LogisticsRepository extends ReactiveCrudRepository<Logistics, UUID> {
 
-
     /**
      * Finds a logistics entry by delivery person ID.
      *
@@ -30,4 +29,6 @@ public interface LogisticsRepository extends ReactiveCrudRepository<Logistics, U
      * @return Flux of matching Logistics entries
      */
     Flux<Logistics> findAllByDeliveryPersonId(UUID deliveryPersonId);
+
+    Mono<Void> deleteByDeliveryPersonId(UUID deliveryPersonId);
 }
