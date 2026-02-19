@@ -42,8 +42,19 @@ public class DeliveryPersonDocument {
         this.email = email;
     }
 
+    public UUID getPersonId() {
+        return personId;
+    }
+
+    public void setPersonId(UUID personId) {
+        this.personId = personId;
+    }
+
     @Id
     private UUID id;
+
+    @Field(type = FieldType.Keyword)
+    private UUID personId;
 
     @GeoPointField
     private GeoPoint location;

@@ -40,6 +40,7 @@ public class SecurityConfig {
                                                                 "/webjars/**")
                                                 .permitAll()
                                                 .pathMatchers("/uploads/**").permitAll()
+                                                .pathMatchers("/api/notifications/stream/**").permitAll()
                                                 .pathMatchers("/api/admin/**").hasRole("ADMIN")
                                                 .anyExchange().authenticated())
                                 .build();

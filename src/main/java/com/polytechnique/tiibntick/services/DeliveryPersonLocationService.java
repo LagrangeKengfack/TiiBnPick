@@ -80,6 +80,8 @@ public class DeliveryPersonLocationService {
                                                                                                         .builder()
                                                                                                         .id(savedDeliveryPerson
                                                                                                                         .getId())
+                                                                                                        .personId(savedDeliveryPerson
+                                                                                                                        .getPersonId())
                                                                                                         .location(new GeoPoint(
                                                                                                                         latitude,
                                                                                                                         longitude))

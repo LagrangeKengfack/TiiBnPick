@@ -62,7 +62,7 @@ public class NotificationService {
 
         // 1. Create Notification Entity
         Notification notification = new Notification();
-        notification.setPersonId(dp.getId());
+        notification.setPersonId(dp.getPersonId());
         notification.setNotificationType(NotificationType.NEW_ANNOUNCEMENT);
         notification.setTitle(title);
         notification.setMessage(message);

@@ -163,6 +163,7 @@ public class MatchingService {
                 // Convert SQL model to Document for notification compatibility
                 DeliveryPersonDocument doc = DeliveryPersonDocument.builder()
                         .id(dp.getId())
+                        .personId(dp.getPersonId())
                         .location(new GeoPoint(dpLat, dpLon))
                         .isActive(dp.getIsActive())
                         .isAvailable(true)

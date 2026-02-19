@@ -62,6 +62,8 @@ import {
   DialogClose,
 } from '@/components/ui/dialog'
 import { ThumbsUp, MessageCircle, Mail, ImageIcon, Heart } from 'lucide-react'
+import apiClient from '@/lib/axios'
+import { cn } from '@/lib/utils'
 
 export function LivreurDashboard() {
   const router = useRouter()
@@ -190,7 +192,9 @@ export function LivreurDashboard() {
   useEffect(() => {
     if (!user?.id) return;
 
-    const eventSource = new EventSource(`http://localhost:8080/api/notifications/stream/${user.id}`);
+    // Use relative path to go through Gateway and add token for authentication
+    const token = localStorage.getItem('token');
+    const eventSource = new EventSource(`/api/notifications/stream/${user.id}${token ? `?token=${token}` : ''}`);
 
     eventSource.onmessage = (event) => {
       try {
@@ -198,9 +202,9 @@ export function LivreurDashboard() {
         console.info('Received real-time matching notification:', matchingEvent);
 
         // Fetch announcement details to add to available deliveries
-        fetch(`/api/announcements/${matchingEvent.announcementId}`)
-          .then(res => res.json())
-          .then(announcement => {
+        apiClient.get(`/api/announcements/${matchingEvent.announcementId}`)
+          .then(res => {
+            const announcement = res.data;
             setAvailableDeliveries(prev => {
               if (prev.find(d => d.id === announcement.id)) return prev;
               const mapped = mapBackendToFrontend(announcement);
@@ -233,12 +237,12 @@ export function LivreurDashboard() {
     customerFullName: ann.shipperFirstName + ' ' + ann.shipperLastName,
     customerEmail: ann.shipperEmail,
     customerPhone: ann.shipperPhone,
-    pickupAddress: ann.pickupAddress?.label || 'Adresse de retrait',
-    deliveryAddress: ann.deliveryAddress?.label || 'Adresse de livraison',
+    pickupAddress: ann.pickupAddress ? `${ann.pickupAddress.street}, ${ann.pickupAddress.city}` : 'Adresse de retrait',
+    deliveryAddress: ann.deliveryAddress ? `${ann.deliveryAddress.street}, ${ann.deliveryAddress.city}` : 'Adresse de livraison',
     senderCoords: { lat: ann.pickupAddress?.latitude, lon: ann.pickupAddress?.longitude },
     recipientCoords: { lat: ann.deliveryAddress?.latitude, lon: ann.deliveryAddress?.longitude },
     distance: ann.distance || 0,
-    estimatedTime: ann.duration ? `${Math.round(ann.duration / 60)} min` : 'N/A',
+    estimatedTime: ann.duration ? `${ann.duration} min` : 'N/A',
     price: ann.amount || 0,
     packageType: ann.packet?.designation || 'Colis',
     designation: ann.packet?.designation,
@@ -266,8 +270,8 @@ export function LivreurDashboard() {
     // Initial fetch of available announcements
     const fetchAnnouncements = async () => {
       try {
-        const res = await fetch('/api/announcements');
-        const data = await res.json();
+        const res = await apiClient.get('/api/announcements');
+        const data = res.data;
         const enriched = data.filter((a: any) => a.status === 'PUBLISHED').map(mapBackendToFrontend);
         setAvailableDeliveries(enriched);
       } catch (e) {
@@ -320,15 +324,11 @@ export function LivreurDashboard() {
     });
 
     try {
-      const response = await fetch(`/api/announcements/${deliveryId}/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ deliveryPersonId: user.id }),
+      const response = await apiClient.post(`/api/announcements/${deliveryId}/subscribe`, {
+        deliveryPersonId: user.id
       });
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         toast({
           title: "Demande envoyée",
           description: "Votre demande de souscription est en cours de traitement.",
@@ -593,7 +593,8 @@ export function LivreurDashboard() {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
-                          <CardTitle className="text-base">{delivery.id}</CardTitle>
+                          <CardTitle className="text-base font-mono">{delivery.id}</CardTitle>
+                          <p className="text-[10px] text-orange-600 font-medium italic">{delivery.deliveryAddress}</p>
                         </div>
                         <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
                           <Star className="w-3 h-3 text-yellow-500 fill-current" />
@@ -867,7 +868,8 @@ export function LivreurDashboard() {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
-                          <CardTitle className="text-base">{delivery.id}</CardTitle>
+                          <CardTitle className="text-base">{delivery.customerName || delivery.id}</CardTitle>
+                          <p className="text-[10px] text-gray-400 font-mono italic">{delivery.id}</p>
                         </div>
                         {getStatusBadge(delivery.status)}
                       </div>
@@ -983,10 +985,6 @@ export function LivreurDashboard() {
       </footer>
     </div>
   )
-}
-
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(' ')
 }
 
 export default withAuth(LivreurDashboard, ['LIVREUR'])
