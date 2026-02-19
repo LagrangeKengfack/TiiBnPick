@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import axiosInstance from '@/lib/axios'
 import {
   Package,
   Users,
@@ -130,81 +131,135 @@ export default function SuperAdminDashboard() {
     }
   }, [authLoading, user, router])
 
-  // Fetch accounts
-  const fetchAccounts = async () => {
+  // Dashboard stats from backend
+  const [stats, setStats] = useState({
+    pendingRegistrations: 0,
+    activeDeliveryPersons: 0,
+    suspendedAccounts: 0,
+    revokedAccounts: 0
+  })
+
+  // Fetch dashboard stats from backend
+  const fetchDashboardStats = useCallback(async () => {
     try {
-      const response = await fetch('/api/accounts')
-      if (response.ok) {
-        const data = await response.json()
-        setAccounts(data)
-      }
+      const response = await axiosInstance.get('/api/admin/dashboard-stats')
+      const data = response.data
+      setStats({
+        pendingRegistrations: data.pendingCount || 0,
+        activeDeliveryPersons: data.activeCount || 0,
+        suspendedAccounts: data.suspendedCount || 0,
+        revokedAccounts: data.revokedCount || 0
+      })
     } catch (error) {
-      console.error('Error fetching accounts:', error)
+      console.error('Error fetching dashboard stats:', error)
     }
-  }
+  }, [])
+
+  // Fetch registration requests from backend (PENDING delivery persons)
+  const fetchRegistrations = useCallback(async () => {
+    try {
+      console.log('[Admin] Fetching registrations from /api/admin/delivery-persons?status=PENDING')
+      const response = await axiosInstance.get('/api/admin/delivery-persons', {
+        params: { status: 'PENDING' }
+      })
+      const data = response.data
+      console.log('[Admin] Registrations response:', JSON.stringify(data).substring(0, 500))
+      console.log('[Admin] Is array?', Array.isArray(data), 'Length:', Array.isArray(data) ? data.length : 'N/A')
+      // Map backend DeliveryPersonDetailsResponse to frontend DeliveryPersonRequest
+      const mapped: DeliveryPersonRequest[] = (Array.isArray(data) ? data : []).map((dp: any) => ({
+        id: dp.id,
+        name: `${dp.firstName || ''} ${dp.lastName || ''}`.trim(),
+        email: dp.email || '',
+        phone: dp.phone || '',
+        location: dp.commercialName || '',
+        vehicleType: dp.vehicleType || '',
+        vehicleBrand: dp.vehicleBrand || '',
+        vehicleModel: dp.vehicleModel || '',
+        vehicleRegNumber: dp.vehicleRegNumber || '',
+        status: dp.status as 'PENDING' | 'APPROVED' | 'REJECTED',
+        idCardVerified: dp.idCardVerified || false,
+        vehicleRegVerified: dp.vehicleRegVerified || false,
+        insuranceVerified: dp.insuranceVerified || false,
+        createdAt: dp.createdAt || new Date().toISOString(),
+        updatedAt: dp.updatedAt || new Date().toISOString(),
+        idCardNumber: dp.nationalId || '',
+        nineNumber: dp.nuiNumber || '',
+        niuPhoto: dp.nuiPhoto || undefined,
+        idCardRectoPhoto: dp.cniRecto || undefined,
+        idCardVersoPhoto: dp.cniVerso || undefined,
+        vehicleFrontPhoto: dp.vehicleFrontPhoto || undefined,
+        vehicleBackPhoto: dp.vehicleBackPhoto || undefined,
+        vehicleColor: dp.vehicleColor || undefined,
+      })).sort((a: DeliveryPersonRequest, b: DeliveryPersonRequest) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      console.log('[Admin] Mapped registrations count:', mapped.length)
+      setRegistrationRequests(mapped)
+    } catch (error: any) {
+      console.error('[Admin] Error fetching registrations:', error?.response?.status, error?.response?.data, error?.message)
+      setRegistrationRequests([])
+    }
+  }, [])
+
+  // Fetch accounts from backend (non-PENDING delivery persons + clients)
+  const fetchAccounts = useCallback(async () => {
+    try {
+      // Fetch delivery persons (all except PENDING)
+      console.log('[Admin] Fetching delivery persons from /api/admin/delivery-persons')
+      const dpResponse = await axiosInstance.get('/api/admin/delivery-persons')
+      console.log('[Admin] Delivery persons response:', JSON.stringify(dpResponse.data).substring(0, 500))
+      const dpData = Array.isArray(dpResponse.data) ? dpResponse.data : []
+      const deliveryAccounts: Account[] = dpData
+        .filter((dp: any) => dp.status !== 'PENDING')
+        .map((dp: any) => ({
+          id: dp.id,
+          name: `${dp.firstName || ''} ${dp.lastName || ''}`.trim(),
+          email: dp.email || '',
+          phone: dp.phone || '',
+          role: 'DELIVERY' as const,
+          status: dp.status === 'APPROVED' ? 'ACTIVE' as const :
+            dp.status === 'SUSPENDED' ? 'SUSPENDED' as const :
+              dp.status === 'REVOKED' ? 'REVOKED' as const : 'ACTIVE' as const,
+          deliveriesCount: 0,
+          lastActivityAt: dp.updatedAt || null,
+          createdAt: dp.createdAt || new Date().toISOString(),
+          updatedAt: dp.updatedAt || new Date().toISOString(),
+        }))
+      console.log('[Admin] Delivery accounts (non-PENDING):', deliveryAccounts.length)
+
+      // Fetch clients
+      console.log('[Admin] Fetching clients from /api/admin/clients')
+      const clientResponse = await axiosInstance.get('/api/admin/clients')
+      console.log('[Admin] Clients response:', JSON.stringify(clientResponse.data).substring(0, 500))
+      const clientData = Array.isArray(clientResponse.data) ? clientResponse.data : []
+      const clientAccounts: Account[] = clientData.map((client: any) => ({
+        id: client.id,
+        name: `${client.firstName || ''} ${client.lastName || ''}`.trim(),
+        email: client.email || '',
+        phone: client.phone || '',
+        role: 'CLIENT' as const,
+        status: client.status === 'SUSPENDED' ? 'SUSPENDED' as const :
+          client.status === 'REVOKED' ? 'REVOKED' as const : 'ACTIVE' as const,
+        deliveriesCount: client.totalDeliveries || 0,
+        lastActivityAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }))
+      console.log('[Admin] Client accounts:', clientAccounts.length)
+
+      setAccounts([...deliveryAccounts, ...clientAccounts])
+      console.log('[Admin] Total accounts set:', deliveryAccounts.length + clientAccounts.length)
+    } catch (error: any) {
+      console.error('[Admin] Error fetching accounts:', error?.response?.status, error?.response?.data, error?.message)
+      setAccounts([])
+    }
+  }, [])
 
   // Fetch data on component mount
   useEffect(() => {
-    // Charger les données de test immédiatement
-    const testData: DeliveryPersonRequest[] = [
-      {
-        id: '1',
-        name: 'Jean Dupont',
-        email: 'jean.dupont@example.com',
-        phone: '+33612345678',
-        location: 'Paris, 75001',
-        vehicleType: 'Moto',
-        vehicleBrand: 'Honda',
-        vehicleModel: 'CB500',
-        vehicleRegNumber: 'AB-123-CD',
-        status: 'PENDING',
-        idCardVerified: true,
-        vehicleRegVerified: false,
-        insuranceVerified: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-        idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-        idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-        idCardNumber: 'AB123456789',
-        nineNumber: 'NINE12345678',
-        niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
-        vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        vehicleColor: 'Rouge',
-      },
-      {
-        id: '2',
-        name: 'Marie Martin',
-        email: 'marie.martin@example.com',
-        phone: '+33698765432',
-        location: 'Lyon, 69000',
-        vehicleType: 'Voiture',
-        vehicleBrand: 'Peugeot',
-        vehicleModel: '308',
-        vehicleRegNumber: 'XY-456-AB',
-        status: 'PENDING',
-        idCardVerified: true,
-        vehicleRegVerified: true,
-        insuranceVerified: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        profilePhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-        idCardRectoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-        idCardVersoPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-        idCardNumber: 'CD987654321',
-        nineNumber: 'NINE87654321',
-        niuPhoto: 'https://images.unsplash.com/photo-1562564055-71e051d33c19?w=600&h=400&fit=crop',
-        vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        vehicleColor: 'Bleu',
-      },
-    ]
-
-    setRegistrationRequests(testData)
-    setLoading(false)
+    fetchRegistrations()
     fetchAccounts()
-  }, [])
+    fetchDashboardStats()
+    setLoading(false)
+  }, [fetchRegistrations, fetchAccounts, fetchDashboardStats])
 
   // Show loading screen until auth is verified - prevents dashboard flash
   // IMPORTANT: This guard must be AFTER all hooks to comply with Rules of Hooks
@@ -230,110 +285,6 @@ export default function SuperAdminDashboard() {
     { id: 'accounts' as const, icon: ShieldCheck, label: 'Comptes' },
     { id: 'subscriptions' as const, icon: CreditCard, label: 'Abonnements' },
   ]
-
-  // Fetch registration requests
-  const fetchRegistrations = async () => {
-    try {
-      // Données de test pour les tests
-      const testData: DeliveryPersonRequest[] = [
-        {
-          id: '1',
-          name: 'Jean Dupont',
-          email: 'jean.dupont@example.com',
-          phone: '+33612345678',
-          location: 'Paris, 75001',
-          vehicleType: 'Moto',
-          vehicleBrand: 'Honda',
-          vehicleModel: 'CB500',
-          vehicleRegNumber: 'AB-123-CD',
-          status: 'PENDING',
-          idCardVerified: true,
-          vehicleRegVerified: false,
-          insuranceVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-          idCardPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardNumber: 'AB123456789',
-          vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        },
-        {
-          id: '2',
-          name: 'Marie Martin',
-          email: 'marie.martin@example.com',
-          phone: '+33698765432',
-          location: 'Lyon, 69000',
-          vehicleType: 'Voiture',
-          vehicleBrand: 'Peugeot',
-          vehicleModel: '308',
-          vehicleRegNumber: 'XY-456-AB',
-          status: 'PENDING',
-          idCardVerified: true,
-          vehicleRegVerified: true,
-          insuranceVerified: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profilePhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-          idCardPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardNumber: 'CD987654321',
-          vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        },
-      ]
-
-      // Essayer de récupérer les données de l'API
-      const response = await fetch('/api/registrations')
-      if (response.ok) {
-        const data = await response.json()
-        // Si l'API retourne des données, les utiliser
-        setRegistrationRequests(data.length > 0 ? data : testData)
-      } else {
-        // Sinon utiliser les données de test
-        setRegistrationRequests(testData)
-      }
-    } catch (error) {
-      console.error('Error fetching registrations:', error)
-      // Fallback avec données de test en cas d'erreur
-      const testData: DeliveryPersonRequest[] = [
-        {
-          id: '1',
-          name: 'Jean Dupont',
-          email: 'jean.dupont@example.com',
-          phone: '+33612345678',
-          location: 'Paris, 75001',
-          vehicleType: 'Moto',
-          vehicleBrand: 'Honda',
-          vehicleModel: 'CB500',
-          vehicleRegNumber: 'AB-123-CD',
-          status: 'PENDING',
-          idCardVerified: true,
-          vehicleRegVerified: false,
-          insuranceVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-          idCardPhoto: 'https://images.unsplash.com/photo-1553351776-5400f69678fa?w=600&h=400&fit=crop',
-          idCardNumber: 'AB123456789',
-          vehicleFrontPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-          vehicleBackPhoto: 'https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=600&h=400&fit=crop',
-        },
-      ]
-      setRegistrationRequests(testData)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-
-
-  // Stats calculations
-  const stats = {
-    pendingRegistrations: registrationRequests.filter(r => r.status === 'PENDING').length,
-    activeDeliveryPersons: accounts.filter(a => a.role === 'DELIVERY' && a.status === 'ACTIVE').length,
-    suspendedAccounts: accounts.filter(a => a.status === 'SUSPENDED').length,
-    revokedAccounts: accounts.filter(a => a.status === 'REVOKED').length
-  }
 
   // Handler functions
   const handleApproveRegistration = (request: DeliveryPersonRequest) => {
@@ -373,82 +324,66 @@ export default function SuperAdminDashboard() {
   const confirmAction = async () => {
     try {
       if (actionDialog === 'approve' && selectedRequest) {
-        const response = await fetch(`/api/registrations/${selectedRequest.id}/approve`, {
-          method: 'POST'
+        await axiosInstance.put('/api/admin/delivery-persons/validate', {
+          deliveryPersonId: selectedRequest.id,
+          approved: true
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Inscription approuvée',
-            description: `Le livreur ${selectedRequest.name} a été approuvé avec succès.`
-          })
-          await fetchRegistrations()
-          await fetchAccounts()
-        } else {
-          throw new Error('Failed to approve')
-        }
+        toast({
+          title: 'Inscription approuvée',
+          description: `Le livreur ${selectedRequest.name} a été approuvé avec succès.`
+        })
+        // Remove from registrations list immediately
+        setRegistrationRequests(prev => prev.filter(r => r.id !== selectedRequest.id))
+        await fetchAccounts()
+        await fetchDashboardStats()
       } else if (actionDialog === 'reject' && selectedRequest) {
-        const response = await fetch(`/api/registrations/${selectedRequest.id}/reject`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: 'Rejeté par l\'administrateur' })
+        await axiosInstance.put('/api/admin/delivery-persons/validate', {
+          deliveryPersonId: selectedRequest.id,
+          approved: false,
+          reason: 'Rejeté par l\'administrateur'
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Inscription rejetée',
-            description: `La demande de ${selectedRequest.name} a été rejetée.`,
-            variant: 'destructive'
-          })
-          await fetchRegistrations()
-        } else {
-          throw new Error('Failed to reject')
-        }
+        toast({
+          title: 'Inscription rejetée',
+          description: `La demande de ${selectedRequest.name} a été rejetée.`,
+          variant: 'destructive'
+        })
+        // Remove from registrations list immediately
+        setRegistrationRequests(prev => prev.filter(r => r.id !== selectedRequest.id))
+        await fetchDashboardStats()
       } else if (actionDialog === 'suspend' && selectedAccount) {
-        const response = await fetch(`/api/accounts/${selectedAccount.id}/suspend`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endDate: suspensionEndDate ? suspensionEndDate.toISOString() : null })
+        const endpoint = selectedAccount.role === 'CLIENT'
+          ? `/api/admin/clients/${selectedAccount.id}/suspend`
+          : `/api/admin/delivery-persons/${selectedAccount.id}/suspend`
+        await axiosInstance.put(endpoint)
+        toast({
+          title: 'Compte suspendu',
+          description: `Le compte de ${selectedAccount.name} a été suspendu.`
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Compte suspendu',
-            description: `Le compte de ${selectedAccount.name} a été suspendu.`
-          })
-          setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'SUSPENDED' as const } : a))
-        } else {
-          throw new Error('Failed to suspend')
-        }
+        setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'SUSPENDED' as const } : a))
+        await fetchDashboardStats()
       } else if (actionDialog === 'revoke' && selectedAccount) {
-        const response = await fetch(`/api/accounts/${selectedAccount.id}/revoke`, {
-          method: 'POST'
+        const endpoint = selectedAccount.role === 'CLIENT'
+          ? `/api/admin/clients/${selectedAccount.id}/revoke`
+          : `/api/admin/delivery-persons/${selectedAccount.id}/revoke`
+        await axiosInstance.put(endpoint)
+        toast({
+          title: 'Compte révoqué',
+          description: `Le compte de ${selectedAccount.name} a été révoqué définitivement.`,
+          variant: 'destructive'
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Compte révoqué',
-            description: `Le compte de ${selectedAccount.name} a été révoqué définitivement.`,
-            variant: 'destructive'
-          })
-          await fetchAccounts()
-        } else {
-          throw new Error('Failed to revoke')
-        }
+        setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'REVOKED' as const } : a))
+        await fetchDashboardStats()
       } else if (actionDialog === 'restore' && selectedAccount) {
-        const response = await fetch(`/api/accounts/${selectedAccount.id}/restore`, {
-          method: 'POST'
+        const endpoint = selectedAccount.role === 'CLIENT'
+          ? `/api/admin/clients/${selectedAccount.id}/activate`
+          : `/api/admin/delivery-persons/${selectedAccount.id}/activate`
+        await axiosInstance.put(endpoint)
+        toast({
+          title: 'Compte restauré',
+          description: `Le compte de ${selectedAccount.name} a été restauré avec succès.`
         })
-
-        if (response.ok) {
-          toast({
-            title: 'Compte restauré',
-            description: `Le compte de ${selectedAccount.name} a été restauré avec succès.`
-          })
-          await fetchAccounts()
-        } else {
-          throw new Error('Failed to restore')
-        }
+        setAccounts(accounts.map(a => a.id === selectedAccount.id ? { ...a, status: 'ACTIVE' as const } : a))
+        await fetchDashboardStats()
       }
     } catch (error) {
       console.error('Error performing action:', error)
@@ -517,25 +452,25 @@ export default function SuperAdminDashboard() {
     return filtered
   }
 
-  // Composants SVG personnalisés pour les icônes de véhicules - mêmes que dans FormulaireColisExpedition
+  // Vehicle icon component matching backend LogisticsType enum values
   const VehicleIcon = ({ type }: { type: string }) => {
-    const vehicleType = type.toLowerCase()
+    const vehicleType = type.toUpperCase()
 
-    if (vehicleType.includes('moto') || vehicleType.includes('motorcycle')) {
-      return <Bike className="w-6 h-6 text-orange-500" />
-    } else if (vehicleType.includes('tricycle') || vehicleType.includes('tricy')) {
-      return <MdDeliveryDining className="w-6 h-6 text-orange-500" />
-    } else if (vehicleType.includes('camion') || vehicleType.includes('truck')) {
-      return <TruckIcon className="w-6 h-6 text-orange-500" />
-    } else if (vehicleType.includes('bus')) {
-      return <TruckIcon className="w-6 h-6 text-orange-500" />
-    } else if (vehicleType.includes('voiture') || vehicleType.includes('car') || vehicleType.includes('auto')) {
-      return <Car className="w-6 h-6 text-orange-500" />
-    } else if (vehicleType.includes('vélo') || vehicleType.includes('velo') || vehicleType.includes('bike') || vehicleType.includes('bicyclette')) {
-      return <BsBicycle className="w-6 h-6 text-orange-500" />
-    } else {
-      // Par défaut, voiture
-      return <Car className="w-6 h-6 text-orange-500" />
+    switch (vehicleType) {
+      case 'MOTORBIKE':
+        return <Bike className="w-6 h-6 text-orange-500" />
+      case 'SCOOTER':
+        return <MdDeliveryDining className="w-6 h-6 text-orange-500" />
+      case 'TRUCK':
+        return <TruckIcon className="w-6 h-6 text-orange-500" />
+      case 'VAN':
+        return <TruckIcon className="w-6 h-6 text-orange-500" />
+      case 'CAR':
+        return <Car className="w-6 h-6 text-orange-500" />
+      case 'BIKE':
+        return <BsBicycle className="w-6 h-6 text-orange-500" />
+      default:
+        return <Car className="w-6 h-6 text-orange-500" />
     }
   }
 
@@ -568,7 +503,7 @@ export default function SuperAdminDashboard() {
             </div>
             <div className="text-white">
               <h1 className="text-lg font-bold leading-tight">
-                TiiB<span className="text-orange-200">n</span>Pick
+                TiiB<span className="text-orange-200">n</span>Tick
               </h1>
               <p className="text-xs text-orange-100">Super Admin</p>
             </div>
@@ -695,14 +630,14 @@ export default function SuperAdminDashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-md transition-shadow lg:block flex flex-col">
+                <Card className="hover:shadow-md transition-shadow flex flex-col">
                   <CardHeader className="pb-3 px-4 py-3">
-                    <CardDescription className="text-xs text-black">Révoqués</CardDescription>
-                    <CardTitle className="text-2xl text-red-600">{stats.revokedAccounts}</CardTitle>
+                    <CardDescription className="text-[10px] md:text-xs text-black">Révoqués</CardDescription>
+                    <CardTitle className="text-xl md:text-2xl text-red-600">{stats.revokedAccounts}</CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4 mt-auto">
                     <div className="flex items-center text-xs text-muted-foreground">
-                      <Ban className="w-4 h-4 mr-1" />
+                      <Ban className="w-3 h-3 mr-1" />
                       Comptes
                     </div>
                   </CardContent>

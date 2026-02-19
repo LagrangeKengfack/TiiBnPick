@@ -1,5 +1,6 @@
 package com.polytechnique.tiibntick.models;
 
+import com.polytechnique.tiibntick.models.enums.client.ClientStatus;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -34,4 +35,7 @@ public class Client {
     @NotNull
     @Column("loyalty_status")
     private String loyaltyStatus;
+
+    @Column("status")
+    private ClientStatus status;
 }

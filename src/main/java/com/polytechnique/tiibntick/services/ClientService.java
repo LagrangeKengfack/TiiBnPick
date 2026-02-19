@@ -190,6 +190,7 @@ public class ClientService {
         responseDTO.setRating(person.getRating());
         responseDTO.setTotalDeliveries(person.getTotalDeliveries());
         responseDTO.setLoyaltyStatus(client.getLoyaltyStatus());
+        responseDTO.setStatus(client.getStatus() != null ? client.getStatus().getValue() : "ACTIVE");
         return responseDTO;
     }
 }

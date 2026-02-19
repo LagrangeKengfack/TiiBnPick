@@ -60,12 +60,14 @@ public class AdminController {
                 deliveryPersonRepository.countByStatus(DeliveryPersonStatus.PENDING),
                 deliveryPersonRepository.countByStatusAndIsActive(DeliveryPersonStatus.APPROVED, true),
                 deliveryPersonRepository.countByStatus(DeliveryPersonStatus.SUSPENDED),
-                deliveryPersonRepository.countByStatus(DeliveryPersonStatus.REJECTED))
+                deliveryPersonRepository.countByStatus(DeliveryPersonStatus.REJECTED),
+                deliveryPersonRepository.countByStatus(DeliveryPersonStatus.REVOKED))
                 .map(tuple -> DashboardStatsDTO.builder()
                         .pendingCount(tuple.getT1())
                         .activeCount(tuple.getT2())
                         .suspendedCount(tuple.getT3())
                         .rejectedCount(tuple.getT4())
+                        .revokedCount(tuple.getT5())
                         .build());
     }
 

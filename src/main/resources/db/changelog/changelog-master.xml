@@ -218,4 +218,20 @@
     </changeSet>
     <include file="db/changelog/changes/002-add-brand-model-to-logistics.xml"/>
     <include file="db/changelog/changes/003-add-nui-photo-to-persons.xml"/>
+
+    <changeSet id="039-add-status-to-clients" author="TiiBnTickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260219_add_status_to_clients.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+
+    <changeSet id="040-seed-test-data" author="TiiBnTickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260219_seed_test_data.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+
+    <changeSet id="041-fix-logistics-class-economy" author="TiiBnTickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260219_fix_logistics_class.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>

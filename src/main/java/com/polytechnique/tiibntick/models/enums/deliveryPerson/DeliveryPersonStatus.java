@@ -11,7 +11,8 @@ public enum DeliveryPersonStatus {
     PENDING("PENDING"),
     APPROVED("APPROVED"),
     SUSPENDED("SUSPENDED"),
-    REJECTED("REJECTED");
+    REJECTED("REJECTED"),
+    REVOKED("REVOKED");
 
     private final String value;
 
