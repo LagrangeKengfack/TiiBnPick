@@ -32,6 +32,8 @@ public class ElasticsearchConfig extends ReactiveElasticsearchConfiguration {
 
         return ClientConfiguration.builder()
                 .connectedTo(connectionString)
+                .withConnectTimeout(java.time.Duration.ofSeconds(10))
+                .withSocketTimeout(java.time.Duration.ofSeconds(30))
                 .build();
     }
 }

@@ -8,6 +8,8 @@ import com.polytechnique.tiibntick.models.enums.notification.NotificationType;
 import com.polytechnique.tiibntick.repositories.NotificationRepository;
 import com.polytechnique.tiibntick.services.support.EmailService;
 import com.polytechnique.tiibntick.services.support.PushNotificationService;
+import com.polytechnique.tiibntick.services.support.KafkaEventPublisher;
+import com.polytechnique.tiibntick.events.MatchingNotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
     private final PushNotificationService pushNotificationService;
+    private final KafkaEventPublisher kafkaEventPublisher;
 
     /**
      * Notifies eligible delivery persons about a new announcement match.
@@ -82,9 +85,23 @@ public class NotificationService {
                             dp.getId(),
                             title,
                             message).onErrorResume(e -> {
-                                log.error("Error sending push to user {}: {}", dp.getId(), e.getMessage());
                                 return Mono.empty();
                             });
+
+                    // 5. Send Kafka Notification
+                    MatchingNotificationEvent kafkaEvent = MatchingNotificationEvent.builder()
+                            .deliveryPersonId(dp.getId())
+                            .announcementId(announcement.getId())
+                            .title(title)
+                            .message(message)
+                            .build();
+
+                    try {
+                        kafkaEventPublisher.publishMatchingNotification(kafkaEvent);
+                    } catch (Exception e) {
+                        log.error("Error sending Kafka notification for delivery person {}: {}", dp.getId(),
+                                e.getMessage());
+                    }
 
                     // execute side effects without blocking the return of the saved notification
                     return Mono.when(emailMono, pushMono)

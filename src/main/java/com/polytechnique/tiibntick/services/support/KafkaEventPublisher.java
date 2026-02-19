@@ -2,6 +2,7 @@ package com.polytechnique.tiibntick.services.support;
 
 import com.polytechnique.tiibntick.events.DeliveryPersonCreatedEvent;
 import com.polytechnique.tiibntick.events.DeliveryPersonValidatedEvent;
+import com.polytechnique.tiibntick.events.MatchingNotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -23,6 +24,7 @@ public class KafkaEventPublisher {
 
     private static final String TOPIC_ANNOUNCEMENT_PUBLISHED = "announcement-published";
     private static final String TOPIC_SUBSCRIPTION_ATTEMPTS = "subscription-attempts";
+    private static final String TOPIC_MATCHING_NOTIFICATIONS = "matching-notifications";
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -66,5 +68,16 @@ public class KafkaEventPublisher {
         log.info("Publishing SubscriptionAttemptEvent for deliveryPerson: {} and announcement: {}",
                 event.getDeliveryPersonId(), event.getAnnouncementId());
         kafkaTemplate.send(TOPIC_SUBSCRIPTION_ATTEMPTS, event.getAnnouncementId().toString(), event);
+    }
+
+    /**
+     * Publishes a MatchingNotificationEvent to Kafka.
+     *
+     * @param event the event to publish
+     */
+    public void publishMatchingNotification(MatchingNotificationEvent event) {
+        log.info("Publishing MatchingNotificationEvent for deliveryPerson: {} and announcement: {}",
+                event.getDeliveryPersonId(), event.getAnnouncementId());
+        kafkaTemplate.send(TOPIC_MATCHING_NOTIFICATIONS, event.getDeliveryPersonId().toString(), event);
     }
 }

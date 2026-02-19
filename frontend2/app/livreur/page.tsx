@@ -184,6 +184,98 @@ export function LivreurDashboard() {
   const [selectedDelivery, setSelectedDelivery] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [activeRoute, setActiveRoute] = useState<any>(null)
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<Set<string>>(new Set())
+
+  // Real-time notifications via SSE
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const eventSource = new EventSource(`http://localhost:8080/api/notifications/stream/${user.id}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const matchingEvent = JSON.parse(event.data);
+        console.info('Received real-time matching notification:', matchingEvent);
+
+        // Fetch announcement details to add to available deliveries
+        fetch(`/api/announcements/${matchingEvent.announcementId}`)
+          .then(res => res.json())
+          .then(announcement => {
+            setAvailableDeliveries(prev => {
+              if (prev.find(d => d.id === announcement.id)) return prev;
+              const mapped = mapBackendToFrontend(announcement);
+              return [mapped, ...prev];
+            });
+
+            toast({
+              title: "Nouvelle course disponible !",
+              description: announcement.title || "Une nouvelle course correspond à votre position.",
+            });
+          });
+      } catch (err) {
+        console.error('Error parsing SSE event:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('SSE Error:', err);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [user?.id]);
+
+  const mapBackendToFrontend = (ann: any) => ({
+    id: ann.id,
+    customerName: ann.shipperFirstName + ' ' + ann.shipperLastName,
+    customerFullName: ann.shipperFirstName + ' ' + ann.shipperLastName,
+    customerEmail: ann.shipperEmail,
+    customerPhone: ann.shipperPhone,
+    pickupAddress: ann.pickupAddress?.label || 'Adresse de retrait',
+    deliveryAddress: ann.deliveryAddress?.label || 'Adresse de livraison',
+    senderCoords: { lat: ann.pickupAddress?.latitude, lon: ann.pickupAddress?.longitude },
+    recipientCoords: { lat: ann.deliveryAddress?.latitude, lon: ann.deliveryAddress?.longitude },
+    distance: ann.distance || 0,
+    estimatedTime: ann.duration ? `${Math.round(ann.duration / 60)} min` : 'N/A',
+    price: ann.amount || 0,
+    packageType: ann.packet?.designation || 'Colis',
+    designation: ann.packet?.designation,
+    description: ann.packet?.description,
+    weight: ann.packet?.weight,
+    options: ([ann.packet?.fragile ? 'Fragile' : null, ann.packet?.isPerishable ? 'Périssable' : null].filter(Boolean) as string[]),
+    isFragile: ann.packet?.fragile,
+    deliveryType: ann.transportMethod || 'Standard',
+    urgency: ann.status === 'PUBLISHED' ? 'normal' : 'urgent',
+    dimensions: `${ann.packet?.length || 0}x${ann.packet?.width || 0}x${ann.packet?.height || 0}`,
+    volume: (ann.packet?.length || 0) * (ann.packet?.width || 0) * (ann.packet?.height || 0),
+    customerRating: 4.5, // Mocked as not in DTO
+    packagePhoto: ann.packet?.photoPacket || '/package_sample.png',
+    vehicleType: 'moteur', // Default
+    feedback: {
+      likes: 12,
+      comments: [
+        { driverName: 'Moussa D.', content: 'Client très ponctuel et sympathique.' },
+        { driverName: 'Sery G.', content: 'Rien à signaler, parfait.' }
+      ]
+    }
+  });
+
+  useEffect(() => {
+    // Initial fetch of available announcements
+    const fetchAnnouncements = async () => {
+      try {
+        const res = await fetch('/api/announcements');
+        const data = await res.json();
+        const enriched = data.filter((a: any) => a.status === 'PUBLISHED').map(mapBackendToFrontend);
+        setAvailableDeliveries(enriched);
+      } catch (e) {
+        console.error("Failed to fetch announcements", e);
+      }
+    };
+    fetchAnnouncements();
+  }, []);
 
   useEffect(() => {
     if (selectedDelivery && selectedDelivery.senderCoords && selectedDelivery.recipientCoords) {
@@ -212,29 +304,57 @@ export function LivreurDashboard() {
   // availability toggle removed per UI request
 
   const handleAcceptDelivery = async (deliveryId: string) => {
+    if (!user?.id) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour souscrire à une annonce.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPendingSubscriptions(prev => {
+      const next = new Set(prev);
+      next.add(deliveryId);
+      return next;
+    });
+
     try {
-      // Call frontend-only service (no backend changes)
-      await acceptDeliveryService(deliveryId)
+      const response = await fetch(`/api/announcements/${deliveryId}/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deliveryPersonId: user.id }),
+      });
 
-      // Move delivery from available to active in local UI state
-      setAvailableDeliveries((prev) => prev.filter((d) => d.id !== deliveryId))
-      const accepted = availableDeliveries.find((d) => d.id === deliveryId)
-      if (accepted) {
-        const now = { ...accepted, status: 'pickup' }
-        setActiveDeliveries((prev) => [now, ...prev])
+      if (response.ok) {
+        toast({
+          title: "Demande envoyée",
+          description: "Votre demande de souscription est en cours de traitement.",
+        })
+      } else {
+        setPendingSubscriptions(prev => {
+          const next = new Set(prev);
+          next.delete(deliveryId);
+          return next;
+        });
+        toast({
+          title: "Erreur",
+          description: "Impossible d'envoyer la demande de souscription.",
+          variant: "destructive",
+        })
       }
-
-      // switch to livraisons tab so the livreur voit sa nouvelle livraison
-      setActiveTab('livraisons')
-
+    } catch (error) {
+      setPendingSubscriptions(prev => {
+        const next = new Set(prev);
+        next.delete(deliveryId);
+        return next;
+      });
       toast({
-        title: 'Annonce souscrite',
-        description: `Vous avez souscrit à ${deliveryId}`,
-      })
-    } catch (err) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible d\'accepter la livraison pour le moment',
+        title: "Erreur",
+        description: "Une erreur réseau est survenue.",
+        variant: "destructive",
       })
     }
   }
@@ -527,14 +647,22 @@ export function LivreurDashboard() {
                           className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
                           onClick={() => { setSelectedDelivery(delivery); setDetailsOpen(true) }}
                         >
-                          Voir Détails
+                          Voir les détails
                         </Button>
                         <Button
                           size="sm"
-                          className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                          disabled={pendingSubscriptions.has(delivery.id)}
+                          className={cn(
+                            "flex-1 shadow-md transform active:scale-95 transition-all text-white font-medium",
+                            pendingSubscriptions.has(delivery.id)
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                          )}
                           onClick={() => handleAcceptDelivery(delivery.id)}
                         >
-                          Souscrire à l'annonce
+                          {pendingSubscriptions.has(delivery.id)
+                            ? "En attente de traitement"
+                            : "Souscrire à l'annonce"}
                         </Button>
                       </div>
                     </CardContent>
