@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -9,9 +8,6 @@ import { cookies } from 'next/headers'
 import ThemeCookieSync from '@/components/theme-cookie-sync'
 import { Toaster } from '@/components/ui/toaster'
 import LocationTracker from '@/components/LocationTracker'
-
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: 'v0 App',

@@ -150,18 +150,53 @@ public class AdminDeliveryPersonService {
                 .switchIfEmpty(Mono.error(new DeliveryPersonNotFoundException("Delivery Person not found")))
                 .flatMap(dp -> {
                     if (dp.getStatus() == DeliveryPersonStatus.PENDING
-                            || dp.getStatus() == DeliveryPersonStatus.REJECTED) {
+                            || dp.getStatus() == DeliveryPersonStatus.REVOKED) {
                         return Mono.error(
-                                new ForbiddenOperationException("Cannot revoke PENDING or already REJECTED accounts"));
+                                new ForbiddenOperationException("Cannot revoke PENDING or already REVOKED accounts"));
                     }
 
-                    dp.setStatus(DeliveryPersonStatus.REJECTED);
+                    dp.setStatus(DeliveryPersonStatus.REVOKED);
                     dp.setIsActive(false); // Force offline
                     return modificationDeliveryPersonService.updateDeliveryPerson(dp)
                             .flatMap(updated -> lecturePersonService.findById(updated.getPersonId())
                                     .doOnNext(person -> {
                                         emailService.sendAccountRevoked(person.getEmail());
                                         log.info("Delivery person {} revoked", updated.getId());
+                                    })
+                                    .then());
+                })
+                .then();
+    }
+
+    /**
+     * Activates (restores) a suspended or revoked delivery person account.
+     *
+     * <p>
+     * Changes the delivery person status back to APPROVED and sets isActive to true.
+     * Only SUSPENDED or REVOKED accounts can be activated.
+     *
+     * @param deliveryPersonId the UUID of the delivery person to activate
+     * @return a Mono&lt;Void&gt; signaling completion
+     * @throws DeliveryPersonNotFoundException if the delivery person ID is invalid
+     * @throws ForbiddenOperationException     if the account is not SUSPENDED or REVOKED
+     */
+    public Mono<Void> activateDeliveryPerson(UUID deliveryPersonId) {
+        return lectureDeliveryPersonService.findById(deliveryPersonId)
+                .switchIfEmpty(Mono.error(new DeliveryPersonNotFoundException("Delivery Person not found")))
+                .flatMap(dp -> {
+                    if (dp.getStatus() != DeliveryPersonStatus.SUSPENDED
+                            && dp.getStatus() != DeliveryPersonStatus.REVOKED) {
+                        return Mono.error(
+                                new ForbiddenOperationException("Can only activate SUSPENDED or REVOKED accounts"));
+                    }
+
+                    dp.setStatus(DeliveryPersonStatus.APPROVED);
+                    dp.setIsActive(true);
+                    return modificationDeliveryPersonService.updateDeliveryPerson(dp)
+                            .flatMap(updated -> lecturePersonService.findById(updated.getPersonId())
+                                    .doOnNext(person -> {
+                                        emailService.sendAccountApproved(person.getEmail());
+                                        log.info("Delivery person {} activated", updated.getId());
                                     })
                                     .then());
                 })
@@ -198,15 +233,25 @@ public class AdminDeliveryPersonService {
             DeliveryPersonStatus status) {
         reactor.core.publisher.Flux<com.polytechnique.tiibntick.models.DeliveryPerson> deliveryPersons;
         if (status != null) {
+            log.info("[Service] Querying delivery_persons with status={}", status);
             deliveryPersons = deliveryPersonRepository.findAllByStatus(status);
         } else {
+            log.info("[Service] Querying all delivery_persons");
             deliveryPersons = deliveryPersonRepository.findAll();
         }
 
-        return deliveryPersons.flatMap(dp -> lecturePersonService.findById(dp.getPersonId())
-                .flatMap(person -> logisticsRepository.findByDeliveryPersonId(dp.getId())
-                        .map(logistics -> mapToDetailsResponse(dp, person, logistics))
-                        .defaultIfEmpty(mapToDetailsResponse(dp, person, null))));
+        return deliveryPersons
+                .doOnNext(dp -> log.info("[Service] Found DeliveryPerson id={}, personId={}, status={}", dp.getId(), dp.getPersonId(), dp.getStatus()))
+                .flatMap(dp -> lecturePersonService.findById(dp.getPersonId())
+                        .doOnNext(person -> log.info("[Service] Found Person for dp={}: {} {}", dp.getId(), person.getFirstName(), person.getLastName()))
+                        .doOnError(e -> log.error("[Service] Error finding Person for dp={}, personId={}", dp.getId(), dp.getPersonId(), e))
+                        .flatMap(person -> logisticsRepository.findByDeliveryPersonId(dp.getId())
+                                .doOnNext(logistics -> log.info("[Service] Found Logistics for dp={}: type={}", dp.getId(), logistics.getLogisticsType()))
+                                .map(logistics -> mapToDetailsResponse(dp, person, logistics))
+                                .defaultIfEmpty(mapToDetailsResponse(dp, person, null)))
+                )
+                .doOnError(e -> log.error("[Service] getAllDeliveryPersons FAILED", e))
+                .doOnComplete(() -> log.info("[Service] getAllDeliveryPersons completed"));
     }
 
     private DeliveryPersonDetailsResponse mapToDetailsResponse(com.polytechnique.tiibntick.models.DeliveryPerson dp,

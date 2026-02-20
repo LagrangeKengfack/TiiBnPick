@@ -5,9 +5,12 @@ import com.polytechnique.tiibntick.dtos.responses.DeliveryPersonDetailsResponse;
 import com.polytechnique.tiibntick.services.AdminDeliveryPersonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 import java.util.UUID;
 
@@ -29,6 +32,7 @@ import java.util.UUID;
  * @author Kengfack Lagrange
  * @date 19/12/2025
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/admin/delivery-persons")
 @RequiredArgsConstructor
@@ -68,20 +72,34 @@ public class AdminDeliveryPersonController {
      */
     @GetMapping("/{id}")
     public Mono<ResponseEntity<DeliveryPersonDetailsResponse>> getDetails(@PathVariable UUID id) {
+        log.info(">>> GET /api/admin/delivery-persons/{} called", id);
         return adminService.getDeliveryPersonDetails(id)
-                .map(ResponseEntity::ok);
+                .doOnNext(details -> log.info("<<< GET /api/admin/delivery-persons/{} returning details for {}", id, details.getFirstName()))
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> {
+                    log.error("!!! GET /api/admin/delivery-persons/{} FAILED", id, e);
+                    return Mono.just(ResponseEntity.internalServerError().build());
+                });
     }
 
     /**
      * Retrieves all delivery persons, optionally filtered by status.
      *
      * @param status optional status to filter by
-     * @return a Flux of delivery person details
+     * @return a list of delivery person details
      */
     @GetMapping
-    public Mono<ResponseEntity<reactor.core.publisher.Flux<DeliveryPersonDetailsResponse>>> getAllDeliveryPersons(
+    public Mono<ResponseEntity<List<DeliveryPersonDetailsResponse>>> getAllDeliveryPersons(
             @RequestParam(required = false) com.polytechnique.tiibntick.models.enums.deliveryPerson.DeliveryPersonStatus status) {
-        return Mono.just(ResponseEntity.ok(adminService.getAllDeliveryPersons(status)));
+        log.info(">>> GET /api/admin/delivery-persons called with status={}", status);
+        return adminService.getAllDeliveryPersons(status)
+                .collectList()
+                .doOnNext(list -> log.info("<<< GET /api/admin/delivery-persons returning {} items", list.size()))
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> {
+                    log.error("!!! GET /api/admin/delivery-persons FAILED", e);
+                    return Mono.just(ResponseEntity.internalServerError().build());
+                });
     }
 
     /**
@@ -105,7 +123,7 @@ public class AdminDeliveryPersonController {
      * Revokes (permanently deactivates) a delivery person's account.
      *
      * <p>
-     * Changes the account status to REJECTED and sends a notification email.
+     * Changes the account status to REVOKED and sends a notification email.
      * APPROVED or SUSPENDED accounts can be revoked.
      *
      * @param id the UUID of the delivery person to revoke
@@ -115,6 +133,23 @@ public class AdminDeliveryPersonController {
     @PutMapping("/{id}/revoke")
     public Mono<ResponseEntity<Void>> revokeDeliveryPerson(@PathVariable UUID id) {
         return adminService.revokeDeliveryPerson(id)
+                .map(v -> ResponseEntity.ok().build());
+    }
+
+    /**
+     * Activates (restores) a suspended or revoked delivery person account.
+     *
+     * <p>
+     * Changes the account status back to APPROVED and sends a notification email.
+     * Only SUSPENDED or REVOKED accounts can be activated.
+     *
+     * @param id the UUID of the delivery person to activate
+     * @return a Mono&lt;ResponseEntity&lt;Void&gt;&gt; with status 200 OK on
+     *         success
+     */
+    @PutMapping("/{id}/activate")
+    public Mono<ResponseEntity<Void>> activateDeliveryPerson(@PathVariable UUID id) {
+        return adminService.activateDeliveryPerson(id)
                 .map(v -> ResponseEntity.ok().build());
     }
 }

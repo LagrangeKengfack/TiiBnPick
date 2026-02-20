@@ -10,4 +10,5 @@ public class DashboardStatsDTO {
     private long activeCount;
     private long suspendedCount;
     private long rejectedCount;
+    private long revokedCount;
 }

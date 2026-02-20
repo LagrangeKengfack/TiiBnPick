@@ -30,4 +30,5 @@ public class ClientResponseDTO {
     private Double rating;
     private Integer totalDeliveries;
     private String loyaltyStatus;
+    private String status;
 }
