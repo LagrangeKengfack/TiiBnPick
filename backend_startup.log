@@ -1,0 +1,266 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< com.polytechnique:TicBnPick >---------------------
+[INFO] Building TicBnPick 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.2:run (default-cli) > test-compile @ TicBnPick >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ TicBnPick ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 25 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ TicBnPick ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ TicBnPick ---
+[INFO] Copying 1 resource from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ TicBnPick ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 22 source files with javac [debug release 21] to target/test-classes
+[INFO] 
+[INFO] <<< spring-boot:3.2.2:run (default-cli) < test-compile @ TicBnPick <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.2:run (default-cli) @ TicBnPick ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+[32m :: Spring Boot :: [39m              [2m (v3.2.2)[0;39m
+
+[2m2026-02-07T10:51:55.658+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mc.p.ticbnpick.TicBnPickApplication      [0;39m [2m:[0;39m Starting TicBnPickApplication using Java 23 with PID 117195 (/home/francois-charles/Bureau/TicBnPick/target/classes started by francois-charles in /home/francois-charles/Bureau/TicBnPick)
+[2m2026-02-07T10:51:55.660+01:00[0;39m [32mDEBUG[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mc.p.ticbnpick.TicBnPickApplication      [0;39m [2m:[0;39m Running with Spring Boot v3.2.2, Spring v6.1.3
+[2m2026-02-07T10:51:55.661+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mc.p.ticbnpick.TicBnPickApplication      [0;39m [2m:[0;39m The following 1 profile is active: "local"
+[2m2026-02-07T10:51:55.745+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mo.s.b.devtools.restart.ChangeableUrls   [0;39m [2m:[0;39m The Class-Path manifest attribute in /home/francois-charles/.m2/repository/io/github/cdimascio/java-dotenv/5.2.2/java-dotenv-5.2.2.jar referenced one or more files that do not exist: file:/home/francois-charles/.m2/repository/io/github/cdimascio/java-dotenv/5.2.2/kotlin-stdlib-1.4.0.jar,file:/home/francois-charles/.m2/repository/io/github/cdimascio/java-dotenv/5.2.2/kotlin-stdlib-common-1.4.0.jar,file:/home/francois-charles/.m2/repository/io/github/cdimascio/java-dotenv/5.2.2/annotations-13.0.jar
+[2m2026-02-07T10:51:55.745+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.e.DevToolsPropertyDefaultsPostProcessor[0;39m [2m:[0;39m Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+[2m2026-02-07T10:51:55.745+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.e.DevToolsPropertyDefaultsPostProcessor[0;39m [2m:[0;39m For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+[2m2026-02-07T10:51:56.668+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Multiple Spring Data modules found, entering strict repository configuration mode
+[2m2026-02-07T10:51:56.669+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+[2m2026-02-07T10:51:56.800+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Finished Spring Data repository scanning in 127 ms. Found 2 Reactive Elasticsearch repository interfaces.
+[2m2026-02-07T10:51:57.163+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Multiple Spring Data modules found, entering strict repository configuration mode
+[2m2026-02-07T10:51:57.164+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+[2m2026-02-07T10:51:57.189+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.AddressRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.191+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.AnnouncementRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.195+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.AnnouncementSubscriptionRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.198+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.ClientRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.199+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.CommentRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.200+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.DeliveryPersonRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.200+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.DeliveryRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.201+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.LogisticsRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.202+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.NotificationAnnonceRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.202+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.NotificationLivraisonRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.203+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.NotificationRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.204+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.PacketRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.206+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.PasswordTokenRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.207+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.PaymentRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.207+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.PersonAddressRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.208+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.PersonRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.209+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.ResponseRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.210+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data Elasticsearch - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.repositories.SubscriptionRepository; If you want this repository to be a Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ElasticsearchRepository, org.springframework.data.elasticsearch.repository.ElasticsearchRepository
+[2m2026-02-07T10:51:57.210+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Finished Spring Data repository scanning in 46 ms. Found 0 Elasticsearch repository interfaces.
+[2m2026-02-07T10:51:57.224+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Multiple Spring Data modules found, entering strict repository configuration mode
+[2m2026-02-07T10:51:57.225+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Bootstrapping Spring Data R2DBC repositories in DEFAULT mode.
+[2m2026-02-07T10:51:57.231+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data R2DBC - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.elasticsearch.repositories.AnnouncementSearchRepository; If you want this repository to be a R2DBC repository, consider annotating your entities with one of these annotations: org.springframework.data.relational.core.mapping.Table (preferred), or consider extending one of the following types with your repository: org.springframework.data.r2dbc.repository.R2dbcRepository
+[2m2026-02-07T10:51:57.232+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.RepositoryConfigurationExtensionSupport[0;39m [2m:[0;39m Spring Data R2DBC - Could not safely identify store assignment for repository candidate interface com.polytechnique.ticbnpick.elasticsearch.repositories.DeliveryPersonSearchRepository; If you want this repository to be a R2DBC repository, consider annotating your entities with one of these annotations: org.springframework.data.relational.core.mapping.Table (preferred), or consider extending one of the following types with your repository: org.springframework.data.r2dbc.repository.R2dbcRepository
+[2m2026-02-07T10:51:57.245+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.d.r.c.RepositoryConfigurationDelegate[0;39m [2m:[0;39m Finished Spring Data repository scanning in 20 ms. Found 14 R2DBC repository interfaces.
+[2m2026-02-07T10:51:58.291+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mo.s.b.d.a.OptionalLiveReloadServer      [0;39m [2m:[0;39m LiveReload server is running on port 35729
+[2m2026-02-07T10:52:00.036+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mo.s.b.a.e.web.EndpointLinksResolver     [0;39m [2m:[0;39m Exposing 1 endpoint(s) beneath base path '/actuator'
+[2m2026-02-07T10:52:00.582+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.database                      [0;39m [2m:[0;39m Set default schema name to public
+[2m2026-02-07T10:52:01.724+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.changelog                     [0;39m [2m:[0;39m Reading from public.databasechangelog
+[2m2026-02-07T10:52:01.813+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.lockservice                   [0;39m [2m:[0;39m Successfully acquired change log lock
+[2m2026-02-07T10:52:01.814+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.command                       [0;39m [2m:[0;39m Using deploymentId: 0457921814
+[2m2026-02-07T10:52:01.817+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.changelog                     [0;39m [2m:[0;39m Reading from public.databasechangelog
+Running Changeset: db/changelog/changelog-master.xml::002-create-person::TiiBnPickTeam
+[2m2026-02-07T10:52:01.863+01:00[0;39m [31mERROR[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.changelog                     [0;39m [2m:[0;39m ChangeSet db/changelog/changelog-master.xml::002-create-person::TiiBnPickTeam encountered an exception.
+[2m2026-02-07T10:52:01.867+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.command                       [0;39m [2m:[0;39m Update command encountered an exception.
+[2m2026-02-07T10:52:01.870+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.lockservice                   [0;39m [2m:[0;39m Successfully released change log lock
+[2m2026-02-07T10:52:01.871+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mliquibase.command                       [0;39m [2m:[0;39m Command execution complete
+[2m2026-02-07T10:52:01.873+01:00[0;39m [33m WARN[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36monfigReactiveWebServerApplicationContext[0;39m [2m:[0;39m Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'liquibase' defined in class path resource [org/springframework/boot/autoconfigure/liquibase/LiquibaseAutoConfiguration$LiquibaseConfiguration.class]: liquibase.exception.LiquibaseException: liquibase.exception.MigrationFailedException: Migration failed for changeset db/changelog/changelog-master.xml::002-create-person::TiiBnPickTeam:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "persons" already exists [Failed SQL: (0) CREATE TABLE persons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    last_name VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    phone VARCHAR NOT NULL,
+    email VARCHAR NOT NULL UNIQUE,
+    password VARCHAR NOT NULL,
+    national_id VARCHAR NOT NULL UNIQUE,
+    photo_card VARCHAR NOT NULL,
+    criminal_record VARCHAR,
+    rating DOUBLE PRECISION,
+    total_deliveries INTEGER DEFAULT 0
+)]
+[2m2026-02-07T10:52:01.906+01:00[0;39m [32m INFO[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36m.s.b.a.l.ConditionEvaluationReportLogger[0;39m [2m:[0;39m 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+[2m2026-02-07T10:52:01.922+01:00[0;39m [31mERROR[0;39m [35m117195[0;39m [2m---[0;39m [2m[TicBnPick] [  restartedMain][0;39m [2m[0;39m[36mo.s.boot.SpringApplication              [0;39m [2m:[0;39m Application run failed
+
+org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'liquibase' defined in class path resource [org/springframework/boot/autoconfigure/liquibase/LiquibaseAutoConfiguration$LiquibaseConfiguration.class]: liquibase.exception.LiquibaseException: liquibase.exception.MigrationFailedException: Migration failed for changeset db/changelog/changelog-master.xml::002-create-person::TiiBnPickTeam:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "persons" already exists [Failed SQL: (0) CREATE TABLE persons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    last_name VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    phone VARCHAR NOT NULL,
+    email VARCHAR NOT NULL UNIQUE,
+    password VARCHAR NOT NULL,
+    national_id VARCHAR NOT NULL UNIQUE,
+    photo_card VARCHAR NOT NULL,
+    criminal_record VARCHAR,
+    rating DOUBLE PRECISION,
+    total_deliveries INTEGER DEFAULT 0
+)]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1773) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:599) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:521) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:325) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:323) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:199) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:975) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:959) ~[spring-context-6.1.3.jar:6.1.3]
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:624) ~[spring-context-6.1.3.jar:6.1.3]
+	at org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext.refresh(ReactiveWebServerApplicationContext.java:66) ~[spring-boot-3.2.2.jar:3.2.2]
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754) ~[spring-boot-3.2.2.jar:3.2.2]
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456) ~[spring-boot-3.2.2.jar:3.2.2]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:334) ~[spring-boot-3.2.2.jar:3.2.2]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1354) ~[spring-boot-3.2.2.jar:3.2.2]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1343) ~[spring-boot-3.2.2.jar:3.2.2]
+	at com.polytechnique.ticbnpick.TicBnPickApplication.main(TicBnPickApplication.java:17) ~[classes/:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.boot.devtools.restart.RestartLauncher.run(RestartLauncher.java:50) ~[spring-boot-devtools-3.2.2.jar:3.2.2]
+Caused by: liquibase.exception.CommandExecutionException: liquibase.exception.LiquibaseException: liquibase.exception.MigrationFailedException: Migration failed for changeset db/changelog/changelog-master.xml::002-create-person::TiiBnPickTeam:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "persons" already exists [Failed SQL: (0) CREATE TABLE persons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    last_name VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    phone VARCHAR NOT NULL,
+    email VARCHAR NOT NULL UNIQUE,
+    password VARCHAR NOT NULL,
+    national_id VARCHAR NOT NULL UNIQUE,
+    photo_card VARCHAR NOT NULL,
+    criminal_record VARCHAR,
+    rating DOUBLE PRECISION,
+    total_deliveries INTEGER DEFAULT 0
+)]
+	at liquibase.command.CommandScope.execute(CommandScope.java:237) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Liquibase.lambda$update$0(Liquibase.java:222) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.lambda$child$0(Scope.java:184) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:193) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:183) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:162) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Liquibase.runInScope(Liquibase.java:1371) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Liquibase.update(Liquibase.java:211) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Liquibase.update(Liquibase.java:193) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.integration.spring.SpringLiquibase.performUpdate(SpringLiquibase.java:331) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.integration.spring.SpringLiquibase.afterPropertiesSet(SpringLiquibase.java:286) ~[liquibase-core-4.24.0.jar:na]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.invokeInitMethods(AbstractAutowireCapableBeanFactory.java:1820) ~[spring-beans-6.1.3.jar:6.1.3]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1769) ~[spring-beans-6.1.3.jar:6.1.3]
+	... 19 common frames omitted
+Caused by: liquibase.exception.LiquibaseException: liquibase.exception.MigrationFailedException: Migration failed for changeset db/changelog/changelog-master.xml::002-create-person::TiiBnPickTeam:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "persons" already exists [Failed SQL: (0) CREATE TABLE persons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    last_name VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    phone VARCHAR NOT NULL,
+    email VARCHAR NOT NULL UNIQUE,
+    password VARCHAR NOT NULL,
+    national_id VARCHAR NOT NULL UNIQUE,
+    photo_card VARCHAR NOT NULL,
+    criminal_record VARCHAR,
+    rating DOUBLE PRECISION,
+    total_deliveries INTEGER DEFAULT 0
+)]
+	at liquibase.changelog.ChangeLogIterator.run(ChangeLogIterator.java:122) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.command.core.AbstractUpdateCommandStep.lambda$doRun$1(AbstractUpdateCommandStep.java:105) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.lambda$child$0(Scope.java:184) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:193) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:183) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:162) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.command.core.AbstractUpdateCommandStep.doRun(AbstractUpdateCommandStep.java:104) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.command.core.AbstractUpdateCommandStep.lambda$run$0(AbstractUpdateCommandStep.java:63) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.lambda$child$0(Scope.java:184) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:193) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:183) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:162) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.command.core.AbstractUpdateCommandStep.run(AbstractUpdateCommandStep.java:62) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.command.core.UpdateCommandStep.run(UpdateCommandStep.java:106) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.command.CommandScope.execute(CommandScope.java:214) ~[liquibase-core-4.24.0.jar:na]
+	... 31 common frames omitted
+Caused by: liquibase.exception.MigrationFailedException: Migration failed for changeset db/changelog/changelog-master.xml::002-create-person::TiiBnPickTeam:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "persons" already exists [Failed SQL: (0) CREATE TABLE persons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    last_name VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    phone VARCHAR NOT NULL,
+    email VARCHAR NOT NULL UNIQUE,
+    password VARCHAR NOT NULL,
+    national_id VARCHAR NOT NULL UNIQUE,
+    photo_card VARCHAR NOT NULL,
+    criminal_record VARCHAR,
+    rating DOUBLE PRECISION,
+    total_deliveries INTEGER DEFAULT 0
+)]
+	at liquibase.changelog.ChangeSet.execute(ChangeSet.java:785) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.changelog.visitor.UpdateVisitor.executeAcceptedChange(UpdateVisitor.java:118) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.changelog.visitor.UpdateVisitor.visit(UpdateVisitor.java:68) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.changelog.ChangeLogIterator$2.lambda$run$0(ChangeLogIterator.java:110) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.lambda$child$0(Scope.java:184) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:193) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:183) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:162) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:250) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.changelog.ChangeLogIterator$2.run(ChangeLogIterator.java:100) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.lambda$child$0(Scope.java:184) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:193) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:183) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:162) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:250) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.Scope.child(Scope.java:254) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.changelog.ChangeLogIterator.run(ChangeLogIterator.java:74) ~[liquibase-core-4.24.0.jar:na]
+	... 45 common frames omitted
+Caused by: liquibase.exception.DatabaseException: ERROR: relation "persons" already exists [Failed SQL: (0) CREATE TABLE persons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    last_name VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    phone VARCHAR NOT NULL,
+    email VARCHAR NOT NULL UNIQUE,
+    password VARCHAR NOT NULL,
+    national_id VARCHAR NOT NULL UNIQUE,
+    photo_card VARCHAR NOT NULL,
+    criminal_record VARCHAR,
+    rating DOUBLE PRECISION,
+    total_deliveries INTEGER DEFAULT 0
+)]
+	at liquibase.executor.jvm.JdbcExecutor$ExecuteStatementCallback.doInStatement(JdbcExecutor.java:468) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.executor.jvm.JdbcExecutor.execute(JdbcExecutor.java:77) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.executor.jvm.JdbcExecutor.execute(JdbcExecutor.java:177) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.database.AbstractJdbcDatabase.execute(AbstractJdbcDatabase.java:1291) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.database.AbstractJdbcDatabase.executeStatements(AbstractJdbcDatabase.java:1273) ~[liquibase-core-4.24.0.jar:na]
+	at liquibase.changelog.ChangeSet.execute(ChangeSet.java:744) ~[liquibase-core-4.24.0.jar:na]
+	... 61 common frames omitted
+Caused by: org.postgresql.util.PSQLException: ERROR: relation "persons" already exists
+	at org.postgresql.core.v3.QueryExecutorImpl.receiveErrorResponse(QueryExecutorImpl.java:2713) ~[postgresql-42.6.0.jar:42.6.0]
+	at org.postgresql.core.v3.QueryExecutorImpl.processResults(QueryExecutorImpl.java:2401) ~[postgresql-42.6.0.jar:42.6.0]
+	at org.postgresql.core.v3.QueryExecutorImpl.execute(QueryExecutorImpl.java:368) ~[postgresql-42.6.0.jar:42.6.0]
+	at org.postgresql.jdbc.PgStatement.executeInternal(PgStatement.java:498) ~[postgresql-42.6.0.jar:42.6.0]
+	at org.postgresql.jdbc.PgStatement.execute(PgStatement.java:415) ~[postgresql-42.6.0.jar:42.6.0]
+	at org.postgresql.jdbc.PgStatement.executeWithFlags(PgStatement.java:335) ~[postgresql-42.6.0.jar:42.6.0]
+	at org.postgresql.jdbc.PgStatement.executeCachedSql(PgStatement.java:321) ~[postgresql-42.6.0.jar:42.6.0]
+	at org.postgresql.jdbc.PgStatement.executeWithFlags(PgStatement.java:297) ~[postgresql-42.6.0.jar:42.6.0]
+	at org.postgresql.jdbc.PgStatement.execute(PgStatement.java:292) ~[postgresql-42.6.0.jar:42.6.0]
+	at liquibase.executor.jvm.JdbcExecutor$ExecuteStatementCallback.doInStatement(JdbcExecutor.java:462) ~[liquibase-core-4.24.0.jar:na]
+	... 66 common frames omitted
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  17.558 s
+[INFO] Finished at: 2026-02-07T10:52:02+01:00
+[INFO] ------------------------------------------------------------------------
