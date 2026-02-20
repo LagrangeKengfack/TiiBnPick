@@ -90,6 +90,7 @@ interface Account {
   updatedAt: string
   subscriptionStatus?: 'ACTIVE' | 'INACTIVE' | 'EXPIRED'
   subscriptionEndDate?: string | null
+  photoCard?: string
 }
 
 type ActiveView = 'dashboard' | 'registrations' | 'accounts' | 'subscriptions'
@@ -193,6 +194,7 @@ function SuperAdminDashboard() {
         vehicleFrontPhoto: dp.vehicleFrontPhoto || undefined,
         vehicleBackPhoto: dp.vehicleBackPhoto || undefined,
         vehicleColor: dp.vehicleColor || undefined,
+        profilePhoto: dp.photoCard || undefined,
       })).sort((a: DeliveryPersonRequest, b: DeliveryPersonRequest) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       console.log('[Admin] Mapped registrations count:', mapped.length)
       setRegistrationRequests(mapped)
@@ -225,6 +227,7 @@ function SuperAdminDashboard() {
           lastActivityAt: dp.updatedAt || null,
           createdAt: dp.createdAt || new Date().toISOString(),
           updatedAt: dp.updatedAt || new Date().toISOString(),
+          photoCard: dp.photoCard || undefined,
         }))
       console.log('[Admin] Delivery accounts (non-PENDING):', deliveryAccounts.length)
 
@@ -245,6 +248,7 @@ function SuperAdminDashboard() {
         lastActivityAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        photoCard: client.photoCard || undefined,
       }))
       console.log('[Admin] Client accounts:', clientAccounts.length)
 
@@ -336,7 +340,8 @@ function SuperAdminDashboard() {
         setAccountDetailData(null)
       }
     } else {
-      setAccountDetailData(null)
+      // For non-delivery accounts, use photoCard from account data
+      setAccountDetailData(account.photoCard ? { photoCard: account.photoCard } : null)
     }
     setShowAccountDetail(true)
   }
@@ -930,14 +935,7 @@ function SuperAdminDashboard() {
                                     </div>
                                   )}
                                   {account.status === 'REVOKED' && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleRestoreAccount(account)}
-                                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                    >
-                                      <CheckCircle className="w-4 h-4" />
-                                    </Button>
+                                    <span className="text-xs text-muted-foreground italic">Révoqué</span>
                                   )}
                                 </TableCell>
                               </TableRow>
@@ -1248,6 +1246,20 @@ function SuperAdminDashboard() {
                 </DialogHeader>
 
                 <div className="space-y-6">
+                  {/* Photo d'identité */}
+                  {(selectedAccount.photoCard || (accountDetailData && accountDetailData.photoCard)) && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3 text-gray-900">Photo d'identité</h3>
+                      <div className="flex justify-center">
+                        <img
+                          src={accountDetailData?.photoCard || selectedAccount.photoCard}
+                          alt="Photo d'identité"
+                          className="w-32 h-32 rounded-lg object-cover border border-gray-200"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Statut du compte */}
                   <div>
                     <label className="text-xs text-gray-500">Statut du compte</label>

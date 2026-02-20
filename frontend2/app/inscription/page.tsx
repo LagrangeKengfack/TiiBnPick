@@ -30,6 +30,39 @@ const PhotoPreview = ({ url, alt, className, objectFit = "object-contain" }: { u
   );
 };
 
+// Helper to compress an image File using Canvas before encoding
+const compressImage = (file: File, maxWidth = 800, quality = 0.6): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
+  });
+};
+
 // Helper to convert File to Base64
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -38,6 +71,12 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
   });
+};
+
+// Helper to compress then convert to Base64
+const compressAndEncode = async (file: File): Promise<string> => {
+  const compressed = await compressImage(file);
+  return fileToBase64(compressed);
 };
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -1393,13 +1432,13 @@ export default function RegisterPage() {
                           unit: formData.uniteMalle,
                           // Separate NIU number from photo
                           nui: formData.numeroNINE,
-                          // Photos as Base64
-                          photoCard: photoIdentite ? await fileToBase64(photoIdentite) : null,
-                          cniRecto: photoCniRecto ? await fileToBase64(photoCniRecto) : null,
-                          cniVerso: photoCniVerso ? await fileToBase64(photoCniVerso) : null,
-                          nuiPhoto: photoNiu ? await fileToBase64(photoNiu) : null,
-                          frontPhoto: photoVehiculeAvant ? await fileToBase64(photoVehiculeAvant) : null,
-                          backPhoto: photoVehiculeArriere ? await fileToBase64(photoVehiculeArriere) : null
+                          // Photos compressed then encoded as Base64
+                          photoCard: photoIdentite ? await compressAndEncode(photoIdentite) : null,
+                          cniRecto: photoCniRecto ? await compressAndEncode(photoCniRecto) : null,
+                          cniVerso: photoCniVerso ? await compressAndEncode(photoCniVerso) : null,
+                          nuiPhoto: photoNiu ? await compressAndEncode(photoNiu) : null,
+                          frontPhoto: photoVehiculeAvant ? await compressAndEncode(photoVehiculeAvant) : null,
+                          backPhoto: photoVehiculeArriere ? await compressAndEncode(photoVehiculeArriere) : null
                         };
 
                         await apiClient.post('/api/delivery-persons/register', payload);

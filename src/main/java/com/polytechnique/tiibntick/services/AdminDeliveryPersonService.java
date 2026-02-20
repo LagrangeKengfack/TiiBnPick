@@ -265,10 +265,10 @@ public class AdminDeliveryPersonService {
         response.setStatus(dp.getStatus().name());
         response.setCommercialName(dp.getCommercialName());
         response.setNuiNumber(dp.getTaxpayerNumber());
-        // Use the new nuiPhoto field from Person entity, falling back to null if not
-        // set
-        response.setNuiPhoto(person.getNuiPhoto());
-        log.info("Mapping person NUI Photo: {}", person.getNuiPhoto());
+        // Use nuiPhoto field, falling back to nui field for old records that stored path there
+        String nuiPhotoPath = person.getNuiPhoto() != null ? person.getNuiPhoto() : person.getNui();
+        response.setNuiPhoto(nuiPhotoPath);
+        log.info("Mapping person NUI Photo: nuiPhoto={}, nui={}, resolved={}", person.getNuiPhoto(), person.getNui(), nuiPhotoPath);
 
         // Personal Info
         response.setNationalId(person.getNationalId());
