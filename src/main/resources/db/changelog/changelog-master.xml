@@ -234,4 +234,9 @@
         <sqlFile path="db/changelog/20260219_fix_logistics_class.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
 
+    <changeSet id="042-remove-duplicate-admin" author="TiiBnTickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260219_remove_duplicate_admin.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>

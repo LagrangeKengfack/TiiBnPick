@@ -107,6 +107,8 @@ export default function SuperAdminDashboard() {
 
   const [registrationRequests, setRegistrationRequests] = useState<DeliveryPersonRequest[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
+  const [accountDetailData, setAccountDetailData] = useState<any>(null)
+  const [showAccountDetail, setShowAccountDetail] = useState(false)
 
   // Filtres pour la page comptes
   const [accountTypeFilter, setAccountTypeFilter] = useState<'all' | 'DELIVERY' | 'CLIENT'>('all')
@@ -319,6 +321,23 @@ export default function SuperAdminDashboard() {
       title: 'Fonctionnalité à venir',
       description: 'La gestion des abonnements sera disponible prochainement.',
     })
+  }
+
+  // Fetch account details when clicking an account in the table
+  const handleAccountClick = async (account: Account) => {
+    setSelectedAccount(account)
+    if (account.role === 'DELIVERY') {
+      try {
+        const response = await axiosInstance.get(`/api/admin/delivery-persons/${account.id}`)
+        setAccountDetailData(response.data)
+      } catch (error) {
+        console.error('[Admin] Error fetching account details:', error)
+        setAccountDetailData(null)
+      }
+    } else {
+      setAccountDetailData(null)
+    }
+    setShowAccountDetail(true)
   }
 
   const confirmAction = async () => {
@@ -729,10 +748,10 @@ export default function SuperAdminDashboard() {
                             </div>
                           </div>
 
-                          {/* Right side - License plate */}
-                          <div className="flex-shrink-0">
-                            <div className="font-mono text-lg font-bold text-orange-600">
-                              {request.vehicleRegNumber}
+                          {/* Right side - Creation date */}
+                          <div className="flex-shrink-0 text-right">
+                            <div className="text-xs text-gray-500">
+                              {formatDate(request.createdAt)}
                             </div>
                           </div>
                         </div>
@@ -843,7 +862,7 @@ export default function SuperAdminDashboard() {
                             </TableRow>
                           ) : (
                             getFilteredAccounts().map((account) => (
-                              <TableRow key={account.id}>
+                              <TableRow key={account.id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleAccountClick(account)}>
                                 <TableCell>
                                   <div>
                                     <div className="font-medium text-sm md:text-base">{account.name}</div>
@@ -1196,7 +1215,6 @@ export default function SuperAdminDashboard() {
                     variant="outline"
                     className="bg-white text-orange-700 border-orange-300 hover:bg-orange-50"
                     onClick={() => {
-                      setSelectedRequest(null)
                       setActionDialog('reject')
                     }}
                   >
@@ -1205,12 +1223,244 @@ export default function SuperAdminDashboard() {
                   <Button
                     className="bg-orange-600 hover:bg-orange-700 text-white border border-orange-600"
                     onClick={() => {
-                      setSelectedRequest(null)
                       setActionDialog('approve')
                     }}
                   >
                     Accepter
                   </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Account Details Dialog */}
+        <Dialog open={showAccountDetail} onOpenChange={(open) => { if (!open) { setShowAccountDetail(false); setAccountDetailData(null); } }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            {selectedAccount && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Informations du compte</DialogTitle>
+                  <DialogDescription>
+                    Compte de {selectedAccount.name}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-6">
+                  {/* Statut du compte */}
+                  <div>
+                    <label className="text-xs text-gray-500">Statut du compte</label>
+                    <div className="mt-2">
+                      {getStatusBadge(selectedAccount.status)}
+                    </div>
+                  </div>
+
+                  {/* Informations Personnelles */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 text-gray-900">Informations Personnelles</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-gray-500">Nom Complet</label>
+                        <p className="font-medium">{selectedAccount.name}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Email</label>
+                        <p className="font-medium">{selectedAccount.email}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Téléphone</label>
+                        <p className="font-medium">{selectedAccount.phone}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Rôle</label>
+                        <p className="font-medium">{getRoleBadge(selectedAccount.role)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delivery person details (fetched from backend) */}
+                  {selectedAccount.role === 'DELIVERY' && accountDetailData && (
+                    <>
+                      {/* NINE Number */}
+                      {accountDetailData.nuiNumber && (
+                        <div>
+                          <label className="text-xs text-gray-500">Numéro NINE</label>
+                          <p className="font-mono font-bold text-orange-600">{accountDetailData.nuiNumber}</p>
+                        </div>
+                      )}
+
+                      {/* Document NIU */}
+                      {accountDetailData.nuiPhoto && (
+                        <div>
+                          <h3 className="text-sm font-semibold mb-3 text-gray-900">Document NIU</h3>
+                          <div className="flex justify-center">
+                            <img
+                              src={accountDetailData.nuiPhoto}
+                              alt="Document NIU"
+                              className="w-full max-h-48 rounded-lg object-cover border border-gray-200"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Pièce d'Identité */}
+                      <div>
+                        <h3 className="text-sm font-semibold mb-3 text-gray-900">Pièce d'Identité</h3>
+                        <div className="space-y-3">
+                          {accountDetailData.nationalId && (
+                            <div>
+                              <label className="text-xs text-gray-500">Numéro CNI</label>
+                              <p className="font-mono font-bold text-orange-600">{accountDetailData.nationalId}</p>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-3">
+                            {accountDetailData.cniRecto && (
+                              <div>
+                                <label className="text-xs text-gray-500 block mb-2">Photo CNI Recto</label>
+                                <img
+                                  src={accountDetailData.cniRecto}
+                                  alt="Photo CNI Recto"
+                                  className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
+                                />
+                              </div>
+                            )}
+                            {accountDetailData.cniVerso && (
+                              <div>
+                                <label className="text-xs text-gray-500 block mb-2">Photo CNI Verso</label>
+                                <img
+                                  src={accountDetailData.cniVerso}
+                                  alt="Photo CNI Verso"
+                                  className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Informations Véhicule */}
+                      <div>
+                        <h3 className="text-sm font-semibold mb-3 text-gray-900">Informations Véhicule</h3>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label className="text-xs text-gray-500">Type de Véhicule</label>
+                            <p className="font-medium">{accountDetailData.vehicleType}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500">Nom du véhicule</label>
+                            <p className="font-medium">{accountDetailData.vehicleBrand} {accountDetailData.vehicleModel}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500">Plaque d'Immatriculation</label>
+                            <p className="font-mono font-bold text-lg text-orange-600">{accountDetailData.vehicleRegNumber}</p>
+                          </div>
+                          {accountDetailData.vehicleColor && (
+                            <div>
+                              <label className="text-xs text-gray-500">Couleur</label>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-4 h-4 rounded-full border border-gray-200"
+                                  style={{ backgroundColor: accountDetailData.vehicleColor.toLowerCase() === 'blanc' ? '#ffffff' : accountDetailData.vehicleColor.toLowerCase() === 'noir' ? '#000000' : accountDetailData.vehicleColor }}
+                                />
+                                <p className="font-medium">{accountDetailData.vehicleColor}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Photos du Véhicule */}
+                        {(accountDetailData.vehicleFrontPhoto || accountDetailData.vehicleBackPhoto) && (
+                          <div className="space-y-4">
+                            <div className="text-xs text-gray-500 font-semibold mb-2">Photos du Véhicule</div>
+                            <div className="grid grid-cols-2 gap-3">
+                              {accountDetailData.vehicleFrontPhoto && (
+                                <div>
+                                  <label className="text-xs text-gray-500 block mb-2">Vue Avant</label>
+                                  <img
+                                    src={accountDetailData.vehicleFrontPhoto}
+                                    alt="Vue avant du véhicule"
+                                    className="w-full h-32 rounded-lg object-cover border border-gray-200"
+                                  />
+                                </div>
+                              )}
+                              {accountDetailData.vehicleBackPhoto && (
+                                <div>
+                                  <label className="text-xs text-gray-500 block mb-2">Vue Arrière</label>
+                                  <img
+                                    src={accountDetailData.vehicleBackPhoto}
+                                    alt="Vue arrière du véhicule"
+                                    className="w-full h-32 rounded-lg object-cover border border-gray-200"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <DialogFooter className="gap-2">
+                  {selectedAccount.status === 'ACTIVE' && (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                        title="Suspendre le compte"
+                        onClick={() => {
+                          setShowAccountDetail(false)
+                          handleSuspendAccount(selectedAccount)
+                        }}
+                      >
+                        <AlertTriangle className="w-4 h-4 mr-2" />
+                        Suspendre
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="text-red-600 border-red-300 hover:bg-red-50"
+                        title="Révoquer le compte définitivement"
+                        onClick={() => {
+                          setShowAccountDetail(false)
+                          handleRevokeAccount(selectedAccount)
+                        }}
+                      >
+                        <Ban className="w-4 h-4 mr-2" />
+                        Révoquer
+                      </Button>
+                    </>
+                  )}
+                  {selectedAccount.status === 'SUSPENDED' && (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="text-green-600 border-green-300 hover:bg-green-50"
+                        title="Restaurer le compte"
+                        onClick={() => {
+                          setShowAccountDetail(false)
+                          handleRestoreAccount(selectedAccount)
+                        }}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Restaurer
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="text-red-600 border-red-300 hover:bg-red-50"
+                        title="Révoquer le compte définitivement"
+                        onClick={() => {
+                          setShowAccountDetail(false)
+                          handleRevokeAccount(selectedAccount)
+                        }}
+                      >
+                        <Ban className="w-4 h-4 mr-2" />
+                        Révoquer
+                      </Button>
+                    </>
+                  )}
+                  {selectedAccount.status === 'REVOKED' && (
+                    <div className="text-sm text-red-600 italic">Ce compte a été révoqué définitivement.</div>
+                  )}
                 </DialogFooter>
               </>
             )}
