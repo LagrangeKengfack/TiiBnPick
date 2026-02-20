@@ -10,11 +10,11 @@ import { Toaster } from '@/components/ui/toaster'
 import LocationTracker from '@/components/LocationTracker'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'TiiBnTick',
+  description: 'Plateforme intelligente de gestion et livraison',
   icons: {
     icon: [
+      { url: '/favicon.ico', sizes: 'any' },
       {
         url: '/icon-light-32x32.png',
         media: '(prefers-color-scheme: light)',
