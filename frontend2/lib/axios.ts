@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const axiosInstance = axios.create();
+const axiosInstance = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
+});
 
 // Request interceptor to add the JWT token to every request
 axiosInstance.interceptors.request.use(

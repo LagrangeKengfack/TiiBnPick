@@ -94,7 +94,7 @@ interface Account {
 
 type ActiveView = 'dashboard' | 'registrations' | 'accounts' | 'subscriptions'
 
-export default function SuperAdminDashboard() {
+function SuperAdminDashboard() {
   const { toast } = useToast()
   const router = useRouter()
   const [loading, setLoading] = useState(true)

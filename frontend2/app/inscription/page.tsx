@@ -48,6 +48,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { checkEmail, createClient, checkNationalId } from '../../services/clientService'
 import { useAuth } from '@/context/AuthContext'
+import apiClient from '@/lib/axios'
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6
 type Role = 'client' | 'livreur' | null
@@ -1401,16 +1402,7 @@ export default function RegisterPage() {
                           backPhoto: photoVehiculeArriere ? await fileToBase64(photoVehiculeArriere) : null
                         };
 
-                        const response = await fetch('/api/delivery-persons/register', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(payload)
-                        });
-
-                        if (!response.ok) {
-                          const errorData = await response.json();
-                          throw new Error(errorData.message || 'Registration failed');
-                        }
+                        await apiClient.post('/api/delivery-persons/register', payload);
 
                         setStep(6);
                       } catch (error: any) {
