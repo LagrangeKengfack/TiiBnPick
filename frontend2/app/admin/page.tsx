@@ -95,6 +95,13 @@ interface Account {
 
 type ActiveView = 'dashboard' | 'registrations' | 'accounts' | 'subscriptions'
 
+// Ensure photo path starts with / for Next.js rewrite proxy
+const photoUrl = (path?: string | null): string => {
+  if (!path) return ''
+  if (path.startsWith('/') || path.startsWith('data:') || path.startsWith('http')) return path
+  return '/' + path
+}
+
 function SuperAdminDashboard() {
   const { toast } = useToast()
   const router = useRouter()
@@ -1049,7 +1056,7 @@ function SuperAdminDashboard() {
                       <h3 className="text-sm font-semibold mb-3 text-gray-900">Photo du Livreur</h3>
                       <div className="flex justify-center">
                         <img
-                          src={selectedRequest.profilePhoto}
+                          src={photoUrl(selectedRequest.profilePhoto)}
                           alt="Photo du livreur"
                           className="w-32 h-32 rounded-lg object-cover border border-gray-200"
                         />
@@ -1096,7 +1103,7 @@ function SuperAdminDashboard() {
                       <h3 className="text-sm font-semibold mb-3 text-gray-900">Document NIU</h3>
                       <div className="flex justify-center">
                         <img
-                          src={selectedRequest.niuPhoto}
+                          src={photoUrl(selectedRequest.niuPhoto)}
                           alt="Document NIU"
                           className="w-full max-h-48 rounded-lg object-cover border border-gray-200"
                         />
@@ -1120,7 +1127,7 @@ function SuperAdminDashboard() {
                           <div>
                             <label className="text-xs text-gray-500 block mb-2">Photo CNI Recto</label>
                             <img
-                              src={selectedRequest.idCardRectoPhoto}
+                              src={photoUrl(selectedRequest.idCardRectoPhoto)}
                               alt="Photo CNI Recto"
                               className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
                             />
@@ -1130,7 +1137,7 @@ function SuperAdminDashboard() {
                           <div>
                             <label className="text-xs text-gray-500 block mb-2">Photo CNI Verso</label>
                             <img
-                              src={selectedRequest.idCardVersoPhoto}
+                              src={photoUrl(selectedRequest.idCardVersoPhoto)}
                               alt="Photo CNI Verso"
                               className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
                             />
@@ -1179,7 +1186,7 @@ function SuperAdminDashboard() {
                             <div>
                               <label className="text-xs text-gray-500 block mb-2">Vue Avant</label>
                               <img
-                                src={selectedRequest.vehicleFrontPhoto}
+                                src={photoUrl(selectedRequest.vehicleFrontPhoto)}
                                 alt="Vue avant du véhicule"
                                 className="w-full h-32 rounded-lg object-cover border border-gray-200"
                               />
@@ -1189,7 +1196,7 @@ function SuperAdminDashboard() {
                             <div>
                               <label className="text-xs text-gray-500 block mb-2">Vue Arrière</label>
                               <img
-                                src={selectedRequest.vehicleBackPhoto}
+                                src={photoUrl(selectedRequest.vehicleBackPhoto)}
                                 alt="Vue arrière du véhicule"
                                 className="w-full h-32 rounded-lg object-cover border border-gray-200"
                               />
@@ -1252,7 +1259,7 @@ function SuperAdminDashboard() {
                       <h3 className="text-sm font-semibold mb-3 text-gray-900">Photo d'identité</h3>
                       <div className="flex justify-center">
                         <img
-                          src={accountDetailData?.photoCard || selectedAccount.photoCard}
+                          src={photoUrl(accountDetailData?.photoCard || selectedAccount.photoCard)}
                           alt="Photo d'identité"
                           className="w-32 h-32 rounded-lg object-cover border border-gray-200"
                         />
@@ -1308,7 +1315,7 @@ function SuperAdminDashboard() {
                           <h3 className="text-sm font-semibold mb-3 text-gray-900">Document NIU</h3>
                           <div className="flex justify-center">
                             <img
-                              src={accountDetailData.nuiPhoto}
+                              src={photoUrl(accountDetailData.nuiPhoto)}
                               alt="Document NIU"
                               className="w-full max-h-48 rounded-lg object-cover border border-gray-200"
                             />
@@ -1331,7 +1338,7 @@ function SuperAdminDashboard() {
                               <div>
                                 <label className="text-xs text-gray-500 block mb-2">Photo CNI Recto</label>
                                 <img
-                                  src={accountDetailData.cniRecto}
+                                  src={photoUrl(accountDetailData.cniRecto)}
                                   alt="Photo CNI Recto"
                                   className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
                                 />
@@ -1341,7 +1348,7 @@ function SuperAdminDashboard() {
                               <div>
                                 <label className="text-xs text-gray-500 block mb-2">Photo CNI Verso</label>
                                 <img
-                                  src={accountDetailData.cniVerso}
+                                  src={photoUrl(accountDetailData.cniVerso)}
                                   alt="Photo CNI Verso"
                                   className="w-full max-h-32 rounded-lg object-cover border border-gray-200"
                                 />
@@ -1390,7 +1397,7 @@ function SuperAdminDashboard() {
                                 <div>
                                   <label className="text-xs text-gray-500 block mb-2">Vue Avant</label>
                                   <img
-                                    src={accountDetailData.vehicleFrontPhoto}
+                                    src={photoUrl(accountDetailData.vehicleFrontPhoto)}
                                     alt="Vue avant du véhicule"
                                     className="w-full h-32 rounded-lg object-cover border border-gray-200"
                                   />
@@ -1400,7 +1407,7 @@ function SuperAdminDashboard() {
                                 <div>
                                   <label className="text-xs text-gray-500 block mb-2">Vue Arrière</label>
                                   <img
-                                    src={accountDetailData.vehicleBackPhoto}
+                                    src={photoUrl(accountDetailData.vehicleBackPhoto)}
                                     alt="Vue arrière du véhicule"
                                     className="w-full h-32 rounded-lg object-cover border border-gray-200"
                                   />

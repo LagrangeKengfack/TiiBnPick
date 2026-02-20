@@ -59,7 +59,7 @@ public class FileStorageService {
                 Files.write(filePath, imageBytes);
                 log.info("Saved file to: {}", filePath);
 
-                return filePath.toString();
+                return "/" + filePath.toString();
             } catch (Exception e) {
                 log.error("Error saving image", e);
                 throw new RuntimeException("Could not save image", e);

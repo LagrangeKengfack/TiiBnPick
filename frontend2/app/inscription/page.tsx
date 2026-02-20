@@ -32,34 +32,42 @@ const PhotoPreview = ({ url, alt, className, objectFit = "object-contain" }: { u
 
 // Helper to compress an image File using Canvas before encoding
 const compressImage = (file: File, maxWidth = 800, quality = 0.6): Promise<File> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let width = img.width;
-      let height = img.height;
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(file); return; }
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { resolve(file); return; }
-          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-        },
-        'image/jpeg',
-        quality
-      );
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
-    img.src = url;
+  return new Promise((resolve) => {
+    try {
+      const img = document.createElement('img');
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        try {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(file); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) { resolve(file); return; }
+              resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+            },
+            'image/jpeg',
+            quality
+          );
+        } catch {
+          resolve(file); // Fallback to original on any canvas error
+        }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); }; // Fallback instead of reject
+      img.src = url;
+    } catch {
+      resolve(file); // Fallback on any unexpected error
+    }
   });
 };
 
@@ -75,8 +83,13 @@ const fileToBase64 = (file: File): Promise<string> => {
 
 // Helper to compress then convert to Base64
 const compressAndEncode = async (file: File): Promise<string> => {
-  const compressed = await compressImage(file);
-  return fileToBase64(compressed);
+  try {
+    const compressed = await compressImage(file);
+    return await fileToBase64(compressed);
+  } catch {
+    // If compression fails for any reason, send the original file as base64
+    return fileToBase64(file);
+  }
 };
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
