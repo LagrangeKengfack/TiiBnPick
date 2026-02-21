@@ -6,6 +6,13 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Data;
 
+/**
+ * DTO for delivery response data.
+ *
+ * @author François-Charles ATANGA
+ * @date 21/02/2026
+ *       Note: Created to return delivery details after an operation.
+ */
 @Data
 public class DeliveryResponseDTO {
     private UUID id;
