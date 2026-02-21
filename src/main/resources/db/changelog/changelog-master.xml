@@ -223,4 +223,8 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260218_add_height_to_packets.sql" relativeToChangelogFile="false"/>
     </changeSet>
+    <changeSet id="040-add-urgency-to-announcement" author="TiiBnTickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260221_add_urgency_to_announcement.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

@@ -82,4 +82,10 @@ public class DeliveryPersonDocument {
 
     @Field(type = FieldType.Boolean)
     private Boolean isAvailable;
+
+    @Field(type = FieldType.Double)
+    private Double capacity;
+
+    @Field(type = FieldType.Keyword)
+    private String unit;
 }

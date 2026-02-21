@@ -103,4 +103,7 @@ public class Announcement {
 
     @Column("updated_at")
     private Instant updatedAt;
+
+    @Column("urgency")
+    private com.polytechnique.tiibntick.models.enums.delivery.DeliveryUrgency urgency;
 }

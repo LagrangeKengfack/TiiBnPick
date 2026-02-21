@@ -2,8 +2,10 @@ package com.polytechnique.tiibntick.services;
 
 import com.polytechnique.tiibntick.elasticsearch.models.DeliveryPersonDocument;
 import com.polytechnique.tiibntick.elasticsearch.repositories.DeliveryPersonSearchRepository;
+import com.polytechnique.tiibntick.models.Logistics;
 import com.polytechnique.tiibntick.repositories.DeliveryPersonRepository;
 import com.polytechnique.tiibntick.services.deliveryperson.LectureDeliveryPersonService;
+import com.polytechnique.tiibntick.services.logistics.LectureLogisticsService;
 import com.polytechnique.tiibntick.services.person.LecturePersonService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.elasticsearch.core.geo.GeoPoint;
@@ -28,16 +30,19 @@ public class DeliveryPersonLocationService {
         private final DeliveryPersonRepository deliveryPersonRepository;
         private final LectureDeliveryPersonService lectureDeliveryPersonService;
         private final LecturePersonService lecturePersonService;
+        private final LectureLogisticsService lectureLogisticsService;
 
         public DeliveryPersonLocationService(
                         Optional<DeliveryPersonSearchRepository> deliveryPersonSearchRepository,
                         DeliveryPersonRepository deliveryPersonRepository,
                         LectureDeliveryPersonService lectureDeliveryPersonService,
-                        LecturePersonService lecturePersonService) {
+                        LecturePersonService lecturePersonService,
+                        LectureLogisticsService lectureLogisticsService) {
                 this.deliveryPersonSearchRepository = deliveryPersonSearchRepository.orElse(null);
                 this.deliveryPersonRepository = deliveryPersonRepository;
                 this.lectureDeliveryPersonService = lectureDeliveryPersonService;
                 this.lecturePersonService = lecturePersonService;
+                this.lectureLogisticsService = lectureLogisticsService;
         }
 
         /**
@@ -72,10 +77,35 @@ public class DeliveryPersonLocationService {
                                                                         return Mono.just(savedDeliveryPerson);
                                                                 }
 
-                                                                return lecturePersonService
-                                                                                .findById(savedDeliveryPerson
-                                                                                                .getPersonId())
-                                                                                .flatMap(person -> {
+                                                                return Mono.zip(
+                                                                                lecturePersonService.findById(
+                                                                                                savedDeliveryPerson
+                                                                                                                .getPersonId()),
+                                                                                lectureLogisticsService
+                                                                                                .findByDeliveryPersonId(
+                                                                                                                deliveryPersonId)
+                                                                                                .defaultIfEmpty(new Logistics()))
+                                                                                .flatMap(tuple -> {
+                                                                                        var person = tuple.getT1();
+                                                                                        var logistics = tuple.getT2();
+
+                                                                                        Double capacityValue = null;
+                                                                                        if (logistics.getLength() != null
+                                                                                                        && logistics.getWidth() != null
+                                                                                                        && logistics.getHeight() != null) {
+                                                                                                double volume = logistics
+                                                                                                                .getLength()
+                                                                                                                * logistics.getWidth()
+                                                                                                                * logistics.getHeight();
+                                                                                                if ("cm".equalsIgnoreCase(
+                                                                                                                logistics.getUnit())) {
+                                                                                                        capacityValue = volume
+                                                                                                                        / 1000000.0;
+                                                                                                } else {
+                                                                                                        capacityValue = volume;
+                                                                                                }
+                                                                                        }
+
                                                                                         DeliveryPersonDocument document = DeliveryPersonDocument
                                                                                                         .builder()
                                                                                                         .id(savedDeliveryPerson
@@ -101,17 +131,19 @@ public class DeliveryPersonLocationService {
                                                                                                         .isActive(savedDeliveryPerson
                                                                                                                         .getIsActive())
                                                                                                         .isAvailable(true)
+                                                                                                        .capacity(capacityValue)
+                                                                                                        .unit("m^3")
                                                                                                         .build();
 
                                                                                         return deliveryPersonSearchRepository
                                                                                                         .save(document)
                                                                                                         .doOnSuccess(doc -> log
                                                                                                                         .debug(
-                                                                                                                                        "Synced location to Elasticsearch for delivery person {}",
+                                                                                                                                        "Synced location and capacity to Elasticsearch for delivery person {}",
                                                                                                                                         deliveryPersonId))
                                                                                                         .doOnError(e -> log
                                                                                                                         .warn(
-                                                                                                                                        "Failed to sync location to Elasticsearch for {}. SQL update was successful.",
+                                                                                                                                        "Failed to sync to Elasticsearch for {}. SQL update was successful.",
                                                                                                                                         deliveryPersonId,
                                                                                                                                         e))
                                                                                                         .onErrorResume(e -> Mono
