@@ -42,4 +42,9 @@ public class DeliveryController {
     public Mono<DeliveryResponseDTO> cancelDelivery(@PathVariable UUID id) {
         return deliveryService.cancelDelivery(id);
     }
+
+    @PostMapping("/{id}/pickup")
+    public Mono<DeliveryResponseDTO> pickupDelivery(@PathVariable UUID id) {
+        return deliveryService.pickupDelivery(id);
+    }
 }

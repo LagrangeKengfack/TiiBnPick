@@ -3,13 +3,18 @@ package com.polytechnique.tiibntick.services;
 import com.polytechnique.tiibntick.elasticsearch.models.DeliveryPersonDocument;
 import com.polytechnique.tiibntick.elasticsearch.repositories.DeliveryPersonSearchRepository;
 import com.polytechnique.tiibntick.models.Logistics;
+import com.polytechnique.tiibntick.models.enums.delivery.DeliveryStatus;
+import com.polytechnique.tiibntick.repositories.AddressRepository;
+import com.polytechnique.tiibntick.repositories.AnnouncementRepository;
 import com.polytechnique.tiibntick.repositories.DeliveryPersonRepository;
+import com.polytechnique.tiibntick.repositories.DeliveryRepository;
 import com.polytechnique.tiibntick.services.deliveryperson.LectureDeliveryPersonService;
 import com.polytechnique.tiibntick.services.logistics.LectureLogisticsService;
 import com.polytechnique.tiibntick.services.person.LecturePersonService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.elasticsearch.core.geo.GeoPoint;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -28,18 +33,29 @@ public class DeliveryPersonLocationService {
 
         private final DeliveryPersonSearchRepository deliveryPersonSearchRepository;
         private final DeliveryPersonRepository deliveryPersonRepository;
+        private final DeliveryRepository deliveryRepository;
+        private final AnnouncementRepository announcementRepository;
+        private final AddressRepository addressRepository;
         private final LectureDeliveryPersonService lectureDeliveryPersonService;
         private final LecturePersonService lecturePersonService;
         private final LectureLogisticsService lectureLogisticsService;
 
+        private static final double EARTH_RADIUS_METERS = 6371000.0;
+
         public DeliveryPersonLocationService(
                         Optional<DeliveryPersonSearchRepository> deliveryPersonSearchRepository,
                         DeliveryPersonRepository deliveryPersonRepository,
+                        DeliveryRepository deliveryRepository,
+                        AnnouncementRepository announcementRepository,
+                        AddressRepository addressRepository,
                         LectureDeliveryPersonService lectureDeliveryPersonService,
                         LecturePersonService lecturePersonService,
                         LectureLogisticsService lectureLogisticsService) {
                 this.deliveryPersonSearchRepository = deliveryPersonSearchRepository.orElse(null);
                 this.deliveryPersonRepository = deliveryPersonRepository;
+                this.deliveryRepository = deliveryRepository;
+                this.announcementRepository = announcementRepository;
+                this.addressRepository = addressRepository;
                 this.lectureDeliveryPersonService = lectureDeliveryPersonService;
                 this.lecturePersonService = lecturePersonService;
                 this.lectureLogisticsService = lectureLogisticsService;
@@ -150,10 +166,57 @@ public class DeliveryPersonLocationService {
                                                                                                                         .just(document))
                                                                                                         .thenReturn(savedDeliveryPerson);
                                                                                 });
+                                                        })
+                                                        .flatMap(savedDP -> {
+                                                                // Logic for IN_TRANSIT: check distance from pickup point
+                                                                return deliveryRepository
+                                                                                .findAllByDeliveryPersonIdAndStatus(
+                                                                                                deliveryPersonId,
+                                                                                                DeliveryStatus.PICKED_UP)
+                                                                                .flatMap(delivery -> announcementRepository
+                                                                                                .findById(delivery.getAnnouncementId())
+                                                                                                .flatMap(announcement -> addressRepository
+                                                                                                                .findById(announcement
+                                                                                                                                .getPickupAddressId())
+                                                                                                                .flatMap(address -> {
+                                                                                                                        double distance = calculateDistanceInMeters(
+                                                                                                                                        latitude,
+                                                                                                                                        longitude,
+                                                                                                                                        address.getLatitude(),
+                                                                                                                                        address.getLongitude());
+
+                                                                                                                        if (distance > 1.0) {
+                                                                                                                                log.info("Delivery person {} moved more than 1 meter ({}m) from pickup for delivery {}. Status -> IN_TRANSIT",
+                                                                                                                                                deliveryPersonId,
+                                                                                                                                                distance,
+                                                                                                                                                delivery.getId());
+                                                                                                                                delivery.setStatus(
+                                                                                                                                                DeliveryStatus.IN_TRANSIT);
+                                                                                                                                return deliveryRepository
+                                                                                                                                                .save(delivery);
+                                                                                                                        }
+                                                                                                                        return Mono.just(
+                                                                                                                                        delivery);
+                                                                                                                })))
+                                                                                .then(Mono.just(savedDP));
                                                         });
-                                })
-                                .doOnError(e -> log.error("Failed to update location for delivery person {}",
-                                                deliveryPersonId, e))
-                                .then();
+                                });
+                }).doOnError(e->log.error("Failed to update location for delivery person {}",deliveryPersonId,e)).then();
+
+        }
+
+        private double calculateDistanceInMeters(double lat1, double lon1, double lat2, double lon2) {
+                double dLat = Math.toRadians(lat2 - lat1);
+                double dLon = Math.toRadians(lon2 - lon1);
+
+                double lat1Rad = Math.toRadians(lat1);
+                double lat2Rad = Math.toRadians(lat2);
+
+                double a = Math.pow(Math.sin(dLat / 2), 2) +
+                                Math.pow(Math.sin(dLon / 2), 2) * Math.cos(lat1Rad) * Math.cos(lat2Rad);
+
+                double c = 2 * Math.asin(Math.sqrt(a));
+
+                return EARTH_RADIUS_METERS * c;
         }
 }

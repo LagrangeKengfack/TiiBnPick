@@ -102,4 +102,23 @@ class DeliveryControllerTest {
                                 .expectBody()
                                 .jsonPath("$.status").isEqualTo("CANCELLED");
         }
+
+        @Test
+        @WithMockUser
+        void pickupDelivery_Success() {
+                UUID deliveryId = UUID.randomUUID();
+                DeliveryResponseDTO response = new DeliveryResponseDTO();
+                response.setId(deliveryId);
+                response.setStatus(DeliveryStatus.PICKED_UP);
+
+                when(deliveryService.pickupDelivery(deliveryId))
+                                .thenReturn(Mono.just(response));
+
+                webTestClient.mutateWith(csrf())
+                                .post().uri("/api/deliveries/{id}/pickup", deliveryId)
+                                .exchange()
+                                .expectStatus().isOk()
+                                .expectBody()
+                                .jsonPath("$.status").isEqualTo("PICKED_UP");
+        }
 }

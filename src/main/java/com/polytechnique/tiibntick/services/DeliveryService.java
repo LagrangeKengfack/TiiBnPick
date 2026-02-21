@@ -93,6 +93,19 @@ public class DeliveryService {
                 return updateDeliveryStatus(deliveryId, DeliveryStatus.CANCELLED, "annulée");
         }
 
+        @Transactional("connectionFactoryTransactionManager")
+        public Mono<DeliveryResponseDTO> pickupDelivery(UUID deliveryId) {
+                log.info("Marking delivery {} as PICKED_UP", deliveryId);
+                return deliveryRepository.findById(deliveryId)
+                                .switchIfEmpty(Mono.error(new RuntimeException("Delivery not found")))
+                                .flatMap(delivery -> {
+                                        delivery.setStatus(DeliveryStatus.PICKED_UP);
+                                        return deliveryRepository.save(delivery)
+                                                        .flatMap(savedDelivery -> notifyPickup(savedDelivery)
+                                                                        .thenReturn(mapToResponse(savedDelivery)));
+                                });
+        }
+
         private Mono<DeliveryResponseDTO> updateDeliveryStatus(UUID deliveryId, DeliveryStatus status,
                         String statusLabel) {
                 return deliveryRepository.findById(deliveryId)
@@ -137,6 +150,34 @@ public class DeliveryService {
                                                                                                         subject, body));
 
                                         return Mono.when(notifyShipper, notifyRecipient, notifyClient);
+                                });
+        }
+
+        private Mono<Void> notifyPickup(Delivery delivery) {
+                return announcementRepository.findById(delivery.getAnnouncementId())
+                                .flatMap(announcement -> {
+                                        String subject = "TiiBnTick - Votre colis a été récupéré";
+                                        String body = "Bonjour,\n\nNous vous informons que le livreur a récupéré votre colis pour la livraison #"
+                                                        + delivery.getId() +
+                                                        " (Annonce: '" + announcement.getTitle() + "').\n\n"
+                                                        + "Le colis est désormais en route.\n\n"
+                                                        + "Cordialement,\nL'équipe TiiBnTick";
+
+                                        // Notify Recipient (destinataire)
+                                        Mono<Void> notifyRecipient = emailService
+                                                        .sendSimpleMessageReactive(announcement.getRecipientEmail(),
+                                                                        subject, body);
+
+                                        // Notify Client (donneur d'ordre)
+                                        Mono<Void> notifyClient = clientRepository.findById(announcement.getClientId())
+                                                        .flatMap(client -> personRepository
+                                                                        .findById(client.getPersonId()))
+                                                        .flatMap(person -> emailService
+                                                                        .sendSimpleMessageReactive(
+                                                                                        person.getEmail(),
+                                                                                        subject, body));
+
+                                        return Mono.when(notifyRecipient, notifyClient);
                                 });
         }
 
