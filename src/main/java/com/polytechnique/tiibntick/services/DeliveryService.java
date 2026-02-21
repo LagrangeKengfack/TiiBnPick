@@ -2,19 +2,18 @@ package com.polytechnique.tiibntick.services;
 
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryResponseDTO;
-import com.polytechnique.tiibntick.models.Announcement;
-import com.polytechnique.tiibntick.models.Client;
+import com.polytechnique.tiibntick.dtos.responses.LocationResponseDTO;
 import com.polytechnique.tiibntick.models.Delivery;
-import com.polytechnique.tiibntick.models.Person;
 import com.polytechnique.tiibntick.models.enums.announcement.AnnouncementStatus;
 import com.polytechnique.tiibntick.models.enums.delivery.DeliveryStatus;
 import com.polytechnique.tiibntick.repositories.AnnouncementRepository;
 import com.polytechnique.tiibntick.repositories.ClientRepository;
+import com.polytechnique.tiibntick.repositories.DeliveryPersonRepository;
 import com.polytechnique.tiibntick.repositories.DeliveryRepository;
 import com.polytechnique.tiibntick.repositories.PersonRepository;
 import com.polytechnique.tiibntick.services.support.EmailService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -26,20 +25,35 @@ import java.util.UUID;
  *
  * @author François-Charles ATANGA
  * @date 21/02/2026
- *       Note: Implemented delivery creation, failure handling, cancellation
- *       logic,
- *       and automated email notifications for all parties.
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class DeliveryService {
 
         private final DeliveryRepository deliveryRepository;
         private final AnnouncementRepository announcementRepository;
         private final ClientRepository clientRepository;
         private final PersonRepository personRepository;
+        private final DeliveryPersonRepository deliveryPersonRepository;
         private final EmailService emailService;
+        private final DeliveryPersonLocationService deliveryPersonLocationService;
+
+        public DeliveryService(
+                        DeliveryRepository deliveryRepository,
+                        AnnouncementRepository announcementRepository,
+                        ClientRepository clientRepository,
+                        PersonRepository personRepository,
+                        DeliveryPersonRepository deliveryPersonRepository,
+                        EmailService emailService,
+                        @Lazy DeliveryPersonLocationService deliveryPersonLocationService) {
+                this.deliveryRepository = deliveryRepository;
+                this.announcementRepository = announcementRepository;
+                this.clientRepository = clientRepository;
+                this.personRepository = personRepository;
+                this.deliveryPersonRepository = deliveryPersonRepository;
+                this.emailService = emailService;
+                this.deliveryPersonLocationService = deliveryPersonLocationService;
+        }
 
         @Transactional("connectionFactoryTransactionManager")
         public Mono<DeliveryResponseDTO> createDelivery(DeliveryRequestDTO request) {
@@ -106,16 +120,51 @@ public class DeliveryService {
                                 });
         }
 
-        private Mono<DeliveryResponseDTO> updateDeliveryStatus(UUID deliveryId, DeliveryStatus status,
+        @Transactional("connectionFactoryTransactionManager")
+        public Mono<DeliveryResponseDTO> startTransit(UUID deliveryId) {
+                log.info("Marking delivery {} as IN_TRANSIT", deliveryId);
+                return updateDeliveryStatus(deliveryId, DeliveryStatus.IN_TRANSIT, "en cours de livraison");
+        }
+
+        public Mono<LocationResponseDTO> getDeliveryLocation(UUID deliveryId) {
+                log.info("Fetching location for delivery {}", deliveryId);
+                return deliveryRepository.findById(deliveryId)
+                                .switchIfEmpty(Mono.error(new RuntimeException("Delivery not found")))
+                                .flatMap(delivery -> deliveryPersonRepository.findById(delivery.getDeliveryPersonId()))
+                                .switchIfEmpty(Mono.error(new RuntimeException("Delivery Person not found")))
+                                .map(dp -> {
+                                        LocationResponseDTO response = new LocationResponseDTO();
+                                        response.setLatitude(
+                                                        dp.getLatitudeGps() != null ? dp.getLatitudeGps().doubleValue()
+                                                                        : null);
+                                        response.setLongitude(dp.getLongitudeGps() != null
+                                                        ? dp.getLongitudeGps().doubleValue()
+                                                        : null);
+                                        return response;
+                                });
+        }
+
+        public Mono<DeliveryResponseDTO> updateDeliveryStatus(UUID deliveryId, DeliveryStatus status,
                         String statusLabel) {
                 return deliveryRepository.findById(deliveryId)
                                 .switchIfEmpty(Mono.error(new RuntimeException("Delivery not found")))
                                 .flatMap(delivery -> {
                                         delivery.setStatus(status);
                                         return deliveryRepository.save(delivery)
-                                                        .flatMap(savedDelivery -> notifyParties(savedDelivery,
-                                                                        statusLabel)
-                                                                        .thenReturn(mapToResponse(savedDelivery)));
+                                                        .flatMap(savedDelivery -> {
+                                                                Mono<Void> syncMono = Mono.empty();
+                                                                if (status == DeliveryStatus.IN_TRANSIT
+                                                                                || status == DeliveryStatus.DELIVERED) {
+                                                                        syncMono = deliveryPersonLocationService
+                                                                                        .syncToElasticsearch(
+                                                                                                        savedDelivery
+                                                                                                                        .getDeliveryPersonId());
+                                                                }
+                                                                return syncMono.then(notifyParties(savedDelivery,
+                                                                                statusLabel))
+                                                                                .thenReturn(mapToResponse(
+                                                                                                savedDelivery));
+                                                        });
                                 });
         }
 
@@ -127,27 +176,22 @@ public class DeliveryService {
                                         String body = "Bonjour,\n\nNous vous informons que la livraison #"
                                                         + delivery.getId() +
                                                         " liée à l'annonce '" + announcement.getTitle()
-                                                        + "' est désormais " + statusLabel + ".\n\n"
-                                                        +
+                                                        + "' est désormais " + statusLabel +
+                                                        ".\n\n" +
                                                         "Cordialement,\nL'équipe TiiBnTick";
 
                                         // Notify Shipper and Recipient (direct emails from Announcement)
                                         Mono<Void> notifyShipper = emailService.sendSimpleMessageReactive(
-                                                        announcement.getShipperEmail(),
-                                                        subject, body);
-                                        Mono<Void> notifyRecipient = emailService
-                                                        .sendSimpleMessageReactive(announcement.getRecipientEmail(),
-                                                                        subject, body);
+                                                        announcement.getShipperEmail(), subject, body);
+                                        Mono<Void> notifyRecipient = emailService.sendSimpleMessageReactive(
+                                                        announcement.getRecipientEmail(), subject, body);
 
                                         // Notify Client (fetch via Person)
                                         Mono<Void> notifyClient = clientRepository.findById(announcement.getClientId())
                                                         .flatMap(client -> personRepository
                                                                         .findById(client.getPersonId()))
-                                                        .flatMap(
-                                                                        person -> emailService
-                                                                                        .sendSimpleMessageReactive(
-                                                                                                        person.getEmail(),
-                                                                                                        subject, body));
+                                                        .flatMap(person -> emailService.sendSimpleMessageReactive(
+                                                                        person.getEmail(), subject, body));
 
                                         return Mono.when(notifyShipper, notifyRecipient, notifyClient);
                                 });
@@ -158,24 +202,22 @@ public class DeliveryService {
                                 .flatMap(announcement -> {
                                         String subject = "TiiBnTick - Votre colis a été récupéré";
                                         String body = "Bonjour,\n\nNous vous informons que le livreur a récupéré votre colis pour la livraison #"
-                                                        + delivery.getId() +
-                                                        " (Annonce: '" + announcement.getTitle() + "').\n\n"
-                                                        + "Le colis est désormais en route.\n\n"
-                                                        + "Cordialement,\nL'équipe TiiBnTick";
+                                                        +
+                                                        delivery.getId() + " (Annonce: '" + announcement.getTitle()
+                                                        + "').\n\n" +
+                                                        "Le colis est désormais en route.\n\n" +
+                                                        "Cordialement,\nL'équipe TiiBnTick";
 
                                         // Notify Recipient (destinataire)
-                                        Mono<Void> notifyRecipient = emailService
-                                                        .sendSimpleMessageReactive(announcement.getRecipientEmail(),
-                                                                        subject, body);
+                                        Mono<Void> notifyRecipient = emailService.sendSimpleMessageReactive(
+                                                        announcement.getRecipientEmail(), subject, body);
 
                                         // Notify Client (donneur d'ordre)
                                         Mono<Void> notifyClient = clientRepository.findById(announcement.getClientId())
                                                         .flatMap(client -> personRepository
                                                                         .findById(client.getPersonId()))
-                                                        .flatMap(person -> emailService
-                                                                        .sendSimpleMessageReactive(
-                                                                                        person.getEmail(),
-                                                                                        subject, body));
+                                                        .flatMap(person -> emailService.sendSimpleMessageReactive(
+                                                                        person.getEmail(), subject, body));
 
                                         return Mono.when(notifyRecipient, notifyClient);
                                 });

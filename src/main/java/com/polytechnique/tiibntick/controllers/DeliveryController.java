@@ -47,4 +47,10 @@ public class DeliveryController {
     public Mono<DeliveryResponseDTO> pickupDelivery(@PathVariable UUID id) {
         return deliveryService.pickupDelivery(id);
     }
+
+    @GetMapping("/{id}/tracking")
+    public Mono<com.polytechnique.tiibntick.dtos.responses.LocationResponseDTO> getDeliveryTracking(
+            @PathVariable UUID id) {
+        return deliveryService.getDeliveryLocation(id);
+    }
 }
