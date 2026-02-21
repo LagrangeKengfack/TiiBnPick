@@ -6,6 +6,7 @@ import com.polytechnique.tiibntick.models.Announcement;
 import com.polytechnique.tiibntick.models.Client;
 import com.polytechnique.tiibntick.models.Delivery;
 import com.polytechnique.tiibntick.models.Person;
+import com.polytechnique.tiibntick.models.enums.announcement.AnnouncementStatus;
 import com.polytechnique.tiibntick.models.enums.delivery.DeliveryStatus;
 import com.polytechnique.tiibntick.repositories.AnnouncementRepository;
 import com.polytechnique.tiibntick.repositories.ClientRepository;
@@ -48,28 +49,35 @@ public class DeliveryService {
                 return announcementRepository.findById(request.getAnnouncementId())
                                 .switchIfEmpty(Mono.error(new RuntimeException("Announcement not found")))
                                 .flatMap(announcement -> {
-                                        Delivery delivery = new Delivery();
-                                        delivery.setId(UUID.randomUUID());
-                                        delivery.setAnnouncementId(announcement.getId());
-                                        delivery.setDeliveryPersonId(request.getDeliveryPersonId());
-                                        delivery.setStatus(DeliveryStatus.CREATED);
-                                        delivery.setPickupMinTime(request.getPickupMinTime());
+                                        // Update announcement status to ASSIGNED
+                                        announcement.setStatus(AnnouncementStatus.ASSIGNED);
+                                        return announcementRepository.save(announcement)
+                                                        .flatMap(savedAnnouncement -> {
+                                                                Delivery delivery = new Delivery();
+                                                                delivery.setId(UUID.randomUUID());
+                                                                delivery.setAnnouncementId(savedAnnouncement.getId());
+                                                                delivery.setDeliveryPersonId(
+                                                                                request.getDeliveryPersonId());
+                                                                delivery.setStatus(DeliveryStatus.CREATED);
+                                                                delivery.setPickupMinTime(request.getPickupMinTime());
 
-                                        // Fields inherited from Announcement
-                                        delivery.setTarif(announcement.getAmount() != null
-                                                        ? announcement.getAmount().intValue()
-                                                        : 0);
-                                        delivery.setUrgency(announcement.getUrgency());
-                                        delivery.setDistanceKm(announcement.getDistance());
-                                        delivery.setDuration(announcement.getDuration());
+                                                                // Fields inherited from Announcement
+                                                                delivery.setTarif(savedAnnouncement.getAmount() != null
+                                                                                ? savedAnnouncement.getAmount()
+                                                                                                .intValue()
+                                                                                : 0);
+                                                                delivery.setUrgency(savedAnnouncement.getUrgency());
+                                                                delivery.setDistanceKm(savedAnnouncement.getDistance());
+                                                                delivery.setDuration(savedAnnouncement.getDuration());
 
-                                        // Fields forced to null as per user requirement
-                                        delivery.setPickupMaxTime(null);
-                                        delivery.setDeliveryMinTime(null);
-                                        delivery.setDeliveryMaxTime(null);
+                                                                // Fields forced to null as per user requirement
+                                                                delivery.setPickupMaxTime(null);
+                                                                delivery.setDeliveryMinTime(null);
+                                                                delivery.setDeliveryMaxTime(null);
 
-                                        return deliveryRepository.save(delivery)
-                                                        .map(this::mapToResponse);
+                                                                return deliveryRepository.save(delivery)
+                                                                                .map(this::mapToResponse);
+                                                        });
                                 });
         }
 
