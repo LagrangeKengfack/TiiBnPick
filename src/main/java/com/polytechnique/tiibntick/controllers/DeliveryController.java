@@ -53,4 +53,10 @@ public class DeliveryController {
             @PathVariable UUID id) {
         return deliveryService.getDeliveryLocation(id);
     }
+
+    @PostMapping("/{id}/arriving-soon")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Void> notifyArrivingSoon(@PathVariable UUID id) {
+        return deliveryService.notifyArrivingSoon(id);
+    }
 }

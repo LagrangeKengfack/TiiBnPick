@@ -168,6 +168,44 @@ public class DeliveryService {
                                 });
         }
 
+        public Mono<Void> notifyArrivingSoon(UUID deliveryId) {
+                log.info("Notifying parties that delivery {} is arriving soon", deliveryId);
+                return deliveryRepository.findById(deliveryId)
+                                .switchIfEmpty(Mono.error(new RuntimeException("Delivery not found")))
+                                .flatMap(delivery -> announcementRepository.findById(delivery.getAnnouncementId())
+                                                .flatMap(announcement -> {
+                                                        String subject = "TiiBnTick - Arrivée imminente de votre livreur";
+                                                        String body = "Bonjour,\n\nVotre livreur arrive dans environ 1 minute pour la livraison #"
+                                                                        +
+                                                                        delivery.getId() + " (Annonce: '"
+                                                                        + announcement.getTitle() + "').\n\n" +
+                                                                        "Merci de vous tenir prêt.\n\n" +
+                                                                        "Cordialement,\nL'équipe TiiBnTick";
+
+                                                        // Notify Shipper and Recipient
+                                                        Mono<Void> notifyShipper = emailService
+                                                                        .sendSimpleMessageReactive(
+                                                                                        announcement.getShipperEmail(),
+                                                                                        subject, body);
+                                                        Mono<Void> notifyRecipient = emailService
+                                                                        .sendSimpleMessageReactive(
+                                                                                        announcement.getRecipientEmail(),
+                                                                                        subject, body);
+
+                                                        // Notify Client
+                                                        Mono<Void> notifyClient = clientRepository
+                                                                        .findById(announcement.getClientId())
+                                                                        .flatMap(client -> personRepository
+                                                                                        .findById(client.getPersonId()))
+                                                                        .flatMap(person -> emailService
+                                                                                        .sendSimpleMessageReactive(
+                                                                                                        person.getEmail(),
+                                                                                                        subject, body));
+
+                                                        return Mono.when(notifyShipper, notifyRecipient, notifyClient);
+                                                }));
+        }
+
         private Mono<Void> notifyParties(Delivery delivery, String statusLabel) {
                 return announcementRepository.findById(delivery.getAnnouncementId())
                                 .flatMap(announcement -> {
