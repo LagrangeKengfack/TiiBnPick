@@ -1,5 +1,6 @@
 package com.polytechnique.tiibntick.controllers;
 
+import com.polytechnique.tiibntick.dtos.delivery.CompleteDeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryResponseDTO;
 import com.polytechnique.tiibntick.services.DeliveryService;
@@ -58,5 +59,12 @@ public class DeliveryController {
     @ResponseStatus(HttpStatus.OK)
     public Mono<Void> notifyArrivingSoon(@PathVariable UUID id) {
         return deliveryService.notifyArrivingSoon(id);
+    }
+
+    @PostMapping("/{id}/complete")
+    public Mono<DeliveryResponseDTO> completeDelivery(
+            @PathVariable UUID id,
+            @RequestBody CompleteDeliveryRequestDTO request) {
+        return deliveryService.completeDelivery(id, request);
     }
 }

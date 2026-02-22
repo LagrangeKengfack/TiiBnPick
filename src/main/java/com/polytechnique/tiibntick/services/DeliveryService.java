@@ -1,5 +1,6 @@
 package com.polytechnique.tiibntick.services;
 
+import com.polytechnique.tiibntick.dtos.delivery.CompleteDeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryResponseDTO;
 import com.polytechnique.tiibntick.dtos.responses.LocationResponseDTO;
@@ -204,6 +205,27 @@ public class DeliveryService {
 
                                                         return Mono.when(notifyShipper, notifyRecipient, notifyClient);
                                                 }));
+        }
+
+        @Transactional("connectionFactoryTransactionManager")
+        public Mono<DeliveryResponseDTO> completeDelivery(UUID deliveryId, CompleteDeliveryRequestDTO request) {
+                log.info("Completing delivery {} with duration {} and distance {}",
+                                deliveryId, request.getActualDuration(), request.getActualDistanceKm());
+
+                return deliveryRepository.findById(deliveryId)
+                                .switchIfEmpty(Mono.error(new RuntimeException("Delivery not found")))
+                                .flatMap(delivery -> {
+                                        delivery.setStatus(DeliveryStatus.DELIVERED);
+                                        delivery.setDuration(request.getActualDuration());
+                                        delivery.setDistanceKm(request.getActualDistanceKm());
+
+                                        return deliveryRepository.save(delivery)
+                                                        .flatMap(savedDelivery -> deliveryPersonLocationService
+                                                                        .syncToElasticsearch(savedDelivery
+                                                                                        .getDeliveryPersonId())
+                                                                        .then(notifyParties(savedDelivery, "terminée"))
+                                                                        .thenReturn(mapToResponse(savedDelivery)));
+                                });
         }
 
         private Mono<Void> notifyParties(Delivery delivery, String statusLabel) {
