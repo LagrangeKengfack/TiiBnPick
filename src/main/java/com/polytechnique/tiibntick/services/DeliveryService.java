@@ -3,12 +3,15 @@ package com.polytechnique.tiibntick.services;
 import com.polytechnique.tiibntick.dtos.delivery.CompleteDeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryResponseDTO;
+import com.polytechnique.tiibntick.dtos.delivery.DeliveryReviewRequestDTO;
 import com.polytechnique.tiibntick.dtos.responses.LocationResponseDTO;
+import com.polytechnique.tiibntick.models.Comment;
 import com.polytechnique.tiibntick.models.Delivery;
 import com.polytechnique.tiibntick.models.enums.announcement.AnnouncementStatus;
 import com.polytechnique.tiibntick.models.enums.delivery.DeliveryStatus;
 import com.polytechnique.tiibntick.repositories.AnnouncementRepository;
 import com.polytechnique.tiibntick.repositories.ClientRepository;
+import com.polytechnique.tiibntick.repositories.CommentRepository;
 import com.polytechnique.tiibntick.repositories.DeliveryPersonRepository;
 import com.polytechnique.tiibntick.repositories.DeliveryRepository;
 import com.polytechnique.tiibntick.repositories.PersonRepository;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -36,6 +40,7 @@ public class DeliveryService {
         private final ClientRepository clientRepository;
         private final PersonRepository personRepository;
         private final DeliveryPersonRepository deliveryPersonRepository;
+        private final CommentRepository commentRepository;
         private final EmailService emailService;
         private final DeliveryPersonLocationService deliveryPersonLocationService;
 
@@ -45,6 +50,7 @@ public class DeliveryService {
                         ClientRepository clientRepository,
                         PersonRepository personRepository,
                         DeliveryPersonRepository deliveryPersonRepository,
+                        CommentRepository commentRepository,
                         EmailService emailService,
                         @Lazy DeliveryPersonLocationService deliveryPersonLocationService) {
                 this.deliveryRepository = deliveryRepository;
@@ -52,6 +58,7 @@ public class DeliveryService {
                 this.clientRepository = clientRepository;
                 this.personRepository = personRepository;
                 this.deliveryPersonRepository = deliveryPersonRepository;
+                this.commentRepository = commentRepository;
                 this.emailService = emailService;
                 this.deliveryPersonLocationService = deliveryPersonLocationService;
         }
@@ -205,6 +212,73 @@ public class DeliveryService {
 
                                                         return Mono.when(notifyShipper, notifyRecipient, notifyClient);
                                                 }));
+        }
+
+        @Transactional("connectionFactoryTransactionManager")
+        public Mono<DeliveryResponseDTO> reviewDeliveryPerson(UUID deliveryId, DeliveryReviewRequestDTO request) {
+                log.info("Client reviewing delivery person for delivery {}", deliveryId);
+                return deliveryRepository.findById(deliveryId)
+                                .switchIfEmpty(Mono.error(new RuntimeException("Delivery not found")))
+                                .flatMap(delivery -> {
+                                        delivery.setNoteLivreur(request.getNote());
+                                        return deliveryRepository.save(delivery)
+                                                        .flatMap(savedDelivery -> announcementRepository
+                                                                        .findById(savedDelivery.getAnnouncementId())
+                                                                        .flatMap(announcement -> deliveryPersonRepository
+                                                                                        .findById(savedDelivery
+                                                                                                        .getDeliveryPersonId())
+                                                                                        .flatMap(dp -> clientRepository
+                                                                                                        .findById(announcement
+                                                                                                                        .getClientId())
+                                                                                                        .flatMap(client -> {
+                                                                                                                Comment comment = new Comment();
+                                                                                                                comment.setPersonId(
+                                                                                                                                client.getPersonId());
+                                                                                                                comment.setPersonReceiverId(
+                                                                                                                                dp.getPersonId());
+                                                                                                                comment.setMessage(
+                                                                                                                                request.getMessage());
+                                                                                                                comment.setNoteObtenue(
+                                                                                                                                request.getNote()
+                                                                                                                                                .intValue());
+                                                                                                                comment.setCreatedAt(
+                                                                                                                                Instant.now());
+                                                                                                                return commentRepository
+                                                                                                                                .save(comment)
+                                                                                                                                .thenReturn(mapToResponse(
+                                                                                                                                                savedDelivery));
+                                                                                                        }))));
+                                });
+        }
+
+        @Transactional("connectionFactoryTransactionManager")
+        public Mono<DeliveryResponseDTO> reviewClient(UUID deliveryId, DeliveryReviewRequestDTO request) {
+                log.info("Delivery person reviewing client for delivery {}", deliveryId);
+                return deliveryRepository.findById(deliveryId)
+                                .switchIfEmpty(Mono.error(new RuntimeException("Delivery not found")))
+                                .flatMap(delivery -> announcementRepository.findById(delivery.getAnnouncementId())
+                                                .flatMap(announcement -> deliveryPersonRepository
+                                                                .findById(delivery.getDeliveryPersonId())
+                                                                .flatMap(dp -> clientRepository
+                                                                                .findById(announcement.getClientId())
+                                                                                .flatMap(client -> {
+                                                                                        Comment comment = new Comment();
+                                                                                        comment.setPersonId(dp
+                                                                                                        .getPersonId());
+                                                                                        comment.setPersonReceiverId(
+                                                                                                        client.getPersonId());
+                                                                                        comment.setMessage(request
+                                                                                                        .getMessage());
+                                                                                        comment.setNoteObtenue(request
+                                                                                                        .getNote()
+                                                                                                        .intValue());
+                                                                                        comment.setCreatedAt(Instant
+                                                                                                        .now());
+                                                                                        return commentRepository.save(
+                                                                                                        comment)
+                                                                                                        .thenReturn(mapToResponse(
+                                                                                                                        delivery));
+                                                                                }))));
         }
 
         @Transactional("connectionFactoryTransactionManager")

@@ -3,6 +3,7 @@ package com.polytechnique.tiibntick.controllers;
 import com.polytechnique.tiibntick.dtos.delivery.CompleteDeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryRequestDTO;
 import com.polytechnique.tiibntick.dtos.delivery.DeliveryResponseDTO;
+import com.polytechnique.tiibntick.dtos.delivery.DeliveryReviewRequestDTO;
 import com.polytechnique.tiibntick.services.DeliveryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -66,5 +67,19 @@ public class DeliveryController {
             @PathVariable UUID id,
             @RequestBody CompleteDeliveryRequestDTO request) {
         return deliveryService.completeDelivery(id, request);
+    }
+
+    @PostMapping("/{id}/review/delivery-person")
+    public Mono<DeliveryResponseDTO> reviewDeliveryPerson(
+            @PathVariable UUID id,
+            @RequestBody DeliveryReviewRequestDTO request) {
+        return deliveryService.reviewDeliveryPerson(id, request);
+    }
+
+    @PostMapping("/{id}/review/client")
+    public Mono<DeliveryResponseDTO> reviewClient(
+            @PathVariable UUID id,
+            @RequestBody DeliveryReviewRequestDTO request) {
+        return deliveryService.reviewClient(id, request);
     }
 }

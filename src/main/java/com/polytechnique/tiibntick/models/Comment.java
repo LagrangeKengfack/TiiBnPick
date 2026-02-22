@@ -39,8 +39,8 @@ public class Comment {
     @Column("message")
     private String message;
 
-    @Column("num_of_like")
-    private Integer numOfLike;
+    @Column("note_obtenue")
+    private Integer noteObtenue = 0;
 
     @Column("created_at")
     private Instant createdAt;
