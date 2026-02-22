@@ -231,4 +231,8 @@
         <validCheckSum>ANY</validCheckSum>
         <sqlFile path="db/changelog/20260222_rename_comment_likes_to_note.sql" relativeToChangelogFile="false"/>
     </changeSet>
+    <changeSet id="042-set-initial-rating-to-2-5" author="TiiBnTickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/20260222_set_initial_rating_to_2_5.sql" relativeToChangelogFile="false"/>
+    </changeSet>
 </databaseChangeLog>

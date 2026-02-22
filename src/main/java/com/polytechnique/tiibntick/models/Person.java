@@ -67,7 +67,7 @@ public class Person implements Persistable<UUID> {
     private String criminalRecord;
 
     @Column("rating")
-    private Double rating;
+    private Double rating = 2.5;
 
     @Column("total_deliveries")
     private Integer totalDeliveries;
