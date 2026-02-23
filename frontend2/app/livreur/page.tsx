@@ -116,22 +116,29 @@ export function LivreurDashboard() {
     }
   }, [])
 
+  // Stable user ID for dependency (avoids re-fetching on every user object change)
+  const deliveryPersonIdRef = user?.deliveryPersonId || user?.id
+
   // Fetch delivery person's subscriptions (active deliveries)
   const fetchMyDeliveries = useCallback(async () => {
-    const dpId = user?.deliveryPersonId || user?.id
-    if (!dpId) return
+    if (!deliveryPersonIdRef) return
     setActiveLoading(true)
     try {
-      const data = await getDeliveryPersonSubscriptions(dpId)
+      const data = await getDeliveryPersonSubscriptions(deliveryPersonIdRef)
       setActiveDeliveries(data)
-      // Pre-populate subscribed IDs set for button state
-      setSubscribedIds(new Set(data.map(a => a.id)))
+      // Merge API subscription IDs into existing set (don't overwrite locally-added IDs)
+      const apiIds = data.map(a => a.id)
+      setSubscribedIds(prev => {
+        const merged = new Set(prev)
+        apiIds.forEach(id => merged.add(id))
+        return merged
+      })
     } catch (error) {
       console.error('Error fetching my deliveries:', error)
     } finally {
       setActiveLoading(false)
     }
-  }, [user])
+  }, [deliveryPersonIdRef])
 
   useEffect(() => {
     fetchAvailableDeliveries()
@@ -157,8 +164,7 @@ export function LivreurDashboard() {
             const announcement = res.data;
             setAvailableDeliveries(prev => {
               if (prev.find(d => d.id === announcement.id)) return prev;
-              const mapped = mapBackendToFrontend(announcement);
-              return [mapped, ...prev];
+              return [announcement as AnnouncementResponseDTO, ...prev];
             });
 
             toast({
@@ -181,66 +187,21 @@ export function LivreurDashboard() {
     };
   }, [user?.id]);
 
-  const mapBackendToFrontend = (ann: any) => ({
-    id: ann.id,
-    customerName: ann.shipperFirstName + ' ' + ann.shipperLastName,
-    customerFullName: ann.shipperFirstName + ' ' + ann.shipperLastName,
-    customerEmail: ann.shipperEmail,
-    customerPhone: ann.shipperPhone,
-    pickupAddress: ann.pickupAddress ? `${ann.pickupAddress.street}, ${ann.pickupAddress.city}` : 'Adresse de retrait',
-    deliveryAddress: ann.deliveryAddress ? `${ann.deliveryAddress.street}, ${ann.deliveryAddress.city}` : 'Adresse de livraison',
-    senderCoords: { lat: ann.pickupAddress?.latitude, lon: ann.pickupAddress?.longitude },
-    recipientCoords: { lat: ann.deliveryAddress?.latitude, lon: ann.deliveryAddress?.longitude },
-    distance: ann.distance || 0,
-    estimatedTime: ann.duration ? `${ann.duration} min` : 'N/A',
-    price: ann.amount || 0,
-    packageType: ann.packet?.designation || 'Colis',
-    designation: ann.packet?.designation,
-    description: ann.packet?.description,
-    weight: ann.packet?.weight,
-    options: ([ann.packet?.fragile ? 'Fragile' : null, ann.packet?.isPerishable ? 'Périssable' : null].filter(Boolean) as string[]),
-    isFragile: ann.packet?.fragile,
-    deliveryType: ann.transportMethod || 'Standard',
-    urgency: ann.status === 'PUBLISHED' ? 'normal' : 'urgent',
-    dimensions: `${ann.packet?.length || 0}x${ann.packet?.width || 0}x${ann.packet?.height || 0}`,
-    volume: (ann.packet?.length || 0) * (ann.packet?.width || 0) * (ann.packet?.height || 0),
-    customerRating: 4.5, // Mocked as not in DTO
-    packagePhoto: ann.packet?.photoPacket || '/package_sample.png',
-    vehicleType: 'moteur', // Default
-    feedback: {
-      likes: 12,
-      comments: [
-        { driverName: 'Moussa D.', content: 'Client très ponctuel et sympathique.' },
-        { driverName: 'Sery G.', content: 'Rien à signaler, parfait.' }
-      ]
-    }
-  });
-
   useEffect(() => {
-    // Initial fetch of available announcements
-    const fetchAnnouncements = async () => {
-      try {
-        const res = await apiClient.get('/api/announcements');
-        const data = res.data;
-        const enriched = data.filter((a: any) => a.status === 'PUBLISHED').map(mapBackendToFrontend);
-        setAvailableDeliveries(enriched);
-      } catch (e) {
-        console.error("Failed to fetch announcements", e);
-      }
-    };
-    fetchAnnouncements();
-  }, []);
-
-  useEffect(() => {
-    if (selectedDelivery && selectedDelivery.senderCoords && selectedDelivery.recipientCoords) {
+    if (
+      selectedDelivery?.pickupAddress?.latitude &&
+      selectedDelivery?.pickupAddress?.longitude &&
+      selectedDelivery?.deliveryAddress?.latitude &&
+      selectedDelivery?.deliveryAddress?.longitude
+    ) {
       const fetchRoute = async () => {
         try {
           const route = await getRoute(
-            selectedDelivery.senderCoords.lat,
-            selectedDelivery.senderCoords.lon,
-            selectedDelivery.recipientCoords.lat,
-            selectedDelivery.recipientCoords.lon,
-            selectedDelivery.vehicleType === 'velo' ? 'bike' : 'driving'
+            selectedDelivery.pickupAddress.latitude,
+            selectedDelivery.pickupAddress.longitude,
+            selectedDelivery.deliveryAddress.latitude,
+            selectedDelivery.deliveryAddress.longitude,
+            selectedDelivery.transportMethod === 'bike' ? 'bike' : 'driving'
           );
           setActiveRoute(route);
         } catch (e) {
@@ -654,51 +615,57 @@ export function LivreurDashboard() {
               <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) { setSelectedDelivery(null); } }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader className="border-b pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-                          <Package className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <div>
-                          <DialogTitle className="text-xl">Détails de l'expédition</DialogTitle>
-                          <DialogDescription className="font-mono text-orange-600">{selectedDelivery?.id}</DialogDescription>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+                        <Package className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-xl">{selectedDelivery?.title || "Détails de l'annonce"}</DialogTitle>
+                        <DialogDescription className="text-xs font-mono text-orange-600">{selectedDelivery?.id}</DialogDescription>
                       </div>
                     </div>
                   </DialogHeader>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
-                    {/* Colonne Gauche : Infos Trajet & Carte */}
-                    <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+                    {/* Left Column: Route Info & Map */}
+                    <div className="space-y-4">
                       <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl space-y-4">
                         <div className="flex items-start gap-3">
                           <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
                           <div>
                             <p className="text-xs text-gray-500 uppercase font-bold">Lieu de Retrait</p>
-                            <p className="text-sm text-gray-700">{selectedDelivery?.pickupAddress}</p>
+                            <p className="text-sm text-gray-700">
+                              {selectedDelivery?.pickupAddress?.street && `${selectedDelivery.pickupAddress.street}, `}
+                              {selectedDelivery?.pickupAddress?.district && `${selectedDelivery.pickupAddress.district}, `}
+                              {selectedDelivery?.pickupAddress?.city || 'N/A'}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
                           <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
                           <div>
                             <p className="text-xs text-gray-500 uppercase font-bold">Lieu de Livraison</p>
-                            <p className="text-sm text-gray-700">{selectedDelivery?.deliveryAddress}</p>
+                            <p className="text-sm text-gray-700">
+                              {selectedDelivery?.deliveryAddress?.street && `${selectedDelivery.deliveryAddress.street}, `}
+                              {selectedDelivery?.deliveryAddress?.district && `${selectedDelivery.deliveryAddress.district}, `}
+                              {selectedDelivery?.deliveryAddress?.city || 'N/A'}
+                            </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Carte logic integration */}
+                      {/* Map */}
                       <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm h-64 relative z-0">
-                        {selectedDelivery && selectedDelivery.senderCoords && (
+                        {selectedDelivery?.pickupAddress?.latitude && selectedDelivery?.deliveryAddress?.latitude && (
                           <MapLeaflet
                             center={[
-                              (selectedDelivery.senderCoords.lat + selectedDelivery.recipientCoords.lat) / 2,
-                              (selectedDelivery.senderCoords.lon + selectedDelivery.recipientCoords.lon) / 2
+                              (selectedDelivery.pickupAddress.latitude + selectedDelivery.deliveryAddress.latitude) / 2,
+                              (selectedDelivery.pickupAddress.longitude + selectedDelivery.deliveryAddress.longitude) / 2
                             ]}
                             zoom={12}
                             markers={[
-                              { position: [selectedDelivery.senderCoords.lat, selectedDelivery.senderCoords.lon], label: "Retrait", color: "#f97316" },
-                              { position: [selectedDelivery.recipientCoords.lat, selectedDelivery.recipientCoords.lon], label: "Livraison", color: "#10b981" }
+                              { position: [selectedDelivery.pickupAddress.latitude, selectedDelivery.pickupAddress.longitude], label: "Retrait", color: "#f97316" },
+                              { position: [selectedDelivery.deliveryAddress.latitude, selectedDelivery.deliveryAddress.longitude], label: "Livraison", color: "#10b981" }
                             ]}
                             route={activeRoute}
                           />
@@ -706,133 +673,110 @@ export function LivreurDashboard() {
                       </div>
 
                       <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
-                        <div className="flex items-center gap-2">
-                          <MapIcon className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold">{selectedDelivery?.distance} km</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-orange-600" />
-                          <span className="font-bold">{selectedDelivery?.estimatedTime}</span>
-                        </div>
-                        <div className="text-lg font-black text-orange-600">
-                          {selectedDelivery?.price?.toLocaleString()} FCFA
-                        </div>
+                        {selectedDelivery?.distance && (
+                          <div className="flex items-center gap-2">
+                            <Navigation className="w-5 h-5 text-orange-600" />
+                            <span className="font-bold">{selectedDelivery.distance.toFixed(1)} km</span>
+                          </div>
+                        )}
+                        {selectedDelivery?.duration && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-5 h-5 text-orange-600" />
+                            <span className="font-bold">{Math.round(selectedDelivery.duration)} min</span>
+                          </div>
+                        )}
+                        {selectedDelivery?.amount && (
+                          <div className="text-lg font-black text-orange-600">
+                            {selectedDelivery.amount.toLocaleString()} FCFA
+                          </div>
+                        )}
                       </div>
 
-                      {/* Section Client Profil & Avis */}
-                      <div className="border-t pt-6">
-                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-4">Profil du Client</h4>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                              {selectedDelivery?.customerFullName?.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-bold text-gray-900">{selectedDelivery?.customerFullName}</p>
-                              <div className="flex items-center gap-1">
-                                <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                                <span className="text-xs font-semibold">{selectedDelivery?.customerRating}</span>
-                              </div>
-                            </div>
+                      {/* Transport & Payment info */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {selectedDelivery?.transportMethod && (
+                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                            <p className="text-xs text-gray-500">Mode de transport</p>
+                            <p className="font-medium capitalize">{selectedDelivery.transportMethod}</p>
                           </div>
-                          <div className="grid grid-cols-1 gap-2 text-sm">
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <Mail className="w-4 h-4" />
-                              <span>{selectedDelivery?.customerEmail}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <Phone className="w-4 h-4" />
-                              <span>{selectedDelivery?.customerPhone}</span>
-                            </div>
+                        )}
+                        {selectedDelivery?.paymentMethod && (
+                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                            <p className="text-xs text-gray-500">Paiement</p>
+                            <p className="font-medium capitalize">{selectedDelivery.paymentMethod}</p>
                           </div>
-                        </div>
-
-                        {/* Avis des autres livreurs */}
-                        <div className="mt-6">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-bold text-gray-900">Avis des Livreurs</h4>
-                            <Badge variant="outline" className="flex items-center gap-1 border-orange-200 text-orange-700 bg-orange-50">
-                              <Heart className="w-3 h-3 fill-current" />
-                              {selectedDelivery?.feedback?.likes} likes
-                            </Badge>
-                          </div>
-                          <div className="space-y-3">
-                            {selectedDelivery?.feedback?.comments.map((c: any, idx: number) => (
-                              <div key={idx} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-100">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold">
-                                    {c.driverName.charAt(0)}
-                                  </div>
-                                  <span className="text-xs font-bold text-gray-700">{c.driverName}</span>
-                                </div>
-                                <p className="text-xs text-gray-600 italic">"{c.content}"</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Colonne Droite : Infos Colis & Logistique */}
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Détails du Colis</h4>
+                    {/* Right Column: Description, Packet & Recipient */}
+                    <div className="space-y-4">
+                      {selectedDelivery?.description && (
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-2">Description</h4>
+                          <p className="text-sm text-gray-600">{selectedDelivery.description}</p>
+                        </div>
+                      )}
 
-                        {/* Photo du Colis */}
-                        <div className="mb-4">
-                          <div className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center relative group">
-                            {selectedDelivery?.packagePhoto ? (
-                              <img
-                                src={selectedDelivery.packagePhoto}
-                                alt="Colis"
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="flex flex-col items-center gap-2 text-gray-400">
-                                <Package className="w-8 h-8 opacity-20" />
-                                <p className="text-xs">Aucune photo disponible</p>
+                      {/* Packet Details */}
+                      {selectedDelivery?.packet && (
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 border-b pb-1">Détails du Colis</h4>
+                          <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm">
+                            {selectedDelivery.packet.designation && (
+                              <div>
+                                <p className="text-xs text-gray-500">Désignation</p>
+                                <p className="font-medium">{selectedDelivery.packet.designation}</p>
+                              </div>
+                            )}
+                            {selectedDelivery.packet.weight && (
+                              <div>
+                                <p className="text-xs text-gray-500">Poids</p>
+                                <p className="font-medium">{selectedDelivery.packet.weight} kg</p>
+                              </div>
+                            )}
+                            {selectedDelivery.packet.length && selectedDelivery.packet.width && selectedDelivery.packet.height && (
+                              <div className="col-span-2">
+                                <p className="text-xs text-gray-500">Dimensions (L × l × H)</p>
+                                <p className="font-medium">{selectedDelivery.packet.length} × {selectedDelivery.packet.width} × {selectedDelivery.packet.height} cm</p>
+                              </div>
+                            )}
+                            {selectedDelivery.packet.description && (
+                              <div className="col-span-2">
+                                <p className="text-xs text-gray-500">Description du colis</p>
+                                <p className="text-sm italic text-gray-600">{selectedDelivery.packet.description}</p>
                               </div>
                             )}
                           </div>
                         </div>
+                      )}
 
-                        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                          <div>
-                            <p className="text-xs text-gray-500">Désignation</p>
-                            <p className="font-medium">{selectedDelivery?.designation}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Type de colis</p>
-                            <p className="font-medium">{selectedDelivery?.packageType}</p>
-                          </div>
-                          <div className="col-span-2">
-                            <p className="text-xs text-gray-500">Description</p>
-                            <p className="text-sm italic text-gray-600">{selectedDelivery?.description || 'Aucune description fournie'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Poids</p>
-                            <p className="font-medium">{selectedDelivery?.weight} kg</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Logistique</p>
-                            <p className="font-medium capitalize">{selectedDelivery?.deliveryType}</p>
-                          </div>
+                      {/* Recipient Info */}
+                      <div className="border-t pt-4">
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3">Destinataire</h4>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl space-y-2">
+                          {(selectedDelivery?.recipientFirstName || selectedDelivery?.recipientLastName) && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                                {selectedDelivery?.recipientFirstName?.charAt(0) || '?'}
+                              </div>
+                              <p className="font-bold text-gray-900">{selectedDelivery?.recipientFirstName} {selectedDelivery?.recipientLastName}</p>
+                            </div>
+                          )}
+                          {selectedDelivery?.recipientPhone && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Phone className="w-4 h-4" />
+                              <span>{selectedDelivery.recipientPhone}</span>
+                            </div>
+                          )}
+                          {selectedDelivery?.recipientEmail && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Mail className="w-4 h-4" />
+                              <span>{selectedDelivery.recipientEmail}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-
-                      <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl space-y-4">
-                        <p className="text-sm font-bold text-orange-800 dark:text-orange-300 flex items-center gap-2">
-                          <Shield className="w-4 h-4" />
-                          Options & Sécurité
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline" className={selectedDelivery?.isFragile ? "border-red-500 text-red-600 bg-red-50" : "opacity-30"}>Fragile</Badge>
-                          <Badge variant="outline" className={selectedDelivery?.options?.includes('Périssable') ? "border-orange-500 text-orange-600 bg-orange-50" : "opacity-30"}>Périssable</Badge>
-                          <Badge variant="outline" className={selectedDelivery?.options?.includes('Assurance') ? "border-green-500 text-green-600 bg-green-50" : "opacity-30"}>Assuré</Badge>
-                        </div>
-                      </div>
-
-
                     </div>
                   </div>
                 </DialogContent>
