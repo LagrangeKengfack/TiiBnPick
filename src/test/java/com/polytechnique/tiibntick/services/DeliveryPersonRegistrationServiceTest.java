@@ -86,7 +86,7 @@ class DeliveryPersonRegistrationServiceTest {
         when(lecturePersonService.existsByEmail(anyString())).thenReturn(Mono.just(false));
         when(passwordHasherService.encode("plainPassword")).thenReturn("hashedPassword");
 
-        when(fileStorageService.saveBase64Image(any(), anyString())).thenReturn(Mono.just("path/to/image"));
+        when(fileStorageService.saveFilePart(any(), anyString())).thenReturn(Mono.just("path/to/image"));
 
         when(mapper.toPerson(request)).thenReturn(person);
         when(mapper.toDeliveryPerson(request)).thenReturn(deliveryPerson);
@@ -100,7 +100,7 @@ class DeliveryPersonRegistrationServiceTest {
         when(creationAddressService.createAddress(any(Address.class))).thenReturn(Mono.just(new Address()));
 
         // Act & Assert
-        StepVerifier.create(service.register(request))
+        StepVerifier.create(service.register(request, null, null, null, null, null, null))
                 .expectNextMatches(response -> "PENDING".equals(response.getStatus()) &&
                         response.getDeliveryPersonId() != null)
                 .verifyComplete();
@@ -121,7 +121,7 @@ class DeliveryPersonRegistrationServiceTest {
         when(lecturePersonService.existsByEmail(anyString())).thenReturn(Mono.just(true));
 
         // Act & Assert
-        StepVerifier.create(service.register(request))
+        StepVerifier.create(service.register(request, null, null, null, null, null, null))
                 .expectError(EmailAlreadyUsedException.class)
                 .verify();
 

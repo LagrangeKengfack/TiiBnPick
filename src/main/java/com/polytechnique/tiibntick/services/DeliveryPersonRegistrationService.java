@@ -127,8 +127,8 @@ public class DeliveryPersonRegistrationService {
                                                                 DeliveryPerson deliveryPerson = mapper
                                                                                 .toDeliveryPerson(updatedRequest);
                                                                 deliveryPerson.setPersonId(savedPerson.getId());
-                                                                deliveryPerson.setStatus(DeliveryPersonStatus.APPROVED);
-                                                                deliveryPerson.setIsActive(true);
+                                                                deliveryPerson.setStatus(DeliveryPersonStatus.PENDING);
+                                                                deliveryPerson.setIsActive(false);
 
                                                                 return creationDeliveryPersonService
                                                                                 .createDeliveryPerson(deliveryPerson)
@@ -170,7 +170,7 @@ public class DeliveryPersonRegistrationService {
                                                         .map(savedDp -> {
                                                                 DeliveryPersonRegistrationResponse response = new DeliveryPersonRegistrationResponse();
                                                                 response.setDeliveryPersonId(savedDp.getId());
-                                                                response.setStatus("APPROVED");
+                                                                response.setStatus("PENDING");
                                                                 return response;
                                                         });
                                 });
