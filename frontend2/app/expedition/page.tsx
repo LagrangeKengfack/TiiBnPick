@@ -412,6 +412,11 @@ export default function ShippingPage() {
               ? { lat: formData.senderData.latitude, lon: formData.senderData.longitude }
               : undefined
           }
+          initialArrivalCoords={
+            formData.recipientData.recipientLatitude && formData.recipientData.recipientLongitude
+              ? { lat: formData.recipientData.recipientLatitude, lon: formData.recipientData.recipientLongitude }
+              : undefined
+          }
           transportMethod={formData.packageData.transportMethod.join(',')}
           onContinue={(routeData, travelPrice) => setFormData(prev => ({ ...prev, routeData, pricing: { ...prev.pricing, travelPrice }, currentStep: 5 }))}
           onBack={() => setFormData(prev => ({ ...prev, currentStep: 3 }))}

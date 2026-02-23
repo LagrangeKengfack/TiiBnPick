@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Clock } from 'lucide-react'
+import { ArrowLeft, Loader2, Clock, AlertTriangle, RefreshCw, SkipForward } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { geocode } from '@/services/geocoding'
 import { getRoute } from '@/services/routing'
@@ -62,108 +62,104 @@ export default function RouteSelectionStep({
   const [markers, setMarkers] = useState<any[]>([])
   const [routeGeoJSON, setRouteGeoJSON] = useState<GeoJSON.Feature | null>(null)
   const [mapCenter, setMapCenter] = useState<[number, number]>([5.33, -4.03])
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const setupFromAddresses = useCallback(async () => {
+    if (!initialDepartureAddress && !initialDepartureCoords) return
+    if (!initialArrivalAddress && !initialArrivalCoords) return
+
+    setIsLoading(true)
+    setErrorMessage(null)
+    try {
+      let depLat, depLon, arrLat, arrLon;
+
+      // Helper for geocoding with fallback
+      const geocodeWithFallback = async (address: string) => {
+        let results = await geocode(address);
+        if (results && results.length > 0) return results[0];
+
+        console.warn(`Precise geocoding failed for: ${address}. Retrying with broader query.`);
+        const parts = address.split(',');
+        if (parts.length > 1) {
+          const broaderQuery = parts.slice(-2).join(', ');
+          results = await geocode(broaderQuery);
+          if (results && results.length > 0) return results[0];
+        }
+        return null;
+      };
+
+      // Gérer le point de départ
+      if (initialDepartureCoords) {
+        depLat = initialDepartureCoords.lat;
+        depLon = initialDepartureCoords.lon;
+      } else if (initialDepartureAddress) {
+        const depResult = await geocodeWithFallback(initialDepartureAddress);
+        if (depResult) {
+          depLat = parseFloat(depResult.lat);
+          depLon = parseFloat(depResult.lon);
+        }
+      }
+
+      // Gérer le point d'arrivée
+      if (initialArrivalCoords) {
+        arrLat = initialArrivalCoords.lat;
+        arrLon = initialArrivalCoords.lon;
+      } else if (initialArrivalAddress) {
+        const arrResult = await geocodeWithFallback(initialArrivalAddress);
+        if (arrResult) {
+          arrLat = parseFloat(arrResult.lat);
+          arrLon = parseFloat(arrResult.lon);
+        }
+      }
+
+      if (depLat !== undefined && depLon !== undefined && arrLat !== undefined && arrLon !== undefined) {
+        setMarkers([
+          { position: [depLat, depLon], label: 'Retrait', color: '#f97316' },
+          { position: [arrLat, arrLon], label: 'Livraison', color: '#10b981' },
+        ]);
+        setMapCenter([(depLat + arrLat) / 2, (depLon + arrLon) / 2]);
+
+        try {
+          const data = await getRoute(depLat, depLon, arrLat, arrLon, transportMethod);
+          if (data && data.routes && data.routes.length > 0) {
+            const route = data.routes[0];
+            const distanceKm = Math.round((route.distance / 1000) * 100) / 100;
+            const durationMinutes = Math.round(route.duration / 60);
+
+            setRouteData(prev => ({
+              ...prev,
+              distanceKm,
+              durationMinutes,
+              departurePointName: initialDepartureAddress || 'Ma position actuelle',
+              arrivalPointName: initialArrivalAddress || 'Destination',
+              departurePointId: 'from-address',
+              arrivalPointId: 'to-address'
+            }));
+            setTravelPrice(calculateTravelPrice(distanceKm));
+            setRouteGeoJSON({ type: 'Feature', geometry: route.geometry as any, properties: {} });
+            setErrorMessage(null);
+          } else {
+            console.error('No route data from service');
+            setErrorMessage('Impossible de calculer un itinéraire entre ces deux points. Vous pouvez réessayer ou passer cette étape.');
+          }
+        } catch (routeError: any) {
+          console.error('Routing service failed:', routeError);
+          setErrorMessage(`Erreur de calcul d'itinéraire: ${routeError.message}. Vous pouvez réessayer ou passer cette étape.`);
+        }
+      } else {
+        setErrorMessage('Impossible de localiser les adresses sur la carte. Vérifiez vos adresses ou passez cette étape.');
+      }
+    } catch (e: any) {
+      console.error('Global setup error:', e);
+      setErrorMessage(e.message || 'Erreur lors de la préparation de l\'itinéraire. Vous pouvez réessayer ou passer cette étape.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [initialDepartureAddress, initialArrivalAddress, initialDepartureCoords, initialArrivalCoords, transportMethod])
 
   useEffect(() => {
-    const setupFromAddresses = async () => {
-      if (!initialDepartureAddress && !initialDepartureCoords) return
-      if (!initialArrivalAddress && !initialArrivalCoords) return
-
-      setIsLoading(true)
-      try {
-        let depLat, depLon, arrLat, arrLon;
-
-        // Helper for geocoding with fallback
-        const geocodeWithFallback = async (address: string) => {
-          // Try precise address first
-          let results = await geocode(address);
-          if (results && results.length > 0) return results[0];
-
-          // If failed and in Cameroon (likely given project context), try city level
-          console.warn(`Precise geocoding failed for: ${address}. Retrying with broader query.`);
-          const parts = address.split(',');
-          if (parts.length > 1) {
-            // Try last few parts (usually City, Region, Country)
-            const broaderQuery = parts.slice(-2).join(', ');
-            results = await geocode(broaderQuery);
-            if (results && results.length > 0) return results[0];
-          }
-          return null;
-        };
-
-        // Gérer le point de départ
-        if (initialDepartureCoords) {
-          depLat = initialDepartureCoords.lat;
-          depLon = initialDepartureCoords.lon;
-        } else if (initialDepartureAddress) {
-          const depResult = await geocodeWithFallback(initialDepartureAddress);
-          if (depResult) {
-            depLat = parseFloat(depResult.lat);
-            depLon = parseFloat(depResult.lon);
-          }
-        }
-
-        // Gérer le point d'arrivée
-        if (initialArrivalCoords) {
-          arrLat = initialArrivalCoords.lat;
-          arrLon = initialArrivalCoords.lon;
-        } else if (initialArrivalAddress) {
-          const arrResult = await geocodeWithFallback(initialArrivalAddress);
-          if (arrResult) {
-            arrLat = parseFloat(arrResult.lat);
-            arrLon = parseFloat(arrResult.lon);
-          }
-        }
-
-        if (depLat !== undefined && depLon !== undefined && arrLat !== undefined && arrLon !== undefined) {
-          // UPDATE MAP IMMEDIATELY
-          setMarkers([
-            { position: [depLat, depLon], label: 'Retrait', color: '#f97316' },
-            { position: [arrLat, arrLon], label: 'Livraison', color: '#10b981' },
-          ]);
-          setMapCenter([(depLat + arrLat) / 2, (depLon + arrLon) / 2]);
-
-          // NOW CALCULATE ROUTE
-          try {
-            const data = await getRoute(depLat, depLon, arrLat, arrLon, transportMethod);
-            if (data && data.routes && data.routes.length > 0) {
-              const route = data.routes[0];
-              const distanceKm = Math.round((route.distance / 1000) * 100) / 100;
-              const durationMinutes = Math.round(route.duration / 60);
-
-              setRouteData(prev => ({
-                ...prev,
-                distanceKm,
-                durationMinutes,
-                departurePointName: initialDepartureAddress || 'Ma position actuelle',
-                arrivalPointName: initialArrivalAddress || 'Destination',
-                departurePointId: 'from-address',
-                arrivalPointId: 'to-address'
-              }));
-              setTravelPrice(calculateTravelPrice(distanceKm));
-              setRouteGeoJSON({ type: 'Feature', geometry: route.geometry as any, properties: {} });
-            } else {
-              console.error('No route data from service');
-              alert('Impossible de calculer un itinéraire entre ces deux points par la route.');
-            }
-          } catch (routeError: any) {
-            console.error('Routing service failed:', routeError);
-            // Fallback: simple straight line distance if OSRM is down? 
-            // No, OSRM is critical for "route". Just report error.
-            alert(`Erreur service de calcul: ${routeError.message}`);
-          }
-        } else {
-          alert('Impossible de positionner les points sur la carte. Vérifiez vos adresses.');
-        }
-      } catch (e: any) {
-        console.error('Global setup error:', e);
-        alert(e.message || 'Erreur lors de la préparation de l\'itinéraire.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     setupFromAddresses()
-  }, [initialDepartureAddress, initialArrivalAddress, initialDepartureCoords, initialArrivalCoords, transportMethod])
+  }, [setupFromAddresses])
 
   const handleReset = () => {
     setMarkers([])
@@ -173,13 +169,32 @@ export default function RouteSelectionStep({
     setMapCenter([5.33, -4.03])
   }
 
+  const handleRetry = () => {
+    setErrorMessage(null)
+    setupFromAddresses()
+  }
+
+  const handleSkip = () => {
+    // Allow user to continue with the addresses but without computed route data
+    const fallbackData: RouteData = {
+      ...routeData,
+      departurePointName: initialDepartureAddress || 'Ma position actuelle',
+      arrivalPointName: initialArrivalAddress || 'Destination',
+      departurePointId: 'from-address',
+      arrivalPointId: 'to-address',
+      distanceKm: 0,
+      durationMinutes: 0
+    };
+    onContinue(fallbackData, 0)
+  }
+
   const handleSubmit = () => {
     if (routeData.distanceKm > 0) {
       onContinue(routeData, travelPrice)
     }
   }
 
-  const isButtonDisabled = isLoading || routeData.distanceKm <= 0;
+  const isButtonDisabled = isLoading || (routeData.distanceKm <= 0 && !errorMessage);
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-screen flex flex-col bg-gray-50 dark:bg-transparent">
@@ -265,11 +280,35 @@ export default function RouteSelectionStep({
                   )}
                 </div>
               ) : (
-                <div className="flex items-center justify-center p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl gap-3">
                   {isLoading ? (
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="animate-spin text-orange-500" size={24} />
                       <p className="text-sm text-gray-500 italic">Calcul en cours...</p>
+                    </div>
+                  ) : errorMessage ? (
+                    <div className="flex flex-col items-center gap-3 w-full">
+                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <AlertTriangle size={20} />
+                        <p className="text-sm font-medium">Problème de calcul</p>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 text-center">{errorMessage}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleRetry}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-orange-600 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+                        >
+                          <RefreshCw size={14} />
+                          Réessayer
+                        </button>
+                        <button
+                          onClick={handleSkip}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <SkipForward size={14} />
+                          Passer cette étape
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500 dark:text-gray-400 text-center italic">

@@ -100,7 +100,16 @@ export function LivreurDashboard() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [activeRoute, setActiveRoute] = useState<any>(null)
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Set<string>>(new Set())
-  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set())
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(() => {
+    // Restore from localStorage on mount
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('livreur_subscribed_ids');
+        if (saved) return new Set(JSON.parse(saved));
+      } catch (e) { /* ignore */ }
+    }
+    return new Set();
+  })
 
   // Fetch published announcements
   const fetchAvailableDeliveries = useCallback(async () => {
@@ -131,6 +140,8 @@ export function LivreurDashboard() {
       setSubscribedIds(prev => {
         const merged = new Set(prev)
         apiIds.forEach(id => merged.add(id))
+        // Persist to localStorage
+        try { localStorage.setItem('livreur_subscribed_ids', JSON.stringify([...merged])); } catch (e) { /* ignore */ }
         return merged
       })
     } catch (error) {
@@ -239,10 +250,18 @@ export function LivreurDashboard() {
         deliveryPersonId: user.deliveryPersonId || user.id
       });
 
-      if (response.status === 200 || response.status === 201) {
+      if (response.status === 200 || response.status === 201 || response.status === 202) {
         setSubscribedIds(prev => {
           const next = new Set(prev);
           next.add(deliveryId);
+          // Persist to localStorage
+          try { localStorage.setItem('livreur_subscribed_ids', JSON.stringify([...next])); } catch (e) { /* ignore */ }
+          return next;
+        });
+        // Clean up pending state
+        setPendingSubscriptions(prev => {
+          const next = new Set(prev);
+          next.delete(deliveryId);
           return next;
         });
         toast({
