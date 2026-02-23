@@ -54,7 +54,10 @@ import {
   deleteAnnouncement,
   publishAnnouncement,
   updateAnnouncement,
-  AnnouncementResponseDTO
+  getSubscriptions,
+  assignDeliveryPerson,
+  AnnouncementResponseDTO,
+  SubscriptionResponseDTO
 } from '@/services/announcementService'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -73,6 +76,15 @@ export function ClientLanding() {
   const [myAnnouncements, setMyAnnouncements] = useState<AnnouncementResponseDTO[]>([])
   const [route, setRoute] = useState<any>(null)
 
+  // Réponses tab state
+  const [responsesAnnouncements, setResponsesAnnouncements] = useState<AnnouncementResponseDTO[]>([])
+  const [responsesLoading, setResponsesLoading] = useState(false)
+  const [selectedResponseAnnouncement, setSelectedResponseAnnouncement] = useState<AnnouncementResponseDTO | null>(null)
+  const [subscriptions, setSubscriptions] = useState<SubscriptionResponseDTO[]>([])
+  const [subscriptionsLoading, setSubscriptionsLoading] = useState(false)
+  const [subscriptionsDialogOpen, setSubscriptionsDialogOpen] = useState(false)
+  const [assigningId, setAssigningId] = useState<string | null>(null)
+
   const fetchAnnouncements = useCallback(async () => {
     if (!user?.clientId) return
     setLoading(true)
@@ -90,7 +102,59 @@ export function ClientLanding() {
     if (activeTab === 'annonces') {
       fetchAnnouncements()
     }
+    if (activeTab === 'reponses') {
+      fetchResponsesAnnouncements()
+    }
   }, [activeTab, fetchAnnouncements])
+
+  const fetchResponsesAnnouncements = async () => {
+    if (!user?.clientId) return
+    setResponsesLoading(true)
+    try {
+      const data = await getAnnouncementByClientId(user.clientId)
+      setResponsesAnnouncements(data)
+    } catch (error) {
+      toast.error('Erreur lors du chargement des annonces')
+    } finally {
+      setResponsesLoading(false)
+    }
+  }
+
+  const handleViewSubscriptions = async (announcement: AnnouncementResponseDTO) => {
+    setSelectedResponseAnnouncement(announcement)
+    setSubscriptionsDialogOpen(true)
+    setSubscriptionsLoading(true)
+    try {
+      const subs = await getSubscriptions(announcement.id)
+      setSubscriptions(subs)
+    } catch (error) {
+      toast.error('Erreur lors du chargement des souscriptions')
+      setSubscriptions([])
+    } finally {
+      setSubscriptionsLoading(false)
+    }
+  }
+
+  const handleAssignDeliveryPerson = async (deliveryPersonId: string) => {
+    if (!selectedResponseAnnouncement) return
+    setAssigningId(deliveryPersonId)
+    try {
+      const updated = await assignDeliveryPerson(selectedResponseAnnouncement.id, deliveryPersonId)
+      setResponsesAnnouncements(prev =>
+        prev.map(a => a.id === updated.id ? updated : a)
+      )
+      setMyAnnouncements(prev =>
+        prev.map(a => a.id === updated.id ? updated : a)
+      )
+      setSelectedResponseAnnouncement(updated)
+      setSubscriptionsDialogOpen(false)
+      toast.success('Livreur assigné avec succès ! Un email de notification lui a été envoyé.')
+    } catch (error) {
+      toast.error("Erreur lors de l'assignation du livreur")
+    } finally {
+      setAssigningId(null)
+    }
+  }
 
   useEffect(() => {
     const fetchRoute = async () => {
@@ -647,6 +711,168 @@ export function ClientLanding() {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
+          </section>
+        )}
+
+        {/* Réponses Tab */}
+        {activeTab === 'reponses' && (
+          <section className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Réponses aux annonces</h2>
+                <p className="text-sm text-gray-500 mt-1">Consultez les livreurs intéressés et assignez une livraison</p>
+              </div>
+            </div>
+
+            {responsesLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+              </div>
+            ) : responsesAnnouncements.length === 0 ? (
+              <Card className="py-16">
+                <CardContent className="flex flex-col items-center justify-center text-center">
+                  <MessageSquare className="w-12 h-12 text-gray-300 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucune annonce</h3>
+                  <p className="text-sm text-gray-500">Publiez une annonce pour recevoir des réponses de livreurs</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {responsesAnnouncements
+                  .filter(a => a.status === 'PUBLISHED' || a.status === 'ASSIGNED')
+                  .map((announcement) => (
+                    <Card key={announcement.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                      <CardContent className="p-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-gray-900 truncate">{announcement.title}</h3>
+                              {announcement.status === 'ASSIGNED' ? (
+                                <Badge className="bg-green-100 text-green-700 border-green-200">
+                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  Assigné
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                                  Publiée
+                                </Badge>
+                              )}
+                            </div>
+                            {announcement.description && (
+                              <p className="text-sm text-gray-500 mb-3 line-clamp-2">{announcement.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-4 h-4 text-orange-500" />
+                                <span className="truncate max-w-[200px]">
+                                  {announcement.pickupAddress?.city || 'N/A'} → {announcement.deliveryAddress?.city || 'N/A'}
+                                </span>
+                              </div>
+                              {announcement.amount && (
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="w-4 h-4 text-green-500" />
+                                  <span className="font-semibold text-green-600">{announcement.amount.toLocaleString()} FCFA</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {announcement.status === 'ASSIGNED' ? (
+                              <div className="px-4 py-2 bg-green-50 rounded-lg text-sm font-medium text-green-700">
+                                Livreur assigné
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                className="border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                onClick={() => handleViewSubscriptions(announcement)}
+                              >
+                                <MessageSquare className="w-4 h-4 mr-2" />
+                                Voir les réponses
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+
+            {/* Subscriptions Dialog */}
+            <Dialog open={subscriptionsDialogOpen} onOpenChange={setSubscriptionsDialogOpen}>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader className="border-b pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                      <MessageSquare className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <DialogTitle className="text-lg">Livreurs intéressés</DialogTitle>
+                      <DialogDescription className="text-sm text-gray-500">
+                        {selectedResponseAnnouncement?.title}
+                      </DialogDescription>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                <div className="py-4 space-y-3">
+                  {subscriptionsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                    </div>
+                  ) : subscriptions.length === 0 ? (
+                    <div className="text-center py-12">
+                      <User className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm text-gray-500">Aucun livreur n'a encore souscrit à cette annonce</p>
+                    </div>
+                  ) : (
+                    subscriptions.map((sub) => (
+                      <div
+                        key={sub.subscriptionId}
+                        className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-orange-200 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center text-white font-bold">
+                              {sub.firstName?.charAt(0)}{sub.lastName?.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-900">{sub.lastName} {sub.firstName}</p>
+                              <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                                <span className="flex items-center gap-1">
+                                  <MapPinIcon className="w-3 h-3" />
+                                  {sub.phone}
+                                </span>
+                                {sub.rating && (
+                                  <span className="flex items-center gap-1">
+                                    <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                                    {sub.rating.toFixed(1)}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-400 mt-1">{sub.email}</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            disabled={assigningId === sub.deliveryPersonId}
+                            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md"
+                            onClick={() => handleAssignDeliveryPerson(sub.deliveryPersonId)}
+                          >
+                            {assigningId === sub.deliveryPersonId ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              'Assigner'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </section>
         )}
 

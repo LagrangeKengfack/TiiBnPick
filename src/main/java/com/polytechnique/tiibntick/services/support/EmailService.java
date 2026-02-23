@@ -187,4 +187,26 @@ public class EmailService {
                         "Cordialement,\n" +
                         "L'équipe TiiBnTick");
     }
+
+    /**
+     * Sends a delivery assignment notification email.
+     *
+     * <p>
+     * Informs the delivery person that they have been assigned to a delivery.
+     *
+     * @param to                the delivery person's email address
+     * @param announcementTitle the title of the assigned announcement
+     */
+    public void sendDeliveryAssigned(String to, String announcementTitle) {
+        sendSimpleMessage(
+                to,
+                "TiiBnTick - Livraison assignée",
+                "Bonjour,\n\n" +
+                        "Félicitations ! Vous avez été sélectionné(e) pour effectuer la livraison suivante :\n\n" +
+                        "\"" + announcementTitle + "\"\n\n" +
+                        "Veuillez vous connecter à l'application pour consulter les détails de la livraison " +
+                        "et commencer le processus.\n\n" +
+                        "Cordialement,\n" +
+                        "L'équipe TiiBnTick");
+    }
 }

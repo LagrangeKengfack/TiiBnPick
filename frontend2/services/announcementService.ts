@@ -171,3 +171,36 @@ export const updateAnnouncement = async (id: string, payload: Partial<Announceme
         throw error;
     }
 };
+
+export interface SubscriptionResponseDTO {
+    subscriptionId: string;
+    deliveryPersonId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    rating: number | null;
+    status: string;
+    createdAt: string;
+}
+
+export const getSubscriptions = async (announcementId: string): Promise<SubscriptionResponseDTO[]> => {
+    try {
+        const response = await apiClient.get(`${API_URL}/${announcementId}/subscriptions`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error fetching subscriptions:', error.response?.data?.message || error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const assignDeliveryPerson = async (announcementId: string, deliveryPersonId: string): Promise<AnnouncementResponseDTO> => {
+    try {
+        const response = await apiClient.post(`${API_URL}/${announcementId}/assign`, { deliveryPersonId });
+        return response.data;
+    } catch (error: any) {
+        console.error('Error assigning delivery person:', error.response?.data?.message || error.response?.data || error.message);
+        throw error;
+    }
+};
+

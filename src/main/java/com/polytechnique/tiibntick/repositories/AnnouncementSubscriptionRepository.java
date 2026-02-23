@@ -3,6 +3,7 @@ package com.polytechnique.tiibntick.repositories;
 import com.polytechnique.tiibntick.models.AnnouncementSubscription;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
 
 import java.util.UUID;
 
@@ -17,4 +18,6 @@ import java.util.UUID;
 public interface AnnouncementSubscriptionRepository extends ReactiveCrudRepository<AnnouncementSubscription, UUID> {
     reactor.core.publisher.Mono<AnnouncementSubscription> findByAnnouncementIdAndDeliveryPersonId(UUID announcementId,
             UUID deliveryPersonId);
+
+    Flux<AnnouncementSubscription> findAllByAnnouncementId(UUID announcementId);
 }

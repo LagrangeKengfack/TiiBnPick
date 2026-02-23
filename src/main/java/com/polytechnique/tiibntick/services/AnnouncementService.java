@@ -4,16 +4,21 @@ import com.polytechnique.tiibntick.dtos.address.AddressDTO;
 import com.polytechnique.tiibntick.dtos.announcement.AnnouncementRequestDTO;
 import com.polytechnique.tiibntick.dtos.announcement.AnnouncementResponseDTO;
 import com.polytechnique.tiibntick.dtos.packet.PacketDTO;
+import com.polytechnique.tiibntick.dtos.subscription.SubscriptionResponseDTO;
 import com.polytechnique.tiibntick.models.Address;
 import com.polytechnique.tiibntick.models.Announcement;
 import com.polytechnique.tiibntick.models.Packet;
 import com.polytechnique.tiibntick.models.enums.announcement.AnnouncementStatus;
 import com.polytechnique.tiibntick.repositories.AddressRepository;
 import com.polytechnique.tiibntick.repositories.AnnouncementRepository;
+import com.polytechnique.tiibntick.repositories.AnnouncementSubscriptionRepository;
+import com.polytechnique.tiibntick.repositories.DeliveryPersonRepository;
+import com.polytechnique.tiibntick.repositories.PersonRepository;
 import com.polytechnique.tiibntick.events.AnnouncementPublishedEvent;
 import com.polytechnique.tiibntick.repositories.PacketRepository;
 import com.polytechnique.tiibntick.services.support.KafkaEventPublisher;
 import com.polytechnique.tiibntick.services.support.FileStorageService;
+import com.polytechnique.tiibntick.services.support.EmailService;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +37,10 @@ public class AnnouncementService {
     private final KafkaEventPublisher kafkaEventPublisher;
     private final FileStorageService fileStorageService;
     private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+    private final AnnouncementSubscriptionRepository subscriptionRepository;
+    private final DeliveryPersonRepository deliveryPersonRepository;
+    private final PersonRepository personRepository;
+    private final EmailService emailService;
 
     @Transactional("connectionFactoryTransactionManager")
     public Mono<AnnouncementResponseDTO> createAnnouncement(AnnouncementRequestDTO request) {
@@ -368,5 +377,54 @@ public class AnnouncementService {
                     Instant.now());
             kafkaEventPublisher.publishSubscriptionAttempt(event);
         });
+    }
+
+    /**
+     * Returns subscribed delivery persons for a given announcement.
+     */
+    public Flux<SubscriptionResponseDTO> getSubscriptionsForAnnouncement(UUID announcementId) {
+        return subscriptionRepository.findAllByAnnouncementId(announcementId)
+                .flatMap(sub -> deliveryPersonRepository.findById(sub.getDeliveryPersonId())
+                        .flatMap(dp -> personRepository.findById(dp.getPersonId())
+                                .map(person -> {
+                                    SubscriptionResponseDTO dto = new SubscriptionResponseDTO();
+                                    dto.setSubscriptionId(sub.getId());
+                                    dto.setDeliveryPersonId(dp.getId());
+                                    dto.setFirstName(person.getFirstName());
+                                    dto.setLastName(person.getLastName());
+                                    dto.setEmail(person.getEmail());
+                                    dto.setPhone(person.getPhone());
+                                    dto.setRating(person.getRating());
+                                    dto.setStatus(sub.getStatus());
+                                    dto.setCreatedAt(sub.getCreatedAt());
+                                    return dto;
+                                })));
+    }
+
+    /**
+     * Assigns a delivery person to an announcement, updates status to ASSIGNED,
+     * and sends an email notification.
+     */
+    @Transactional
+    public Mono<AnnouncementResponseDTO> assignDeliveryPerson(UUID announcementId, UUID deliveryPersonId) {
+        return announcementRepository.findById(announcementId)
+                .switchIfEmpty(Mono.error(new RuntimeException("Announcement not found")))
+                .flatMap(announcement -> {
+                    announcement.setStatus(AnnouncementStatus.ASSIGNED);
+                    announcement.setUpdatedAt(Instant.now());
+                    return announcementRepository.save(announcement);
+                })
+                .flatMap(this::populateDetails)
+                .doOnSuccess(response -> {
+                    // Send email notification to the assigned delivery person (fire-and-forget)
+                    deliveryPersonRepository.findById(deliveryPersonId)
+                            .flatMap(dp -> personRepository.findById(dp.getPersonId()))
+                            .doOnSuccess(person -> {
+                                if (person != null && person.getEmail() != null) {
+                                    emailService.sendDeliveryAssigned(person.getEmail(), response.getTitle());
+                                }
+                            })
+                            .subscribe();
+                });
     }
 }

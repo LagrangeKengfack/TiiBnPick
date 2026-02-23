@@ -244,4 +244,9 @@
         <sqlFile path="db/changelog/20260219_remove_duplicate_admin.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
 
+    <changeSet id="043-add-unique-constraint-subscriptions" author="TiiBnTickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/043-add-unique-constraint-subscriptions.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>

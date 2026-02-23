@@ -1,13 +1,13 @@
 package com.polytechnique.tiibntick.services.consumers;
 
 import com.polytechnique.tiibntick.events.SubscriptionAttemptEvent;
-import com.polytechnique.tiibntick.models.Announcement;
 import com.polytechnique.tiibntick.models.AnnouncementSubscription;
 import com.polytechnique.tiibntick.models.enums.announcement.AnnouncementStatus;
 import com.polytechnique.tiibntick.repositories.AnnouncementRepository;
 import com.polytechnique.tiibntick.repositories.AnnouncementSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -49,19 +49,23 @@ public class SubscriptionConfirmationConsumer {
                                                                         return Mono.empty();
                                                                 })
                                                                 .switchIfEmpty(Mono.defer(() -> {
-                                                                        // Create the Subscription Link (PENDING status)
                                                                         AnnouncementSubscription subscription = new AnnouncementSubscription();
                                                                         subscription.setAnnouncementId(
                                                                                         announcement.getId());
                                                                         subscription.setDeliveryPersonId(
                                                                                         event.getDeliveryPersonId());
-                                                                        subscription.setStatus("PENDING");
+                                                                        subscription.setStatus("REGISTERED");
                                                                         subscription.setCreatedAt(Instant.now());
 
                                                                         return subscriptionRepository.save(subscription)
                                                                                         .doOnSuccess(sub -> log.info(
                                                                                                         "Subscription REGISTERED for Announcement {}",
-                                                                                                        event.getAnnouncementId()));
+                                                                                                        event.getAnnouncementId()))
+                                                                                        .onErrorResume(DuplicateKeyException.class, e -> {
+                                                                                                log.info("Duplicate subscription detected for Announcement {} by DeliveryPerson {} — ignoring",
+                                                                                                                event.getAnnouncementId(), event.getDeliveryPersonId());
+                                                                                                return Mono.empty();
+                                                                                        });
                                                                 }));
                                         } else {
                                                 log.warn("Subscription REJECTED: Announcement {} is not PUBLISHED (Status: {})",
@@ -71,6 +75,6 @@ public class SubscriptionConfirmationConsumer {
                                 })
                                 .doOnError(e -> log.error("Error processing subscription for Announcement {}",
                                                 event.getAnnouncementId(), e))
-                                .block();
+                                .subscribe();
         }
 }
