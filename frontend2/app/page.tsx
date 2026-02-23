@@ -47,16 +47,7 @@ export default function LoginPage() {
         } else if (response.userType === 'CLIENT') {
           router.replace('/client')
         } else if (response.userType === 'LIVREUR') {
-          if (response.isActive) {
-            router.replace('/livreur')
-          } else {
-            setSuccess(false)
-            toast({
-              title: "Activation requise",
-              description: "Votre compte livreur n'est pas encore activé. Veuillez patienter ou contacter le support.",
-              variant: "destructive"
-            })
-          }
+          router.replace('/livreur')
         }
       }, 1000)
     } catch (err: any) {
