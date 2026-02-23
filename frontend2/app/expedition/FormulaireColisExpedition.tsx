@@ -31,7 +31,7 @@ interface PackageData {
   height: string;
   isFragile: boolean;
   isPerishable: boolean;
-  transportMethod: 'TRUCK' | 'MOTORBIKE' | 'BIKE' | 'CAR' | 'SCOOTER' | '';
+  transportMethod: ('TRUCK' | 'MOTORBIKE' | 'BIKE' | 'CAR' | 'SCOOTER')[];
 }
 
 interface PackageRegistrationProps {
@@ -117,7 +117,7 @@ export default function PackageRegistration({ initialData = {}, onContinue, onBa
     height: '',
     isFragile: false,
     isPerishable: false,
-    transportMethod: '',
+    transportMethod: [],
     ...initialData
   });
 
@@ -146,7 +146,7 @@ export default function PackageRegistration({ initialData = {}, onContinue, onBa
       parseFloat(packageData.weight) > 0
     );
 
-    setIsFormValid(isValid && Boolean(packageData.transportMethod));
+    setIsFormValid(isValid && packageData.transportMethod.length > 0);
 
     if (!isValid) {
       if (!packageData.photo) {
@@ -156,8 +156,8 @@ export default function PackageRegistration({ initialData = {}, onContinue, onBa
       } else if (!packageData.weight.trim() || isNaN(parseFloat(packageData.weight)) || parseFloat(packageData.weight) <= 0) {
         setValidationError('Veuillez saisir un poids valide');
       }
-    } else if (!packageData.transportMethod) {
-      setValidationError('Veuillez sélectionner un moyen de transport');
+    } else if (packageData.transportMethod.length === 0) {
+      setValidationError('Veuillez sélectionner au moins un moyen de transport');
     } else {
       setValidationError('');
     }
@@ -424,8 +424,15 @@ export default function PackageRegistration({ initialData = {}, onContinue, onBa
                   key={option.key}
                   title={option.label}
                   icon={option.icon}
-                  isSelected={packageData.transportMethod === option.key}
-                  onClick={() => handleInputChange('transportMethod', option.key)}
+                  isSelected={packageData.transportMethod.includes(option.key as any)}
+                  onClick={() => {
+                    const key = option.key as any;
+                    const current = packageData.transportMethod;
+                    const updated = current.includes(key)
+                      ? current.filter((k: string) => k !== key)
+                      : [...current, key];
+                    handleInputChange('transportMethod', updated);
+                  }}
                   compact={true}
                 />
               ))}
@@ -478,10 +485,10 @@ export default function PackageRegistration({ initialData = {}, onContinue, onBa
                 </div>
               )}
 
-              {packageData.transportMethod && (
+              {packageData.transportMethod.length > 0 && (
                 <div>
                   <span className="font-medium text-gray-600 dark:text-gray-400">Transport:</span>
-                  <p className="text-gray-800 dark:text-gray-200 font-semibold">{packageData.transportMethod}</p>
+                  <p className="text-gray-800 dark:text-gray-200 font-semibold">{packageData.transportMethod.join(', ')}</p>
                 </div>
               )}
             </div>

@@ -1,16 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  ArrowPathIcon, 
-  PrinterIcon, 
-  ArchiveBoxIcon, 
-  DocumentTextIcon, 
-  BuildingOfficeIcon 
+import {
+  ArrowPathIcon,
+  PrinterIcon,
+  ArchiveBoxIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 export const ProcessingAnimation = () => {
   const [processingStep, setProcessingStep] = React.useState('Vérification des données...');
-  
+
   const processingSteps = [
     'Vérification des données...',
     'Traitement du paiement...',
@@ -27,7 +26,7 @@ export const ProcessingAnimation = () => {
 
     return () => clearInterval(interval);
   }, []);
-  
+
   const steps = [
     {
       id: 1,
@@ -49,29 +48,21 @@ export const ProcessingAnimation = () => {
       title: "Coller le bordereau",
       description: "Fixez solidement le bordereau sur le colis",
       color: "purple" as const
-    },
-    {
-      id: 4,
-      icon: BuildingOfficeIcon,
-      title: "Déposer en agence",
-      description: "Apportez votre colis à l'agence de départ",
-      color: "orange" as const
     }
   ];
 
-  const getStepColor = (color: 'blue' | 'green' | 'purple' | 'orange'): string => {
+  const getStepColor = (color: 'blue' | 'green' | 'purple'): string => {
     const colors = {
       blue: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800",
       green: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800",
-      purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800",
-      orange: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800"
+      purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800"
     };
     return colors[color] || colors.blue;
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-orange-50 dark:bg-gray-900 px-4">
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="text-center mb-12"
@@ -85,7 +76,7 @@ export const ProcessingAnimation = () => {
             <ArrowPathIcon className="w-10 h-10 text-orange-600 dark:text-orange-400" />
           </motion.div>
         </div>
-        
+
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
           Traitement en cours
         </h2>
@@ -96,7 +87,7 @@ export const ProcessingAnimation = () => {
 
       {/* Étapes de l'expédition */}
       <div className="max-w-4xl w-full">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -111,13 +102,13 @@ export const ProcessingAnimation = () => {
         </motion.div>
 
         {/* Grille des étapes - responsive */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {steps.map((step, index) => (
             <motion.div
               key={step.id}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ 
+              transition={{
                 delay: 0.7 + (index * 0.2),
                 duration: 0.5,
                 ease: "easeOut"
@@ -126,13 +117,13 @@ export const ProcessingAnimation = () => {
             >
               {/* Connecteur entre les étapes (masqué sur mobile) */}
               {index < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-12 -right-3 w-6 h-0.5 bg-gray-300 dark:bg-gray-600 z-0">
+                <div className="hidden md:block absolute top-12 -right-3 w-6 h-0.5 bg-gray-300 dark:bg-gray-600 z-0">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: "100%" }}
-                    transition={{ 
-                      delay: 1.2 + (index * 0.2), 
-                      duration: 0.8 
+                    transition={{
+                      delay: 1.2 + (index * 0.2),
+                      duration: 0.8
                     }}
                     className="h-full bg-orange-400 dark:bg-orange-500"
                   />
@@ -148,11 +139,11 @@ export const ProcessingAnimation = () => {
 
                 {/* Icône avec animation */}
                 <motion.div
-                  animate={{ 
+                  animate={{
                     scale: [1, 1.1, 1],
                     rotate: [0, 5, -5, 0]
                   }}
-                  transition={{ 
+                  transition={{
                     duration: 2,
                     repeat: Infinity,
                     ease: 'easeInOut',
@@ -183,7 +174,7 @@ export const ProcessingAnimation = () => {
           className="text-center mt-8 p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700"
         >
           <p className="text-gray-700 dark:text-gray-300 font-medium">
-            ✨ Votre colis sera prêt pour l'expédition une fois ces étapes terminées !
+            ✨ Votre colis sera prêt pour l&apos;expédition une fois ces étapes terminées !
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Notre équipe vous accompagne à chaque étape du processus
@@ -192,7 +183,7 @@ export const ProcessingAnimation = () => {
       </div>
 
       {/* Animation des points de chargement */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}

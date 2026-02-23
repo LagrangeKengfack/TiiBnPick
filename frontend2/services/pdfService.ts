@@ -170,7 +170,7 @@ export const pdfService = {
             recipientY +=
                 addGridFieldForLongText(
                     "Destinataire",
-                    allData.recipientName,
+                    allData.recipientName || `${allData.recipientFirstName || ''} ${allData.recipientLastName || ''}`.trim() || 'N/A',
                     col2X,
                     recipientY,
                     colWidth,

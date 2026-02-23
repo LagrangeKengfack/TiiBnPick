@@ -67,7 +67,7 @@ interface FinalData {
   isFragile: boolean;
   isPerishable: boolean;
 
-  transportMethod: string;
+  transportMethod: string | string[];
 
   departurePointId: number | null;
   arrivalPointId: number | null;
@@ -107,7 +107,7 @@ interface PaymentOptionProps {
 }
 
 const PAYMENT_OPERATOR_FEE = 100;
-const APP_NAME = "PicknDrop Link";
+const APP_NAME = "TiiBnTick";
 
 export default function PaymentStep({ allData, onBack, onPaymentFinalized, currentUser }: PaymentStepProps) {
   const [selectedMethod, setSelectedMethod] = useState<'cash' | 'mobile' | 'recipient'>('cash');
@@ -212,7 +212,7 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
         amount: totalPrice,
         signatureUrl: allData.signatureUrl,
         paymentMethod: selectedMethod,
-        transportMethod: allData.transportMethod,
+        transportMethod: Array.isArray(allData.transportMethod) ? allData.transportMethod.join(',') : allData.transportMethod,
         distance: allData.distanceKm,
         duration: allData.durationMinutes,
 
@@ -337,6 +337,18 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
                 <div className="bg-orange-50 dark:bg-orange-900/30 rounded-2xl p-4 mb-6 border border-orange-200 dark:border-orange-700">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide font-semibold">Numéro de suivi</p>
                   <p className="text-3xl font-black text-orange-600 dark:text-orange-400 font-mono tracking-wider">{trackingNumber}</p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(trackingNumber);
+                    }}
+                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-800/50 text-orange-700 dark:text-orange-300 rounded-lg text-sm font-medium hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                    </svg>
+                    Copier le numéro
+                  </button>
                 </div>
 
                 <motion.button
@@ -381,10 +393,10 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
 
                     <div className="space-y-4">
                       <PaymentOption
-                        id="cash"
-                        label="Paiement en espèces"
-                        description="Payez directement à notre agent"
-                        icon={BanknotesIcon}
+                        id="recipient"
+                        label="Paiement par le destinataire"
+                        description="Le destinataire paie à la réception"
+                        icon={GiftIcon}
                         fee={0}
                         selected={selectedMethod}
                         setSelected={setSelectedMethod}
@@ -402,10 +414,10 @@ export default function PaymentStep({ allData, onBack, onPaymentFinalized, curre
                       />
 
                       <PaymentOption
-                        id="recipient"
-                        label="Paiement par le destinataire"
-                        description="Le destinataire paie à la réception"
-                        icon={GiftIcon}
+                        id="cash"
+                        label="Paiement en espèces"
+                        description="Payez directement au retrait du colis"
+                        icon={BanknotesIcon}
                         fee={0}
                         selected={selectedMethod}
                         setSelected={setSelectedMethod}

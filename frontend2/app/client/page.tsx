@@ -238,16 +238,16 @@ export function ClientLanding() {
                 <Package className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-xl font-bold text-gray-900">
-                TiiB<span className="text-amber-500">n</span>Pick
+                TiiB<span className="text-amber-500">n</span>Tick
               </h1>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-1">
-              <Button variant="ghost" className="text-gray-700 hover:text-orange-600 hover:bg-orange-50 font-medium">
+              <Button variant="ghost" className="text-gray-400 cursor-not-allowed opacity-50 font-medium" disabled>
                 Tarifs
               </Button>
-              <Button variant="ghost" className="text-gray-700 hover:text-orange-600 hover:bg-orange-50 font-medium">
+              <Button variant="ghost" className="text-gray-400 cursor-not-allowed opacity-50 font-medium" disabled>
                 Comment ça marche
               </Button>
               <Button variant="ghost" size="icon" onClick={logout} className="text-red-500 hover:text-red-600 hover:bg-red-50">
@@ -264,10 +264,10 @@ export function ClientLanding() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-700 relative"
+                className="text-gray-400 relative opacity-50 cursor-not-allowed"
+                disabled
               >
                 <Bell className="w-6 h-6" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </Button>
               <Button
                 variant="ghost"
@@ -296,11 +296,11 @@ export function ClientLanding() {
                   </div>
                 </div>
               </div>
-              <Button variant="ghost" className="w-full justify-start">
+              <Button variant="ghost" className="w-full justify-start opacity-50 cursor-not-allowed" disabled>
                 <MapPinIcon className="w-4 h-4 mr-2" />
                 Mes adresses
               </Button>
-              <Button variant="ghost" className="w-full justify-start">
+              <Button variant="ghost" className="w-full justify-start opacity-50 cursor-not-allowed" disabled>
                 <Calendar className="w-4 h-4 mr-2" />
                 Historique des livraisons
               </Button>
@@ -338,7 +338,7 @@ export function ClientLanding() {
                   </div>
                   <div className="grid lg:grid-cols-2 gap-4">
                     {myAnnouncements.map((announcement: AnnouncementResponseDTO) => (
-                      <Card key={announcement.id} className="border-2 border-orange-500 bg-orange-50 hover:shadow-lg transition-shadow">
+                      <Card key={announcement.id} className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-xl">
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between">
                             <div className="space-y-1">
@@ -619,16 +619,7 @@ export function ClientLanding() {
                             Assuré ({selectedAnnouncement?.declaredValue || 0} FCFA)
                           </Badge>
                         </div>
-                        <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-orange-100 shadow-sm">
-                          <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mb-1">Mode de Transport & Logistique</p>
-                          <p className="text-sm font-bold text-gray-900">{selectedAnnouncement?.deliveryType}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="text-xs text-gray-500">Urgence :</span>
-                            <Badge variant="secondary" className={selectedAnnouncement?.urgency === 'high' ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}>
-                              {selectedAnnouncement?.urgency === 'high' ? 'Haute' : 'Normale'}
-                            </Badge>
-                          </div>
-                        </div>
+                        {/* Transport and urgence sections removed as not relevant */}
                       </div>
                     </div>
                   </div>

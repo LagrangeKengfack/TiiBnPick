@@ -87,7 +87,7 @@ interface PackageData {
   height: string;
   isFragile: boolean;
   isPerishable: boolean;
-  transportMethod: 'TRUCK' | 'MOTORBIKE' | 'BIKE' | 'CAR' | 'SCOOTER' | '';
+  transportMethod: ('TRUCK' | 'MOTORBIKE' | 'BIKE' | 'CAR' | 'SCOOTER')[];
 }
 interface RouteData {
   departurePointId: string | null;
@@ -177,6 +177,7 @@ const ShippingSteps = ({ currentStep = 1 }: { currentStep?: number }) => {
 
 export default function ShippingPage() {
   const router = useRouter();
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState<LoggedInUser | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -193,7 +194,7 @@ export default function ShippingPage() {
     packageData: {
       photo: null, designation: '', description: '', weight: '', length: '', width: '', height: '',
       isFragile: false, isPerishable: false,
-      transportMethod: ''
+      transportMethod: []
     },
     routeData: { departurePointId: null, arrivalPointId: null, departurePointName: '', arrivalPointName: '', distanceKm: 0 },
     signatureData: { signatureUrl: null },
@@ -292,6 +293,30 @@ export default function ShippingPage() {
           }
         }
       }
+
+      // Fallback: if no Supabase session but backend auth is active, use authUser
+      if (!user && authUser && !restoredData) {
+        const backendUser: LoggedInUser = {
+          id: authUser.id,
+          full_name: `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() || null,
+          phone: authUser.phone || null,
+          email: authUser.email,
+          address: authUser.street || null,
+          lieu_dit: null,
+        };
+        setUser(backendUser);
+        setFormData(prev => ({
+          ...prev,
+          senderData: {
+            ...prev.senderData,
+            senderFirstName: authUser.firstName || '',
+            senderLastName: authUser.lastName || '',
+            senderPhone: authUser.phone || '',
+            senderEmail: authUser.email || '',
+            senderAddress: authUser.street || '',
+          }
+        }));
+      }
       setIsLoadingUser(false);
     };
 
@@ -387,7 +412,7 @@ export default function ShippingPage() {
               ? { lat: formData.senderData.latitude, lon: formData.senderData.longitude }
               : undefined
           }
-          transportMethod={formData.packageData.transportMethod}
+          transportMethod={formData.packageData.transportMethod.join(',')}
           onContinue={(routeData, travelPrice) => setFormData(prev => ({ ...prev, routeData, pricing: { ...prev.pricing, travelPrice }, currentStep: 5 }))}
           onBack={() => setFormData(prev => ({ ...prev, currentStep: 3 }))}
         />;
@@ -453,7 +478,19 @@ export default function ShippingPage() {
 
                 <div className="bg-orange-50 dark:bg-orange-900/30 rounded-2xl p-4 mb-6">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Numéro de suivi</p>
-                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{trackingNumber}</p>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 break-all">{trackingNumber}</p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(trackingNumber);
+                    }}
+                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-800/50 text-orange-700 dark:text-orange-300 rounded-lg text-sm font-medium hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                    </svg>
+                    Copier le numéro
+                  </button>
                 </div>
 
                 {/* Bouton télécharger le bordereau */}
@@ -539,7 +576,7 @@ export default function ShippingPage() {
           transition={{ duration: 0.5 }}
         >
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/client')}
             className="mb-2 group flex items-center mx-auto text-orange-600 dark:text-orange-400 text-sm hover:text-orange-700 dark:hover:text-orange-300 transition-colors duration-200"
           >
             <ArrowUturnLeftIcon className="w-4 h-4 mr-1" /> Retour à l'accueil

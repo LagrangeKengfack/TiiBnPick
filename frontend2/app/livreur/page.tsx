@@ -325,7 +325,7 @@ export function LivreurDashboard() {
 
     try {
       const response = await apiClient.post(`/api/announcements/${deliveryId}/subscribe`, {
-        deliveryPersonId: user.id
+        deliveryPersonId: user.deliveryPersonId || user.id
       });
 
       if (response.status === 200 || response.status === 201) {
@@ -402,7 +402,7 @@ export function LivreurDashboard() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">
-                  TiiB<span className="text-orange-500">n</span>Pick
+                  TiiB<span className="text-orange-500">n</span>Tick
                 </h1>
                 <p className="text-xs text-gray-500">Espace Livreur</p>
               </div>
@@ -411,9 +411,8 @@ export function LivreurDashboard() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-4">
               {/* Notification Bell */}
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative opacity-50 cursor-not-allowed" disabled>
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
               </Button>
 
               {/* Profile Menu */}
@@ -430,20 +429,19 @@ export function LivreurDashboard() {
                 </div>
               </div>
 
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="opacity-50 cursor-not-allowed" disabled>
                 <Settings className="w-5 h-5" />
               </Button>
 
-              <Button variant="ghost" size="icon" className="text-red-600">
+              <Button variant="ghost" size="icon" className="text-red-600" onClick={logout}>
                 <LogOut className="w-5 h-5" />
               </Button>
             </nav>
 
             {/* Mobile Menu */}
             <div className="md:hidden flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative opacity-50 cursor-not-allowed" disabled>
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
               </Button>
 
               <Button
@@ -472,15 +470,15 @@ export function LivreurDashboard() {
                   </div>
                 </div>
               </div>
-              <Button variant="ghost" className="w-full justify-start">
+              <Button variant="ghost" className="w-full justify-start opacity-50 cursor-not-allowed" disabled>
                 <Settings className="w-4 h-4 mr-2" />
                 Paramètres
               </Button>
-              <Button variant="ghost" className="w-full justify-start" onClick={() => router.push('/livreur/historique')}>
+              <Button variant="ghost" className="w-full justify-start opacity-50 cursor-not-allowed" disabled>
                 <Calendar className="w-4 h-4 mr-2" />
                 Historique des livraisons
               </Button>
-              <Button variant="ghost" className="w-full justify-start text-red-600">
+              <Button variant="ghost" className="w-full justify-start text-red-600" onClick={logout}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Déconnexion
               </Button>
@@ -589,7 +587,7 @@ export function LivreurDashboard() {
             <>
               <div className="grid lg:grid-cols-2 gap-4">
                 {availableDeliveries.map((delivery) => (
-                  <Card key={delivery.id} className="border-2 border-orange-500 bg-orange-50 hover:shadow-lg transition-shadow">
+                  <Card key={delivery.id} className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-xl">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -864,7 +862,7 @@ export function LivreurDashboard() {
             <>
               <div className="grid lg:grid-cols-2 gap-4 mb-6">
                 {activeDeliveries.map((delivery) => (
-                  <Card key={delivery.id} className="border-2 border-orange-500 bg-orange-50 transition-shadow hover:shadow-md">
+                  <Card key={delivery.id} className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-xl">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">

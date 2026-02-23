@@ -335,17 +335,27 @@ export default function SenderInfoStep({ initialData, onContinue, currentUser }:
         timeout: 10000,
         maximumAge: 0
       };
-      navigator.geolocation.getCurrentPosition((position) => {
+      navigator.geolocation.getCurrentPosition(async (position) => {
         setIsSender(true);
         setFormData(prev => ({
           ...prev,
-          senderFirstName: currentUser?.full_name?.split(' ')[0] || (authUser as any)?.user_metadata?.full_name?.split(' ')[0] || '',
-          senderLastName: currentUser?.full_name?.split(' ').slice(1).join(' ') || (authUser as any)?.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
-          senderPhone: currentUser?.phone || (authUser as any)?.user_metadata?.phone || '',
-          senderEmail: currentUser?.email || authUser?.email || '',
+          senderFirstName: currentUser?.firstName || (authUser as any)?.firstName || prev.senderFirstName,
+          senderLastName: currentUser?.lastName || (authUser as any)?.lastName || prev.senderLastName,
+          senderPhone: currentUser?.phone || (authUser as any)?.phone || prev.senderPhone,
+          senderEmail: currentUser?.email || (authUser as any)?.email || prev.senderEmail,
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         }));
+        // Reverse geocode to get a text address
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json&accept-language=fr`);
+          const geo = await res.json();
+          if (geo?.display_name) {
+            setFormData(prev => ({ ...prev, senderAddress: geo.display_name }));
+          }
+        } catch (e) {
+          console.warn('Reverse geocoding failed:', e);
+        }
         setIsLocating(false);
       }, (error) => {
         console.error("Erreur de géolocalisation", error);

@@ -24,10 +24,10 @@ public class AuthenticationService {
 
     public Mono<AuthResponseDTO> login(AuthRequestDTO request) {
         return personRepository.findByEmail(request.getEmail())
-                .switchIfEmpty(Mono.error(new InvalidCredentialsException("Email non existant")))
+                .switchIfEmpty(Mono.error(new InvalidCredentialsException("Email ou mot de passe incorrect")))
                 .flatMap(person -> {
                     if (!passwordEncoder.matches(request.getPassword(), person.getPassword())) {
-                        return Mono.error(new InvalidCredentialsException("Mot de passe pas correct"));
+                        return Mono.error(new InvalidCredentialsException("Email ou mot de passe incorrect"));
                     }
 
                     AuthResponseDTO response = new AuthResponseDTO();
@@ -46,11 +46,18 @@ public class AuthenticationService {
 
                     // Check user type and build response
                     return clientRepository.findByPersonId(person.getId())
-                            .map(client -> {
+                            .flatMap(client -> {
+                                // Check client account status
+                                if (client.getStatus() == com.polytechnique.tiibntick.models.enums.client.ClientStatus.SUSPENDED) {
+                                    return Mono.error(new InvalidCredentialsException("Votre compte a été suspendu"));
+                                }
+                                if (client.getStatus() == com.polytechnique.tiibntick.models.enums.client.ClientStatus.REVOKED) {
+                                    return Mono.error(new InvalidCredentialsException("Votre compte a été bloqué"));
+                                }
                                 response.setClientId(client.getId());
                                 response.setLoyaltyStatus(client.getLoyaltyStatus());
                                 response.setUserType("CLIENT");
-                                return response;
+                                return Mono.just(response);
                             })
                             .switchIfEmpty(deliveryPersonRepository.findByPersonId(person.getId())
                                     .flatMap(deliveryPerson -> {
@@ -58,12 +65,17 @@ public class AuthenticationService {
                                         if (deliveryPerson
                                                 .getStatus() == com.polytechnique.tiibntick.models.enums.deliveryPerson.DeliveryPersonStatus.SUSPENDED) {
                                             return Mono
-                                                    .error(new InvalidCredentialsException("Compte livreur suspendu"));
+                                                    .error(new InvalidCredentialsException("Votre compte a été suspendu"));
+                                        }
+                                        if (deliveryPerson
+                                                .getStatus() == com.polytechnique.tiibntick.models.enums.deliveryPerson.DeliveryPersonStatus.REVOKED) {
+                                            return Mono
+                                                    .error(new InvalidCredentialsException("Votre compte a été bloqué"));
                                         }
                                         if (deliveryPerson
                                                 .getStatus() == com.polytechnique.tiibntick.models.enums.deliveryPerson.DeliveryPersonStatus.REJECTED) {
                                             return Mono.error(new InvalidCredentialsException(
-                                                    "Compte livreur rejeté ou révoqué"));
+                                                    "Votre compte a été rejeté"));
                                         }
                                         /*
                                          * if (deliveryPerson
