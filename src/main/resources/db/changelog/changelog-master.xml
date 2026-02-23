@@ -249,4 +249,9 @@
         <sqlFile path="db/changelog/043-add-unique-constraint-subscriptions.sql" relativeToChangelogFile="false" splitStatements="false"/>
     </changeSet>
 
+    <changeSet id="044-add-assigned-delivery-person" author="TiiBnTickTeam">
+        <validCheckSum>ANY</validCheckSum>
+        <sqlFile path="db/changelog/044-add-assigned-delivery-person.sql" relativeToChangelogFile="false" splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>

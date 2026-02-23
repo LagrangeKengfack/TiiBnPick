@@ -185,7 +185,24 @@ public class AnnouncementService {
                 : Mono.just(new Packet());
 
         return Mono.zip(pickupMono, deliveryMono, packetMono)
-                .map(tuple -> mapToResponse(announcement, tuple.getT1(), tuple.getT2(), tuple.getT3()));
+                .map(tuple -> mapToResponse(announcement, tuple.getT1(), tuple.getT2(), tuple.getT3()))
+                .flatMap(response -> {
+                    // Populate assigned delivery person info if present
+                    if (announcement.getAssignedDeliveryPersonId() != null) {
+                        return deliveryPersonRepository.findById(announcement.getAssignedDeliveryPersonId())
+                                .flatMap(dp -> personRepository.findById(dp.getPersonId()))
+                                .map(person -> {
+                                    response.setAssignedDeliveryPersonId(announcement.getAssignedDeliveryPersonId());
+                                    response.setAssignedDeliveryPersonFirstName(person.getFirstName());
+                                    response.setAssignedDeliveryPersonLastName(person.getLastName());
+                                    response.setAssignedDeliveryPersonEmail(person.getEmail());
+                                    response.setAssignedDeliveryPersonPhone(person.getPhone());
+                                    return response;
+                                })
+                                .defaultIfEmpty(response);
+                    }
+                    return Mono.just(response);
+                });
     }
 
     private Address maptoAddress(AddressDTO dto) {
@@ -269,6 +286,10 @@ public class AnnouncementService {
     public Mono<AnnouncementResponseDTO> updateAnnouncement(UUID id, AnnouncementRequestDTO request) {
         return announcementRepository.findById(id)
                 .flatMap(announcement -> {
+                    // Block updates on assigned announcements
+                    if (announcement.getStatus() == AnnouncementStatus.ASSIGNED) {
+                        return Mono.error(new RuntimeException("Cannot modify an assigned announcement"));
+                    }
                     announcement.setTitle(request.getTitle());
                     announcement.setDescription(request.getDescription());
                     announcement.setTitle(request.getTitle());
@@ -411,6 +432,7 @@ public class AnnouncementService {
                 .switchIfEmpty(Mono.error(new RuntimeException("Announcement not found")))
                 .flatMap(announcement -> {
                     announcement.setStatus(AnnouncementStatus.ASSIGNED);
+                    announcement.setAssignedDeliveryPersonId(deliveryPersonId);
                     announcement.setUpdatedAt(Instant.now());
                     return announcementRepository.save(announcement);
                 })
@@ -426,5 +448,14 @@ public class AnnouncementService {
                             })
                             .subscribe();
                 });
+    }
+
+    /**
+     * Returns announcements that a delivery person has subscribed to.
+     */
+    public Flux<AnnouncementResponseDTO> getSubscriptionsByDeliveryPersonId(UUID deliveryPersonId) {
+        return subscriptionRepository.findAllByDeliveryPersonId(deliveryPersonId)
+                .flatMap(sub -> announcementRepository.findById(sub.getAnnouncementId())
+                        .flatMap(this::populateDetails));
     }
 }

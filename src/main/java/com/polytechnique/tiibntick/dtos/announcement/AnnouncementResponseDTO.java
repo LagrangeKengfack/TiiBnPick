@@ -45,6 +45,13 @@ public class AnnouncementResponseDTO {
     private AddressDTO deliveryAddress;
     private PacketDTO packet;
 
+    // Assigned delivery person info (populated when status is ASSIGNED)
+    private UUID assignedDeliveryPersonId;
+    private String assignedDeliveryPersonFirstName;
+    private String assignedDeliveryPersonLastName;
+    private String assignedDeliveryPersonEmail;
+    private String assignedDeliveryPersonPhone;
+
     public void setPickupAddress(AddressDTO pickupAddress) {
         this.pickupAddress = pickupAddress;
     }

@@ -50,4 +50,10 @@ public class SubscriptionController {
         return announcementService.assignDeliveryPerson(announcementId, request.getDeliveryPersonId())
                 .map(ResponseEntity::ok);
     }
+
+    @GetMapping("/subscriptions/delivery-person/{deliveryPersonId}")
+    public Flux<AnnouncementResponseDTO> getDeliveryPersonSubscriptions(
+            @PathVariable("deliveryPersonId") UUID deliveryPersonId) {
+        return announcementService.getSubscriptionsByDeliveryPersonId(deliveryPersonId);
+    }
 }

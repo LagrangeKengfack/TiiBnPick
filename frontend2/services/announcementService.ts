@@ -51,6 +51,12 @@ export interface AnnouncementResponseDTO {
     };
     distance?: number;
     duration?: number;
+    // Assigned delivery person info (when status is ASSIGNED)
+    assignedDeliveryPersonId?: string;
+    assignedDeliveryPersonFirstName?: string;
+    assignedDeliveryPersonLastName?: string;
+    assignedDeliveryPersonEmail?: string;
+    assignedDeliveryPersonPhone?: string;
 }
 
 export const getAnnouncementById = async (id: string): Promise<AnnouncementResponseDTO> => {
@@ -204,3 +210,22 @@ export const assignDeliveryPerson = async (announcementId: string, deliveryPerso
     }
 };
 
+export const getPublishedAnnouncements = async (): Promise<AnnouncementResponseDTO[]> => {
+    try {
+        const response = await apiClient.get(`${API_URL}`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error fetching published announcements:', error.response?.data?.message || error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const getDeliveryPersonSubscriptions = async (deliveryPersonId: string): Promise<AnnouncementResponseDTO[]> => {
+    try {
+        const response = await apiClient.get(`${API_URL}/subscriptions/delivery-person/${deliveryPersonId}`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Error fetching delivery person subscriptions:', error.response?.data?.message || error.response?.data || error.message);
+        throw error;
+    }
+};

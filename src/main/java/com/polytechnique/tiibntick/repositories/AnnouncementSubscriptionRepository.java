@@ -20,4 +20,6 @@ public interface AnnouncementSubscriptionRepository extends ReactiveCrudReposito
             UUID deliveryPersonId);
 
     Flux<AnnouncementSubscription> findAllByAnnouncementId(UUID announcementId);
+
+    Flux<AnnouncementSubscription> findAllByDeliveryPersonId(UUID deliveryPersonId);
 }

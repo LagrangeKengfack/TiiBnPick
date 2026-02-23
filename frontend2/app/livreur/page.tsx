@@ -45,7 +45,12 @@ import { useRouter } from 'next/navigation'
 import { acceptDelivery as acceptDeliveryService } from '@/services/deliveryService'
 import dynamic from 'next/dynamic'
 import { getRoute } from '@/services/routing'
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
+import {
+  getPublishedAnnouncements,
+  getDeliveryPersonSubscriptions,
+  AnnouncementResponseDTO
+} from '@/services/announcementService'
 
 const MapLeaflet = dynamic(() => import('@/components/MapLeaflet'), {
   ssr: false,
@@ -83,110 +88,55 @@ export function LivreurDashboard() {
   }
 
 
-  // Livraisons actives
-  const [activeDeliveries, setActiveDeliveries] = useState([
-    {
-      id: 'TBP-2024-001',
-      customerName: 'Amani Yao',
-      pickupAddress: 'Cocody, Rue des Jardins',
-      deliveryAddress: 'Plateau, Avenue de la République',
-      distance: 5.2,
-      estimatedTime: '15 min',
-      price: 1500,
-      status: 'pickup',
-      packageType: 'Repas à domicile',
-      pickupTime: '10:30',
-      urgency: 'urgent'
-    },
-    {
-      id: 'TBP-2024-002',
-      customerName: 'Koffi Aya',
-      pickupAddress: 'Yopougon, Zone 4',
-      deliveryAddress: 'Marcory, Biétry',
-      distance: 8.7,
-      estimatedTime: '25 min',
-      price: 2000,
-      status: 'delivery',
-      packageType: 'Documents urgents',
-      pickupTime: '10:45',
-      urgency: 'normal'
-    }
-  ])
+  // Available announcements from API
+  const [availableDeliveries, setAvailableDeliveries] = useState<AnnouncementResponseDTO[]>([])
+  const [availableLoading, setAvailableLoading] = useState(false)
 
-  // Livraisons disponibles
-  const [availableDeliveries, setAvailableDeliveries] = useState([
-    {
-      id: 'TBP-2024-003',
-      customerName: 'Kouassi Paul',
-      customerFullName: 'Kouassi Paul-Marie',
-      customerEmail: 'paul.kouassi@email.com',
-      customerPhone: '+225 01 02 03 04 05',
-      pickupAddress: 'Abobo, Baoulé',
-      deliveryAddress: 'Treichville, Boulevard Mitterrand',
-      senderCoords: { lat: 5.4166, lon: -4.0166 },
-      recipientCoords: { lat: 5.3094, lon: -4.0126 },
-      distance: 12.3,
-      estimatedTime: '35 min',
-      price: 2500,
-      packageType: 'Courses urgentes',
-      designation: 'Vêtements',
-      description: 'Un sac contenant des vêtements variés pour livraison express.',
-      weight: 5,
-      volume: 3.5,
-      options: ['Fragile'],
-      isFragile: true,
-      deliveryType: 'Express 48h',
-      urgency: 'high',
-      customerRating: 4.5,
-      packagePhoto: '/package_sample.png',
-      vehicleType: 'moteur',
-      feedback: {
-        likes: 12,
-        comments: [
-          { driverName: 'Moussa D.', content: 'Client très ponctuel et sympathique.' },
-          { driverName: 'Sery G.', content: 'Rien à signaler, parfait.' }
-        ]
-      }
-    },
-    {
-      id: 'TBP-2024-004',
-      customerName: 'Yao Esther',
-      customerFullName: 'Yao Esther Grâce',
-      customerEmail: 'e.yao@hotline.ci',
-      customerPhone: '+225 05 06 07 08 09',
-      pickupAddress: 'Plateau, Stade Général De Gaulle',
-      deliveryAddress: 'Cocody, Angre',
-      senderCoords: { lat: 5.3245, lon: -4.0123 },
-      recipientCoords: { lat: 5.3789, lon: -3.9876 },
-      distance: 6.8,
-      estimatedTime: '20 min',
-      price: 1800,
-      packageType: 'Pharmacie & Santé',
-      designation: 'Médicaments',
-      description: 'Boîtes de médicaments à livrer d\'urgence.',
-      weight: 1,
-      volume: 0.1,
-      options: ['Assurance'],
-      isFragile: false,
-      deliveryType: 'Standard 72h',
-      urgency: 'urgent',
-      customerRating: 4.9,
-      packagePhoto: '/package_sample.png',
-      vehicleType: 'velo',
-      feedback: {
-        likes: 45,
-        comments: [
-          { driverName: 'Koffi J.', content: 'Habituée, toujours au top.' },
-          { driverName: 'Amani B.', content: 'Donne souvent des pourboires.' }
-        ]
-      }
-    }
-  ])
+  // Active deliveries (subscribed announcements) from API
+  const [activeDeliveries, setActiveDeliveries] = useState<AnnouncementResponseDTO[]>([])
+  const [activeLoading, setActiveLoading] = useState(false)
 
   const [selectedDelivery, setSelectedDelivery] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [activeRoute, setActiveRoute] = useState<any>(null)
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Set<string>>(new Set())
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set())
+
+  // Fetch published announcements
+  const fetchAvailableDeliveries = useCallback(async () => {
+    setAvailableLoading(true)
+    try {
+      const data = await getPublishedAnnouncements()
+      // Only show PUBLISHED announcements (not ASSIGNED)
+      setAvailableDeliveries(data.filter(a => a.status === 'PUBLISHED'))
+    } catch (error) {
+      console.error('Error fetching announcements:', error)
+    } finally {
+      setAvailableLoading(false)
+    }
+  }, [])
+
+  // Fetch delivery person's subscriptions (active deliveries)
+  const fetchMyDeliveries = useCallback(async () => {
+    const dpId = user?.deliveryPersonId || user?.id
+    if (!dpId) return
+    setActiveLoading(true)
+    try {
+      const data = await getDeliveryPersonSubscriptions(dpId)
+      setActiveDeliveries(data)
+      // Pre-populate subscribed IDs set for button state
+      setSubscribedIds(new Set(data.map(a => a.id)))
+    } catch (error) {
+      console.error('Error fetching my deliveries:', error)
+    } finally {
+      setActiveLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    fetchAvailableDeliveries()
+    fetchMyDeliveries()
+  }, [fetchAvailableDeliveries, fetchMyDeliveries])
 
   // Real-time notifications via SSE
   useEffect(() => {
@@ -329,6 +279,11 @@ export function LivreurDashboard() {
       });
 
       if (response.status === 200 || response.status === 201) {
+        setSubscribedIds(prev => {
+          const next = new Set(prev);
+          next.add(deliveryId);
+          return next;
+        });
         toast({
           title: "Demande envoyée",
           description: "Votre demande de souscription est en cours de traitement.",
@@ -523,7 +478,9 @@ export function LivreurDashboard() {
                     >
                       <Megaphone className="w-8 h-8 text-orange-600" />
                       <span className="text-sm font-medium">Voir les annonces</span>
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-700">{availableDeliveries.length}</Badge>
+                      {availableLoading ? null : (
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-700">{availableDeliveries.length}</Badge>
+                      )}
                     </Button>
 
                     <Button
@@ -532,8 +489,10 @@ export function LivreurDashboard() {
                       className="h-24 flex flex-col items-center justify-center gap-2 hover:border-orange-500 hover:bg-orange-50"
                     >
                       <Truck className="w-8 h-8 text-orange-600" />
-                      <span className="text-sm font-medium">Livraisons actives</span>
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">{activeDeliveries.length}</Badge>
+                      <span className="text-sm font-medium">Mes livraisons</span>
+                      {activeLoading ? null : (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">{activeDeliveries.length}</Badge>
+                      )}
                     </Button>
                   </div>
                 </CardContent>
@@ -554,29 +513,40 @@ export function LivreurDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {activeDeliveries.slice(0, 2).map((delivery) => (
-                      <div key={delivery.id} className="p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-sm font-semibold text-gray-900">{delivery.id}</span>
-                              {getStatusBadge(delivery.status)}
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                              <div className="space-y-1 flex-1">
-                                <p className="text-xs text-gray-700">
-                                  <span className="font-medium">Retrait:</span> {delivery.pickupAddress}
-                                </p>
-                                <p className="text-xs text-gray-700">
-                                  <span className="font-medium">Livraison:</span> {delivery.deliveryAddress}
-                                </p>
+                    {activeDeliveries.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Truck className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                        <p className="text-sm text-gray-500">Aucune livraison en cours</p>
+                        <p className="text-xs text-gray-400 mt-1">Souscrivez à une annonce pour commencer</p>
+                      </div>
+                    ) : (
+                      activeDeliveries.slice(0, 2).map((delivery) => (
+                        <div key={delivery.id} className="p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-sm font-semibold text-gray-900">{delivery.title}</span>
+                                <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300">
+                                  <Package className="w-3 h-3 mr-1" />
+                                  {delivery.status === 'ASSIGNED' ? 'Assignée' : 'Souscrit'}
+                                </Badge>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                                <div className="space-y-1 flex-1">
+                                  <p className="text-xs text-gray-700">
+                                    <span className="font-medium">Retrait:</span> {delivery.pickupAddress?.city || 'N/A'}
+                                  </p>
+                                  <p className="text-xs text-gray-700">
+                                    <span className="font-medium">Livraison:</span> {delivery.deliveryAddress?.city || 'N/A'}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -586,57 +556,69 @@ export function LivreurDashboard() {
           {activeTab === 'annonces' && (
             <>
               <div className="grid lg:grid-cols-2 gap-4">
-                {availableDeliveries.map((delivery) => (
+                {availableLoading ? (
+                  <div className="col-span-2 flex items-center justify-center py-16">
+                    <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : availableDeliveries.length === 0 ? (
+                  <div className="col-span-2 text-center py-16">
+                    <Megaphone className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucune annonce disponible</h3>
+                    <p className="text-sm text-gray-500">Revenez plus tard pour voir les nouvelles annonces</p>
+                  </div>
+                ) : availableDeliveries.map((delivery) => (
                   <Card key={delivery.id} className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-xl">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
-                          <CardTitle className="text-base font-mono">{delivery.id}</CardTitle>
-                          <p className="text-[10px] text-orange-600 font-medium italic">{delivery.deliveryAddress}</p>
+                          <CardTitle className="text-base">{delivery.title}</CardTitle>
+                          <p className="text-[10px] text-orange-600 font-medium italic">
+                            {delivery.pickupAddress?.city || 'N/A'} → {delivery.deliveryAddress?.city || 'N/A'}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
-                          <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                          <span className="text-sm font-semibold text-yellow-700">{delivery.customerRating}</span>
-                        </div>
+                        {delivery.amount && (
+                          <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded">
+                            <DollarSign className="w-3 h-3 text-green-600" />
+                            <span className="text-sm font-semibold text-green-700">{delivery.amount.toLocaleString()} FCFA</span>
+                          </div>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-700">{delivery.customerName}</span>
-                      </div>
-
+                      {delivery.description && (
+                        <p className="text-sm text-gray-500 line-clamp-2">{delivery.description}</p>
+                      )}
                       <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <MapPin className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
                         <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full" />
                             <p className="text-sm text-gray-700">
-                              <span className="font-medium">Retrait:</span> {delivery.pickupAddress}
+                              <span className="font-medium">Retrait:</span> {delivery.pickupAddress?.street || delivery.pickupAddress?.city || 'N/A'}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-red-500 rounded-full" />
                             <p className="text-sm text-gray-700">
-                              <span className="font-medium">Livraison:</span> {delivery.deliveryAddress}
+                              <span className="font-medium">Livraison:</span> {delivery.deliveryAddress?.street || delivery.deliveryAddress?.city || 'N/A'}
                             </p>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
-                        <div className="flex items-center gap-2">
-                          <MapIcon className="w-4 h-4" />
-                          <span>{delivery.distance} km</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          <span>{delivery.estimatedTime}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          <span className="font-semibold text-green-600">{delivery.price.toLocaleString()} FCFA</span>
-                        </div>
+                        {delivery.distance && (
+                          <div className="flex items-center gap-2">
+                            <Navigation className="w-4 h-4" />
+                            <span>{delivery.distance.toFixed(1)} km</span>
+                          </div>
+                        )}
+                        {delivery.amount && (
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="w-4 h-4 text-green-600" />
+                            <span className="font-semibold text-green-600">{delivery.amount.toLocaleString()} FCFA</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex gap-2 pt-2">
@@ -650,16 +632,16 @@ export function LivreurDashboard() {
                         </Button>
                         <Button
                           size="sm"
-                          disabled={pendingSubscriptions.has(delivery.id)}
+                          disabled={pendingSubscriptions.has(delivery.id) || subscribedIds.has(delivery.id)}
                           className={cn(
                             "flex-1 shadow-md transform active:scale-95 transition-all text-white font-medium",
-                            pendingSubscriptions.has(delivery.id)
+                            (pendingSubscriptions.has(delivery.id) || subscribedIds.has(delivery.id))
                               ? "bg-gray-400 cursor-not-allowed"
                               : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
                           )}
                           onClick={() => handleAcceptDelivery(delivery.id)}
                         >
-                          {pendingSubscriptions.has(delivery.id)
+                          {(pendingSubscriptions.has(delivery.id) || subscribedIds.has(delivery.id))
                             ? "En attente de traitement"
                             : "Souscrire à l'annonce"}
                         </Button>
@@ -860,84 +842,95 @@ export function LivreurDashboard() {
 
           {activeTab === 'livraisons' && (
             <>
-              <div className="grid lg:grid-cols-2 gap-4 mb-6">
-                {activeDeliveries.map((delivery) => (
-                  <Card key={delivery.id} className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-xl">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className="text-base">{delivery.customerName || delivery.id}</CardTitle>
-                          <p className="text-[10px] text-gray-400 font-mono italic">{delivery.id}</p>
-                        </div>
-                        {getStatusBadge(delivery.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <p className="text-sm text-gray-700">
-                              <span className="font-medium">Retrait:</span> {delivery.pickupAddress}
+              {activeLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : activeDeliveries.length === 0 ? (
+                <div className="text-center py-16">
+                  <Truck className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucune livraison</h3>
+                  <p className="text-sm text-gray-500">Souscrivez à une annonce pour voir vos livraisons ici</p>
+                  <Button
+                    className="mt-4 bg-gradient-to-r from-orange-500 to-amber-500"
+                    onClick={() => setActiveTab('annonces')}
+                  >
+                    Voir les annonces
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-4 mb-6">
+                  {activeDeliveries.map((delivery) => (
+                    <Card key={delivery.id} className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow rounded-xl">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <CardTitle className="text-base">{delivery.title}</CardTitle>
+                            <p className="text-[10px] text-gray-400 italic">
+                              {delivery.pickupAddress?.city || 'N/A'} → {delivery.deliveryAddress?.city || 'N/A'}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-red-500 rounded-full" />
-                            <p className="text-sm text-gray-700">
-                              <span className="font-medium">Livraison:</span> {delivery.deliveryAddress}
-                            </p>
+                          <Badge variant="outline" className={cn(
+                            delivery.status === 'ASSIGNED'
+                              ? 'bg-green-100 text-green-700 border-green-300'
+                              : 'bg-orange-100 text-orange-700 border-orange-300'
+                          )}>
+                            {delivery.status === 'ASSIGNED' ? (
+                              <><CheckCircle2 className="w-3 h-3 mr-1" /> Assignée</>
+                            ) : (
+                              <><Package className="w-3 h-3 mr-1" /> Souscrit</>
+                            )}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {delivery.description && (
+                          <p className="text-sm text-gray-500 line-clamp-2">{delivery.description}</p>
+                        )}
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full" />
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Retrait:</span> {delivery.pickupAddress?.street || delivery.pickupAddress?.city || 'N/A'}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-red-500 rounded-full" />
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Livraison:</span> {delivery.deliveryAddress?.street || delivery.deliveryAddress?.city || 'N/A'}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          <span>{delivery.estimatedTime}</span>
+                        <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
+                          {delivery.distance && (
+                            <div className="flex items-center gap-2">
+                              <Navigation className="w-4 h-4" />
+                              <span>{delivery.distance.toFixed(1)} km</span>
+                            </div>
+                          )}
+                          {delivery.amount && (
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-green-600" />
+                              <span className="font-semibold text-green-600">{delivery.amount.toLocaleString()} FCFA</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          <span className="font-semibold text-green-600">{delivery.price.toLocaleString()} FCFA</span>
-                        </div>
-                      </div>
-
-                      {delivery.status === 'delivery' ? (
-                        <Button
-                          size="sm"
-                          className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-                        >
-                          Continuer
-                        </Button>
-                      ) : (
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1"
-                          >
-                            Annuler
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-                            onClick={() => handleStartDelivery(delivery.id)}
-                          >
-                            Démarrer
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
-      </main>
+      </main >
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-50">
+      < nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-50" >
         <div className="flex items-center justify-around py-2">
           <button
             onClick={() => setActiveTab('accueil')}
@@ -973,15 +966,15 @@ export function LivreurDashboard() {
             <span className="text-[10px]">Livraisons</span>
           </button>
         </div>
-      </nav>
+      </nav >
 
       {/* Desktop Footer */}
-      <footer className="hidden md:block py-6 bg-white border-t border-gray-100 mt-auto">
+      < footer className="hidden md:block py-6 bg-white border-t border-gray-100 mt-auto" >
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
           <p>© 2025 TiiBnTick - Espace Livreur • Disponible 24h/24</p>
         </div>
-      </footer>
-    </div>
+      </footer >
+    </div >
   )
 }
 

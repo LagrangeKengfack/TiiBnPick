@@ -98,6 +98,9 @@ public class Announcement {
     @Column("distance")
     private Double distance;
 
+    @Column("assigned_delivery_person_id")
+    private UUID assignedDeliveryPersonId;
+
     @Column("created_at")
     private Instant createdAt;
 

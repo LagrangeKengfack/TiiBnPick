@@ -408,8 +408,12 @@ export function ClientLanding() {
                             <div className="space-y-1">
                               <CardTitle className="text-xs break-all pr-2">{announcement.id}</CardTitle>
                             </div>
-                            <Badge variant={announcement.status === 'PUBLISHED' ? "default" : "secondary"} className={announcement.status === 'PUBLISHED' ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"}>
-                              {announcement.status === 'PUBLISHED' ? "Publiée" : "Non publiée"}
+                            <Badge variant={announcement.status === 'ASSIGNED' ? 'default' : announcement.status === 'PUBLISHED' ? "default" : "secondary"}
+                              className={announcement.status === 'ASSIGNED' ? "bg-green-100 text-green-700 border-green-300" : announcement.status === 'PUBLISHED' ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"}
+                            >
+                              {announcement.status === 'ASSIGNED' ? (
+                                <><CheckCircle2 className="w-3 h-3 mr-1" /> Assignée</>
+                              ) : announcement.status === 'PUBLISHED' ? "Publiée" : "Non publiée"}
                             </Badge>
                           </div>
                         </CardHeader>
@@ -456,15 +460,17 @@ export function ClientLanding() {
                             >
                               Voir Détails
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
-                              onClick={() => confirmDelete(announcement.id)}
-                            >
-                              Supprimer
-                            </Button>
-                            {announcement.status !== 'PUBLISHED' && (
+                            {announcement.status !== 'ASSIGNED' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
+                                onClick={() => confirmDelete(announcement.id)}
+                              >
+                                Supprimer
+                              </Button>
+                            )}
+                            {announcement.status !== 'PUBLISHED' && announcement.status !== 'ASSIGNED' && (
                               <Button
                                 size="sm"
                                 className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
@@ -474,6 +480,20 @@ export function ClientLanding() {
                               </Button>
                             )}
                           </div>
+
+                          {/* Show assigned delivery person info */}
+                          {announcement.status === 'ASSIGNED' && announcement.assignedDeliveryPersonFirstName && (
+                            <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                              <div className="flex items-center gap-2 mb-1">
+                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                <span className="text-sm font-semibold text-green-700">Livreur assigné</span>
+                              </div>
+                              <p className="text-sm text-gray-700">
+                                {announcement.assignedDeliveryPersonFirstName} {announcement.assignedDeliveryPersonLastName}
+                              </p>
+                              <p className="text-xs text-gray-500">{announcement.assignedDeliveryPersonPhone}</p>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     ))}
@@ -742,10 +762,10 @@ export function ClientLanding() {
                   .filter(a => a.status === 'PUBLISHED' || a.status === 'ASSIGNED')
                   .map((announcement) => (
                     <Card key={announcement.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between gap-4">
+                      <CardContent className="p-4 sm:p-5">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
                               <h3 className="font-semibold text-gray-900 truncate">{announcement.title}</h3>
                               {announcement.status === 'ASSIGNED' ? (
                                 <Badge className="bg-green-100 text-green-700 border-green-200">
@@ -761,10 +781,10 @@ export function ClientLanding() {
                             {announcement.description && (
                               <p className="text-sm text-gray-500 mb-3 line-clamp-2">{announcement.description}</p>
                             )}
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                               <div className="flex items-center gap-1">
                                 <MapPin className="w-4 h-4 text-orange-500" />
-                                <span className="truncate max-w-[200px]">
+                                <span className="truncate max-w-[180px] sm:max-w-[250px]">
                                   {announcement.pickupAddress?.city || 'N/A'} → {announcement.deliveryAddress?.city || 'N/A'}
                                 </span>
                               </div>
@@ -775,16 +795,35 @@ export function ClientLanding() {
                                 </div>
                               )}
                             </div>
+
+                            {/* Show assigned delivery person details */}
+                            {announcement.status === 'ASSIGNED' && announcement.assignedDeliveryPersonFirstName && (
+                              <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                    {announcement.assignedDeliveryPersonFirstName?.charAt(0)}{announcement.assignedDeliveryPersonLastName?.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-green-800">
+                                      {announcement.assignedDeliveryPersonFirstName} {announcement.assignedDeliveryPersonLastName}
+                                    </p>
+                                    <p className="text-xs text-green-600">{announcement.assignedDeliveryPersonPhone}</p>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-gray-500">{announcement.assignedDeliveryPersonEmail}</p>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 self-start">
                             {announcement.status === 'ASSIGNED' ? (
-                              <div className="px-4 py-2 bg-green-50 rounded-lg text-sm font-medium text-green-700">
-                                Livreur assigné
+                              <div className="px-3 py-2 bg-green-50 rounded-lg text-sm font-medium text-green-700 whitespace-nowrap">
+                                ✓ Livreur assigné
                               </div>
                             ) : (
                               <Button
                                 variant="outline"
-                                className="border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                size="sm"
+                                className="border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700 w-full sm:w-auto"
                                 onClick={() => handleViewSubscriptions(announcement)}
                               >
                                 <MessageSquare className="w-4 h-4 mr-2" />
