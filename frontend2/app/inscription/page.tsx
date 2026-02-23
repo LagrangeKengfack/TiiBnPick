@@ -1415,7 +1415,7 @@ export default function RegisterPage() {
                         setIsRegistering(true);
                         console.log('Final Submission Livreur:', formData);
 
-                        // Prepare data with Base64 images
+                        // Prepare multipart FormData with compressed binary images
                         const vehicleTypeMap: { [key: string]: string } = {
                           'voiture': 'CAR',
                           'moto': 'MOTORBIKE',
@@ -1424,8 +1424,8 @@ export default function RegisterPage() {
                           'velo': 'BIKE'
                         };
 
-                        const payload = {
-                          ...formData,
+                        // Text fields as JSON
+                        const textData = {
                           firstName: formData.prenom,
                           lastName: formData.nom,
                           phone: formData.telephone,
@@ -1435,7 +1435,7 @@ export default function RegisterPage() {
                           commercialName: `${formData.nom} ${formData.prenom}`,
                           commercialRegister: "INDIVIDUAL",
                           street: formData.adressePersonnelle,
-                          city: formData.pays, // Placeholder
+                          city: formData.pays,
                           district: formData.lieuDitAdresse,
                           country: formData.pays,
                           logisticsType: vehicleTypeMap[formData.typeVehicule] || 'CAR',
@@ -1445,19 +1445,40 @@ export default function RegisterPage() {
                           width: formData.largeurMalle ? parseFloat(formData.largeurMalle) : null,
                           height: formData.hauteurMalle ? parseFloat(formData.hauteurMalle) : null,
                           unit: formData.uniteMalle,
-                          // Separate NIU number from photo
                           nui: formData.numeroNINE,
-                          // Photos compressed then encoded as Base64
-                          photoCard: photoIdentite ? await compressAndEncode(photoIdentite) : null,
-                          cniRecto: photoCniRecto ? await compressAndEncode(photoCniRecto) : null,
-                          cniVerso: photoCniVerso ? await compressAndEncode(photoCniVerso) : null,
-                          nuiPhoto: photoNiu ? await compressAndEncode(photoNiu) : null,
-                          frontPhoto: photoVehiculeAvant ? await compressAndEncode(photoVehiculeAvant) : null,
-                          backPhoto: photoVehiculeArriere ? await compressAndEncode(photoVehiculeArriere) : null
                         };
 
-                        await apiClient.post('/api/delivery-persons/register', payload, {
-                          timeout: 180000, // 180s timeout for 6 base64 images through Cloudflare tunnel
+                        const multipartData = new FormData();
+                        multipartData.append('data', new Blob([JSON.stringify(textData)], { type: 'application/json' }));
+
+                        // Compress then append photos as binary files (no base64 overhead)
+                        if (photoIdentite) {
+                          const compressed = await compressImage(photoIdentite);
+                          multipartData.append('photoCard', compressed, compressed.name);
+                        }
+                        if (photoCniRecto) {
+                          const compressed = await compressImage(photoCniRecto);
+                          multipartData.append('cniRecto', compressed, compressed.name);
+                        }
+                        if (photoCniVerso) {
+                          const compressed = await compressImage(photoCniVerso);
+                          multipartData.append('cniVerso', compressed, compressed.name);
+                        }
+                        if (photoNiu) {
+                          const compressed = await compressImage(photoNiu);
+                          multipartData.append('nuiPhoto', compressed, compressed.name);
+                        }
+                        if (photoVehiculeAvant) {
+                          const compressed = await compressImage(photoVehiculeAvant);
+                          multipartData.append('frontPhoto', compressed, compressed.name);
+                        }
+                        if (photoVehiculeArriere) {
+                          const compressed = await compressImage(photoVehiculeArriere);
+                          multipartData.append('backPhoto', compressed, compressed.name);
+                        }
+
+                        await apiClient.post('/api/delivery-persons/register', multipartData, {
+                          timeout: 180000,
                         });
 
                         setStep(6);

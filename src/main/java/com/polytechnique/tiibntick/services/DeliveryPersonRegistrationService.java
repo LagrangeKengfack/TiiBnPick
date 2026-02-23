@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple6;
+import org.springframework.http.codec.multipart.FilePart;
 
 /**
  * Orchestrator service for DeliveryPerson registration.
@@ -64,7 +64,14 @@ public class DeliveryPersonRegistrationService {
          * @throws EmailAlreadyUsedException if the email is already registered
          */
         @Transactional("connectionFactoryTransactionManager")
-        public Mono<DeliveryPersonRegistrationResponse> register(DeliveryPersonRegistrationRequest request) {
+        public Mono<DeliveryPersonRegistrationResponse> register(
+                        DeliveryPersonRegistrationRequest request,
+                        FilePart photoCard,
+                        FilePart cniRecto,
+                        FilePart cniVerso,
+                        FilePart nuiPhoto,
+                        FilePart frontPhoto,
+                        FilePart backPhoto) {
                 return validator.validate(request)
                                 .flatMap(validRequest -> lecturePersonService.existsByEmail(validRequest.getEmail())
                                                 .flatMap(exists -> {
@@ -75,31 +82,25 @@ public class DeliveryPersonRegistrationService {
                                                         return Mono.just(validRequest);
                                                 }))
                                 .flatMap(validRequest -> {
-                                        // Save all photos reactively and update the request object with final paths
+                                        // Save all photos reactively via multipart FileParts
                                         return Mono.zip(
                                                         fileStorageService
-                                                                        .saveBase64Image(validRequest.getPhotoCard(),
-                                                                                        "identite")
+                                                                        .saveFilePart(photoCard, "identite")
                                                                         .defaultIfEmpty("NOT_PROVIDED"),
                                                         fileStorageService
-                                                                        .saveBase64Image(validRequest.getCniRecto(),
-                                                                                        "cni_recto")
+                                                                        .saveFilePart(cniRecto, "cni_recto")
                                                                         .defaultIfEmpty("NOT_PROVIDED"),
                                                         fileStorageService
-                                                                        .saveBase64Image(validRequest.getCniVerso(),
-                                                                                        "cni_verso")
+                                                                        .saveFilePart(cniVerso, "cni_verso")
                                                                         .defaultIfEmpty("NOT_PROVIDED"),
                                                         fileStorageService
-                                                                        .saveBase64Image(validRequest.getNuiPhoto(),
-                                                                                        "niu")
+                                                                        .saveFilePart(nuiPhoto, "niu")
                                                                         .defaultIfEmpty("NOT_PROVIDED"),
                                                         fileStorageService
-                                                                        .saveBase64Image(validRequest.getFrontPhoto(),
-                                                                                        "vehicule_avant")
+                                                                        .saveFilePart(frontPhoto, "vehicule_avant")
                                                                         .defaultIfEmpty("NOT_PROVIDED"),
                                                         fileStorageService
-                                                                        .saveBase64Image(validRequest.getBackPhoto(),
-                                                                                        "vehicule_arriere")
+                                                                        .saveFilePart(backPhoto, "vehicule_arriere")
                                                                         .defaultIfEmpty("NOT_PROVIDED"))
                                                         .map(imagePaths -> {
                                                                 validRequest.setPhotoCard(imagePaths.getT1());

@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,6 +33,7 @@ export default function LoginPage() {
     }
 
     setIsLoading(true)
+    setLoginError(null)
     try {
       const response = await loginService(email, password)
       setSuccess(true)
@@ -58,9 +60,11 @@ export default function LoginPage() {
         }
       }, 1000)
     } catch (err: any) {
+      const message = err.message || "Email ou mot de passe incorrect."
+      setLoginError(message)
       toast({
         title: "Échec de connexion",
-        description: err.message || "Email ou mot de passe invalide.",
+        description: message,
         variant: "destructive"
       })
     } finally {
@@ -87,6 +91,15 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Inline Error Banner */}
+          {loginError && (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-3">
+              <svg className="w-5 h-5 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm font-medium">{loginError}</p>
+            </div>
+          )}
           {/* Email Field */}
           <div>
             <label

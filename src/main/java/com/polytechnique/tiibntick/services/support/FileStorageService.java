@@ -68,6 +68,33 @@ public class FileStorageService {
     }
 
     /**
+     * Saves a FilePart (multipart upload) to disk and returns the relative path.
+     *
+     * @param filePart the uploaded file part
+     * @param prefix   a prefix for the filename (e.g., "identite", "cni")
+     * @return a Mono containing the relative path to the saved file
+     */
+    public Mono<String> saveFilePart(org.springframework.http.codec.multipart.FilePart filePart, String prefix) {
+        if (filePart == null) {
+            return Mono.empty();
+        }
+
+        String originalFilename = filePart.filename();
+        String extension = originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+                : ".jpg";
+
+        String fileName = prefix + "_" + UUID.randomUUID().toString() + extension;
+        Path filePath = Paths.get(uploadDir, fileName);
+
+        return filePart.transferTo(filePath)
+                .then(Mono.fromCallable(() -> {
+                    log.info("Saved multipart file to: {}", filePath);
+                    return "/" + filePath.toString();
+                }));
+    }
+
+    /**
      * Deletes a file from the storage.
      *
      * @param fileName the name of the file to delete (e.g. "uploads/images/...")

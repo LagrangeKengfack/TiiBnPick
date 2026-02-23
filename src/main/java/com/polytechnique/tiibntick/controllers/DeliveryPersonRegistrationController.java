@@ -3,47 +3,67 @@ package com.polytechnique.tiibntick.controllers;
 import com.polytechnique.tiibntick.dtos.requests.DeliveryPersonRegistrationRequest;
 import com.polytechnique.tiibntick.dtos.responses.DeliveryPersonRegistrationResponse;
 import com.polytechnique.tiibntick.services.DeliveryPersonRegistrationService;
-import jakarta.validation.Valid;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 /**
  * Controller for delivery person registration.
  *
- * <p>Provides public endpoint for new delivery person registration.
- * After successful registration, the account is in PENDING status
- * awaiting admin validation.
+ * <p>Accepts multipart/form-data: JSON text fields + binary photo files.
  *
  * @author Kengfack Lagrange
  * @date 19/12/2025
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/delivery-persons")
 @RequiredArgsConstructor
 public class DeliveryPersonRegistrationController {
 
     private final DeliveryPersonRegistrationService registrationService;
+    private final ObjectMapper objectMapper;
 
     /**
-     * Registers a new delivery person.
+     * Registers a new delivery person using multipart upload.
      *
-     * <p>Accepts registration data, validates it, and creates the delivery person
-     * with all related entities (Person, DeliveryPerson, Logistics, Address).
-     * Sends a confirmation email and publishes a Kafka event.
-     *
-     * @param request the registration request body containing all required data
-     * @return a Mono&lt;ResponseEntity&lt;DeliveryPersonRegistrationResponse&gt;&gt; with status 201 Created
+     * @param jsonData   JSON string with text fields (parsed to DeliveryPersonRegistrationRequest)
+     * @param photoCard  photo d'identité (optional)
+     * @param cniRecto   CNI recto (optional)
+     * @param cniVerso   CNI verso (optional)
+     * @param nuiPhoto   NUI photo (optional)
+     * @param frontPhoto vehicle front photo (optional)
+     * @param backPhoto  vehicle back photo (optional)
+     * @return 201 Created with registration response
      */
-    @PostMapping("/register")
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<ResponseEntity<DeliveryPersonRegistrationResponse>> register(
-            @Valid @RequestBody DeliveryPersonRegistrationRequest request) {
-        return registrationService.register(request)
+            @RequestPart("data") String jsonData,
+            @RequestPart(value = "photoCard", required = false) FilePart photoCard,
+            @RequestPart(value = "cniRecto", required = false) FilePart cniRecto,
+            @RequestPart(value = "cniVerso", required = false) FilePart cniVerso,
+            @RequestPart(value = "nuiPhoto", required = false) FilePart nuiPhoto,
+            @RequestPart(value = "frontPhoto", required = false) FilePart frontPhoto,
+            @RequestPart(value = "backPhoto", required = false) FilePart backPhoto) {
+
+        DeliveryPersonRegistrationRequest request;
+        try {
+            request = objectMapper.readValue(jsonData, DeliveryPersonRegistrationRequest.class);
+        } catch (Exception e) {
+            log.error("Failed to parse registration JSON data", e);
+            return Mono.just(ResponseEntity.badRequest().build());
+        }
+
+        return registrationService.register(request, photoCard, cniRecto, cniVerso, nuiPhoto, frontPhoto, backPhoto)
                 .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 }
