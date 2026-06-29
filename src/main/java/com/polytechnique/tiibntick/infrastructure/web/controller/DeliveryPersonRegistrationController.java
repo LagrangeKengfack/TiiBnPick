@@ -1,0 +1,53 @@
+package com.polytechnique.tiibntick.infrastructure.web.controller;
+
+import com.polytechnique.tiibntick.domain.port.in.DeliveryPersonRegistrationUseCase;
+import com.polytechnique.tiibntick.infrastructure.web.dto.requests.DeliveryPersonRegistrationRequest;
+import com.polytechnique.tiibntick.infrastructure.web.dto.responses.DeliveryPersonRegistrationResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
+
+/**
+ * Inbound REST adapter for delivery person registration.
+ * Accepts multipart/form-data: JSON text fields + binary photo files.
+ *
+ * @author Kengfack Lagrange
+ * @date 19/12/2025
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/delivery-persons")
+@RequiredArgsConstructor
+public class DeliveryPersonRegistrationController {
+
+    private final DeliveryPersonRegistrationUseCase registrationUseCase;
+    private final ObjectMapper objectMapper;
+
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Mono<ResponseEntity<DeliveryPersonRegistrationResponse>> register(
+            @RequestPart("data") String jsonData,
+            @RequestPart(value = "photoCard", required = false) FilePart photoCard,
+            @RequestPart(value = "cniRecto", required = false) FilePart cniRecto,
+            @RequestPart(value = "cniVerso", required = false) FilePart cniVerso,
+            @RequestPart(value = "nuiPhoto", required = false) FilePart nuiPhoto,
+            @RequestPart(value = "frontPhoto", required = false) FilePart frontPhoto,
+            @RequestPart(value = "backPhoto", required = false) FilePart backPhoto) {
+
+        DeliveryPersonRegistrationRequest request;
+        try {
+            request = objectMapper.readValue(jsonData, DeliveryPersonRegistrationRequest.class);
+        } catch (Exception e) {
+            log.error("Failed to parse registration JSON data", e);
+            return Mono.just(ResponseEntity.badRequest().build());
+        }
+
+        return registrationUseCase.register(request, photoCard, cniRecto, cniVerso, nuiPhoto, frontPhoto, backPhoto)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
+    }
+}

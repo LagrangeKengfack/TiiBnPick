@@ -111,7 +111,6 @@ class DeliveryPersonProfileServiceTest {
         when(personAddressRepository.findByPersonId(dp.getPersonId())).thenReturn(Flux.just(personAddress));
         when(addressRepository.findById(personAddress.getAddressId())).thenReturn(Mono.just(address));
         when(modificationAddressService.updateAddress(any())).thenReturn(Mono.just(address));
-        when(passwordEncoder.encode(any())).thenReturn("ENCODED");
 
         // Act & Assert
         StepVerifier.create(service.updateProfile(dpId, request))

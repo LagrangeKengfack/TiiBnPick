@@ -3,6 +3,7 @@ package com.polytechnique.tiibntick.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polytechnique.tiibntick.dtos.requests.DeliveryPersonRegistrationRequest;
 import com.polytechnique.tiibntick.dtos.responses.DeliveryPersonRegistrationResponse;
+import com.polytechnique.tiibntick.exceptions.GlobalExceptionHandler;
 import com.polytechnique.tiibntick.models.enums.logistics.LogisticsClass;
 import com.polytechnique.tiibntick.models.enums.logistics.LogisticsType;
 import com.polytechnique.tiibntick.services.DeliveryPersonRegistrationService;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -26,6 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 @WebFluxTest(controllers = DeliveryPersonRegistrationController.class)
+@Import(GlobalExceptionHandler.class)
 class DeliveryPersonRegistrationControllerTest {
 
     @Autowired
@@ -77,6 +80,16 @@ class DeliveryPersonRegistrationControllerTest {
     @Test
     @WithMockUser
     void register_ValidationFailure() {
+        // Send empty JSON object - the service validator will reject it
+        // Since the controller parses JSON successfully but the service
+        // throws a ValidationException, the GlobalExceptionHandler returns 400
+        when(registrationService.register(
+                any(DeliveryPersonRegistrationRequest.class),
+                any(), any(), any(), any(), any(), any()))
+                .thenReturn(Mono.error(
+                        new com.polytechnique.tiibntick.exceptions.ValidationException(
+                                "First name is required, Last name is required, Email is required, Phone is required, Password is required")));
+
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
         builder.part("data", "{}", MediaType.APPLICATION_JSON);
 
