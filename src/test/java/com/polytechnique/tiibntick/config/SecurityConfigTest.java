@@ -1,18 +1,19 @@
 package com.polytechnique.tiibntick.config;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest
+/**
+ * Unit tests for SecurityConfig password encoder.
+ * Uses a direct BCryptPasswordEncoder instance instead of loading the full Spring context.
+ */
 class SecurityConfigTest {
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Test
     void passwordEncoder_BeanExists() {

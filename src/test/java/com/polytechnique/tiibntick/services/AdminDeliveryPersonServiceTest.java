@@ -4,6 +4,8 @@ import com.polytechnique.tiibntick.dtos.requests.AdminDeliveryPersonValidationRe
 import com.polytechnique.tiibntick.models.DeliveryPerson;
 import com.polytechnique.tiibntick.models.Person;
 import com.polytechnique.tiibntick.models.enums.deliveryPerson.DeliveryPersonStatus;
+import com.polytechnique.tiibntick.repositories.DeliveryPersonRepository;
+import com.polytechnique.tiibntick.repositories.LogisticsRepository;
 import com.polytechnique.tiibntick.services.deliveryperson.LectureDeliveryPersonService;
 import com.polytechnique.tiibntick.services.deliveryperson.ModificationDeliveryPersonService;
 import com.polytechnique.tiibntick.services.person.LecturePersonService;
@@ -46,6 +48,10 @@ class AdminDeliveryPersonServiceTest {
     private EmailService emailService;
     @Mock
     private KafkaEventPublisher kafkaEventPublisher;
+    @Mock
+    private LogisticsRepository logisticsRepository;
+    @Mock
+    private DeliveryPersonRepository deliveryPersonRepository;
 
     @InjectMocks
     private AdminDeliveryPersonService service;
@@ -136,7 +142,7 @@ class AdminDeliveryPersonServiceTest {
     }
 
     @Test
-    void revokeDeliveryPerson_ShouldUpdateStatusToRejected() {
+    void revokeDeliveryPerson_ShouldUpdateStatusToRevoked() {
         // Arrange
         UUID dpId = UUID.randomUUID();
         UUID personId = UUID.randomUUID();
@@ -157,7 +163,8 @@ class AdminDeliveryPersonServiceTest {
         StepVerifier.create(service.revokeDeliveryPerson(dpId))
                 .verifyComplete();
 
-        verify(modificationDeliveryPersonService).updateDeliveryPerson(argThat(d -> d.getStatus() == DeliveryPersonStatus.REJECTED));
+        // The service sets status to REVOKED (not REJECTED)
+        verify(modificationDeliveryPersonService).updateDeliveryPerson(argThat(d -> d.getStatus() == DeliveryPersonStatus.REVOKED));
         verify(emailService).sendAccountRevoked("test@example.com");
     }
 }

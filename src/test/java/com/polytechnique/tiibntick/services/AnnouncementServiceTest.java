@@ -10,7 +10,13 @@ import com.polytechnique.tiibntick.models.Packet;
 import com.polytechnique.tiibntick.models.enums.announcement.AnnouncementStatus;
 import com.polytechnique.tiibntick.repositories.AddressRepository;
 import com.polytechnique.tiibntick.repositories.AnnouncementRepository;
+import com.polytechnique.tiibntick.repositories.AnnouncementSubscriptionRepository;
+import com.polytechnique.tiibntick.repositories.DeliveryPersonRepository;
+import com.polytechnique.tiibntick.repositories.PersonRepository;
 import com.polytechnique.tiibntick.repositories.PacketRepository;
+import com.polytechnique.tiibntick.services.support.KafkaEventPublisher;
+import com.polytechnique.tiibntick.services.support.FileStorageService;
+import com.polytechnique.tiibntick.services.support.EmailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,9 +48,20 @@ class AnnouncementServiceTest {
     private AddressRepository addressRepository;
     @Mock
     private PacketRepository packetRepository;
-
+    @Mock
+    private KafkaEventPublisher kafkaEventPublisher;
+    @Mock
+    private FileStorageService fileStorageService;
     @Mock
     private org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+    @Mock
+    private AnnouncementSubscriptionRepository subscriptionRepository;
+    @Mock
+    private DeliveryPersonRepository deliveryPersonRepository;
+    @Mock
+    private PersonRepository personRepository;
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private AnnouncementService announcementService;
@@ -73,6 +90,7 @@ class AnnouncementServiceTest {
         when(entityTemplate.insert(any(Address.class))).thenReturn(Mono.just(savedAddress));
         when(entityTemplate.insert(any(Packet.class))).thenReturn(Mono.just(savedPacket));
         when(entityTemplate.insert(any(Announcement.class))).thenReturn(Mono.just(savedAnnouncement));
+        when(fileStorageService.saveBase64Image(any(), any())).thenReturn(Mono.empty());
 
         StepVerifier.create(announcementService.createAnnouncement(request))
                 .expectNextMatches(response -> response.getId().equals(savedAnnouncement.getId()) &&
