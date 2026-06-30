@@ -96,6 +96,17 @@ public class DeliveryPersonMapper {
         }
         logistics.setBackPhoto(request.getBackPhoto());
         logistics.setFrontPhoto(request.getFrontPhoto());
+        logistics.setStorefrontPhoto(request.getStorefrontPhoto());
+        if (request.getOpeningHours() != null) {
+            logistics.setOpeningHours(request.getOpeningHours().stream()
+                .map(dto -> com.polytechnique.tiibntick.domain.model.OpeningHours.builder()
+                    .dayOfWeek(dto.getDayOfWeek())
+                    .openTime(dto.getOpenTime())
+                    .closeTime(dto.getCloseTime())
+                    .isClosed(dto.getIsClosed())
+                    .build())
+                .collect(java.util.stream.Collectors.toList()));
+        }
         logistics.setTankCapacity(request.getTankCapacity());
         logistics.setLength(request.getLength());
         logistics.setWidth(request.getWidth());

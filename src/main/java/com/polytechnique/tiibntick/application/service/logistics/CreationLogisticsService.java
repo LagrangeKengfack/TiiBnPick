@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 public class CreationLogisticsService {
 
     private final LogisticsRepository logisticsRepository;
+    private final com.polytechnique.tiibntick.infrastructure.persistence.repository.OpeningHoursRepository openingHoursRepository;
 
     /**
      * Persists a new Logistics entity to the database.
@@ -28,6 +29,18 @@ public class CreationLogisticsService {
      * @throws org.springframework.dao.DataIntegrityViolationException if data integrity is violated
      */
     public Mono<Logistics> createLogistics(Logistics logistics) {
-        return logisticsRepository.save(logistics);
+        return logisticsRepository.save(logistics)
+            .flatMap(savedLogistics -> {
+                if (logistics.getOpeningHours() != null && !logistics.getOpeningHours().isEmpty()) {
+                    return reactor.core.publisher.Flux.fromIterable(logistics.getOpeningHours())
+                        .map(oh -> {
+                            oh.setLogisticsId(savedLogistics.getId());
+                            return oh;
+                        })
+                        .flatMap(openingHoursRepository::save)
+                        .then(Mono.just(savedLogistics));
+                }
+                return Mono.just(savedLogistics);
+            });
     }
 }

@@ -13,7 +13,8 @@ public enum LogisticsType {
     CAR("CAR"),
     VAN("VAN"),
     TRUCK("TRUCK"),
-    SCOOTER("SCOOTER");
+    SCOOTER("SCOOTER"),
+    POINT_RELAIS("POINT_RELAIS");
 
     private final String value;
 

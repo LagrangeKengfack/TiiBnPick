@@ -49,6 +49,7 @@ public class DeliveryPersonRegistrationRequest {
     private String logisticsClass; // Enum value
     private String backPhoto;
     private String frontPhoto;
+    private String storefrontPhoto;
     private Double tankCapacity;
     private Double length;
     private Double width;
@@ -56,6 +57,7 @@ public class DeliveryPersonRegistrationRequest {
     private String unit;
     private Integer totalSeatNumber;
     private String color;
+    private java.util.List<OpeningHoursDTO> openingHours;
 
     // Address fields
     private String street;

@@ -23,13 +23,13 @@ public class DeliveryPersonRegistrationUseCaseImpl implements DeliveryPersonRegi
     public Mono<DeliveryPersonRegistrationResponse> register(
             DeliveryPersonRegistrationRequest request,
             FilePart photoCard, FilePart cniRecto, FilePart cniVerso,
-            FilePart nuiPhoto, FilePart frontPhoto, FilePart backPhoto) {
+            FilePart nuiPhoto, FilePart frontPhoto, FilePart backPhoto, FilePart storefrontPhoto) {
 
         // Convert shared DTO to legacy DTO
         com.polytechnique.tiibntick.infrastructure.web.dto.requests.DeliveryPersonRegistrationRequest legacyRequest =
                 convertRequest(request);
 
-        return registrationService.register(legacyRequest, photoCard, cniRecto, cniVerso, nuiPhoto, frontPhoto, backPhoto)
+        return registrationService.register(legacyRequest, photoCard, cniRecto, cniVerso, nuiPhoto, frontPhoto, backPhoto, storefrontPhoto)
                 .map(legacyResponse -> {
                     DeliveryPersonRegistrationResponse response = new DeliveryPersonRegistrationResponse();
                     response.setDeliveryPersonId(legacyResponse.getDeliveryPersonId());
@@ -62,6 +62,7 @@ public class DeliveryPersonRegistrationUseCaseImpl implements DeliveryPersonRegi
         legacy.setLogisticsClass(shared.getLogisticsClass());
         legacy.setBackPhoto(shared.getBackPhoto());
         legacy.setFrontPhoto(shared.getFrontPhoto());
+        legacy.setStorefrontPhoto(shared.getStorefrontPhoto());
         legacy.setTankCapacity(shared.getTankCapacity());
         legacy.setLength(shared.getLength());
         legacy.setWidth(shared.getWidth());
@@ -69,6 +70,7 @@ public class DeliveryPersonRegistrationUseCaseImpl implements DeliveryPersonRegi
         legacy.setUnit(shared.getUnit());
         legacy.setTotalSeatNumber(shared.getTotalSeatNumber());
         legacy.setColor(shared.getColor());
+        legacy.setOpeningHours(shared.getOpeningHours());
         legacy.setStreet(shared.getStreet());
         legacy.setCity(shared.getCity());
         legacy.setDistrict(shared.getDistrict());

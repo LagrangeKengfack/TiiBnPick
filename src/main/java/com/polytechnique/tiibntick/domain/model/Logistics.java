@@ -85,4 +85,11 @@ public class Logistics {
 
     @Column("front_photo")
     private String frontPhoto;
+
+    // Champs spécifiques au Point Relais
+    @Column("storefront_photo")
+    private String storefrontPhoto;
+
+    @org.springframework.data.annotation.Transient
+    private java.util.List<OpeningHours> openingHours;
 }

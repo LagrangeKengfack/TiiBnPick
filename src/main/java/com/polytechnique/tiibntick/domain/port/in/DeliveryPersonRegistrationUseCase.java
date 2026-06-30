@@ -17,5 +17,6 @@ public interface DeliveryPersonRegistrationUseCase {
             FilePart cniVerso,
             FilePart nuiPhoto,
             FilePart frontPhoto,
-            FilePart backPhoto);
+            FilePart backPhoto,
+            FilePart storefrontPhoto);
 }

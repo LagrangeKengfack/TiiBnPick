@@ -37,7 +37,8 @@ public class DeliveryPersonRegistrationController {
             @RequestPart(value = "cniVerso", required = false) FilePart cniVerso,
             @RequestPart(value = "nuiPhoto", required = false) FilePart nuiPhoto,
             @RequestPart(value = "frontPhoto", required = false) FilePart frontPhoto,
-            @RequestPart(value = "backPhoto", required = false) FilePart backPhoto) {
+            @RequestPart(value = "backPhoto", required = false) FilePart backPhoto,
+            @RequestPart(value = "storefrontPhoto", required = false) FilePart storefrontPhoto) {
 
         DeliveryPersonRegistrationRequest request;
         try {
@@ -47,7 +48,7 @@ public class DeliveryPersonRegistrationController {
             return Mono.just(ResponseEntity.badRequest().build());
         }
 
-        return registrationUseCase.register(request, photoCard, cniRecto, cniVerso, nuiPhoto, frontPhoto, backPhoto)
+        return registrationUseCase.register(request, photoCard, cniRecto, cniVerso, nuiPhoto, frontPhoto, backPhoto, storefrontPhoto)
                 .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 }

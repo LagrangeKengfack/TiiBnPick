@@ -71,7 +71,8 @@ public class DeliveryPersonRegistrationService {
                         FilePart cniVerso,
                         FilePart nuiPhoto,
                         FilePart frontPhoto,
-                        FilePart backPhoto) {
+                        FilePart backPhoto,
+                        FilePart storefrontPhoto) {
                 return validator.validate(request)
                                 .flatMap(validRequest -> lecturePersonService.existsByEmail(validRequest.getEmail())
                                                 .flatMap(exists -> {
@@ -101,6 +102,9 @@ public class DeliveryPersonRegistrationService {
                                                                         .defaultIfEmpty("NOT_PROVIDED"),
                                                         fileStorageService
                                                                         .saveFilePart(backPhoto, "vehicule_arriere")
+                                                                        .defaultIfEmpty("NOT_PROVIDED"),
+                                                        fileStorageService
+                                                                        .saveFilePart(storefrontPhoto, "devanture")
                                                                         .defaultIfEmpty("NOT_PROVIDED"))
                                                         .map(imagePaths -> {
                                                                 validRequest.setPhotoCard(imagePaths.getT1());
@@ -115,6 +119,7 @@ public class DeliveryPersonRegistrationService {
 
                                                                 validRequest.setFrontPhoto(imagePaths.getT5());
                                                                 validRequest.setBackPhoto(imagePaths.getT6());
+                                                                validRequest.setStorefrontPhoto(imagePaths.getT7());
                                                                 return validRequest;
                                                         });
                                 })
